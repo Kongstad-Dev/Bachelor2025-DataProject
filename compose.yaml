@@ -1,0 +1,6 @@
+﻿services:
+  bachelor2025-dataproject:
+    image: bachelor2025-dataproject
+    build:
+      context: .
+      dockerfile: Bachelor2025-DataProject/Dockerfile
