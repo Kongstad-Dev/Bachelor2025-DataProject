@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Bachelor2025-DataProject")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+dc449f5949f1c7b6c998045665a85f6cdc4af1f7")]
 [assembly: System.Reflection.AssemblyProductAttribute("Bachelor2025-DataProject")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Bachelor2025-DataProject")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
