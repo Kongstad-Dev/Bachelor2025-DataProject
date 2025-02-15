@@ -1,0 +1,41 @@
+{
+  "Files": [
+    {
+      "Id": "C:\\Users\\krist\\Desktop\\Bachelor\\Bach2025-nortec\\obj\\Debug\\net8.0\\scopedcss\\projectbundle\\Bach2025-nortec.bundle.scp.css",
+      "PackagePath": "staticwebassets\\Bach2025-nortec.bundle.scp.css"
+    },
+    {
+      "Id": "C:\\Users\\krist\\Desktop\\Bachelor\\Bach2025-nortec\\wwwroot\\app.css",
+      "PackagePath": "staticwebassets\\app.css"
+    },
+    {
+      "Id": "C:\\Users\\krist\\Desktop\\Bachelor\\Bach2025-nortec\\wwwroot\\bootstrap\\bootstrap.min.css",
+      "PackagePath": "staticwebassets\\bootstrap\\bootstrap.min.css"
+    },
+    {
+      "Id": "C:\\Users\\krist\\Desktop\\Bachelor\\Bach2025-nortec\\wwwroot\\bootstrap\\bootstrap.min.css.map",
+      "PackagePath": "staticwebassets\\bootstrap\\bootstrap.min.css.map"
+    },
+    {
+      "Id": "C:\\Users\\krist\\Desktop\\Bachelor\\Bach2025-nortec\\wwwroot\\favicon.png",
+      "PackagePath": "staticwebassets\\favicon.png"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.Bach2025-nortec.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.build.Bach2025-nortec.props",
+      "PackagePath": "build\\Bach2025-nortec.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildMultiTargeting.Bach2025-nortec.props",
+      "PackagePath": "buildMultiTargeting\\Bach2025-nortec.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildTransitive.Bach2025-nortec.props",
+      "PackagePath": "buildTransitive\\Bach2025-nortec.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

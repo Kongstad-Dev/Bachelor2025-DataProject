@@ -1,0 +1,6 @@
+﻿services:
+  bach2025-nortec:
+    image: bach2025-nortec
+    build:
+      context: .
+      dockerfile: Dockerfile

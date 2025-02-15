@@ -1,0 +1,23 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "Bach2025-nortec/1.0.0": {
+        "runtime": {
+          "Bach2025-nortec.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Bach2025-nortec/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
