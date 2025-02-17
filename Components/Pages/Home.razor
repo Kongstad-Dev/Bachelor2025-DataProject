@@ -1,7 +1,37 @@
 ﻿@page "/"
 
+@using Microsoft.EntityFrameworkCore
+@inject YourDbContext DbContext
+
 <PageTitle>Home</PageTitle>
 
 <h1>Hello, world!</h1>
 
-Welcome to your new app.
+@if (isConnected)
+{
+    <p>Connected</p>
+}
+else
+{
+    <p>Not Connected</p>
+}
+
+@code {
+    private bool isConnected;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Try to query the database to check the connection
+             await DbContext.Database.CanConnectAsync();
+
+            
+            isConnected = true;
+        }
+        catch
+        {
+            isConnected = false;
+        }
+    }
+}
