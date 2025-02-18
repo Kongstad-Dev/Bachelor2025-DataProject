@@ -1,23 +1,23 @@
 {
   "Files": [
     {
-      "Id": "C:\\Users\\krist\\Desktop\\Bachelor\\Bach2025-nortec\\obj\\Debug\\net8.0\\scopedcss\\projectbundle\\Bach2025-nortec.bundle.scp.css",
+      "Id": "C:\\Users\\aleks\\Bachelor2025-DataProject\\obj\\Debug\\net8.0\\scopedcss\\projectbundle\\Bach2025-nortec.bundle.scp.css",
       "PackagePath": "staticwebassets\\Bach2025-nortec.bundle.scp.css"
     },
     {
-      "Id": "C:\\Users\\krist\\Desktop\\Bachelor\\Bach2025-nortec\\wwwroot\\app.css",
+      "Id": "C:\\Users\\aleks\\Bachelor2025-DataProject\\wwwroot\\app.css",
       "PackagePath": "staticwebassets\\app.css"
     },
     {
-      "Id": "C:\\Users\\krist\\Desktop\\Bachelor\\Bach2025-nortec\\wwwroot\\bootstrap\\bootstrap.min.css",
+      "Id": "C:\\Users\\aleks\\Bachelor2025-DataProject\\wwwroot\\bootstrap\\bootstrap.min.css",
       "PackagePath": "staticwebassets\\bootstrap\\bootstrap.min.css"
     },
     {
-      "Id": "C:\\Users\\krist\\Desktop\\Bachelor\\Bach2025-nortec\\wwwroot\\bootstrap\\bootstrap.min.css.map",
+      "Id": "C:\\Users\\aleks\\Bachelor2025-DataProject\\wwwroot\\bootstrap\\bootstrap.min.css.map",
       "PackagePath": "staticwebassets\\bootstrap\\bootstrap.min.css.map"
     },
     {
-      "Id": "C:\\Users\\krist\\Desktop\\Bachelor\\Bach2025-nortec\\wwwroot\\favicon.png",
+      "Id": "C:\\Users\\aleks\\Bachelor2025-DataProject\\wwwroot\\favicon.png",
       "PackagePath": "staticwebassets\\favicon.png"
     },
     {

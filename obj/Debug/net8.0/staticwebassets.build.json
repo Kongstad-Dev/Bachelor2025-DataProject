@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "D1pWY3ZhKRRH8QTyJZBAX3NM3FvYwN9clW5icAM5dQo=",
+  "Hash": "gd8dr90yUxcfyq445mI59QJmyQJlmrYUGUGETKcmzQg=",
   "Source": "Bach2025-nortec",
   "BasePath": "_content/Bach2025-nortec",
   "Mode": "Default",
@@ -10,17 +10,17 @@
     {
       "Name": "Bach2025-nortec\\wwwroot",
       "Source": "Bach2025-nortec",
-      "ContentRoot": "C:\\Users\\krist\\Desktop\\Bachelor\\Bach2025-nortec\\wwwroot\\",
+      "ContentRoot": "C:\\Users\\aleks\\Bachelor2025-DataProject\\wwwroot\\",
       "BasePath": "_content/Bach2025-nortec",
       "Pattern": "**"
     }
   ],
   "Assets": [
     {
-      "Identity": "C:\\Users\\krist\\Desktop\\Bachelor\\Bach2025-nortec\\obj\\Debug\\net8.0\\scopedcss\\bundle\\Bach2025-nortec.styles.css",
+      "Identity": "C:\\Users\\aleks\\Bachelor2025-DataProject\\obj\\Debug\\net8.0\\scopedcss\\bundle\\Bach2025-nortec.styles.css",
       "SourceId": "Bach2025-nortec",
       "SourceType": "Computed",
-      "ContentRoot": "C:\\Users\\krist\\Desktop\\Bachelor\\Bach2025-nortec\\obj\\Debug\\net8.0\\scopedcss\\bundle\\",
+      "ContentRoot": "C:\\Users\\aleks\\Bachelor2025-DataProject\\obj\\Debug\\net8.0\\scopedcss\\bundle\\",
       "BasePath": "_content/Bach2025-nortec",
       "RelativePath": "Bach2025-nortec.styles.css",
       "AssetKind": "All",
@@ -33,13 +33,13 @@
       "AssetTraitValue": "ApplicationBundle",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
-      "OriginalItemSpec": "C:\\Users\\krist\\Desktop\\Bachelor\\Bach2025-nortec\\obj\\Debug\\net8.0\\scopedcss\\bundle\\Bach2025-nortec.styles.css"
+      "OriginalItemSpec": "C:\\Users\\aleks\\Bachelor2025-DataProject\\obj\\Debug\\net8.0\\scopedcss\\bundle\\Bach2025-nortec.styles.css"
     },
     {
-      "Identity": "C:\\Users\\krist\\Desktop\\Bachelor\\Bach2025-nortec\\obj\\Debug\\net8.0\\scopedcss\\projectbundle\\Bach2025-nortec.bundle.scp.css",
+      "Identity": "C:\\Users\\aleks\\Bachelor2025-DataProject\\obj\\Debug\\net8.0\\scopedcss\\projectbundle\\Bach2025-nortec.bundle.scp.css",
       "SourceId": "Bach2025-nortec",
       "SourceType": "Computed",
-      "ContentRoot": "C:\\Users\\krist\\Desktop\\Bachelor\\Bach2025-nortec\\obj\\Debug\\net8.0\\scopedcss\\projectbundle\\",
+      "ContentRoot": "C:\\Users\\aleks\\Bachelor2025-DataProject\\obj\\Debug\\net8.0\\scopedcss\\projectbundle\\",
       "BasePath": "_content/Bach2025-nortec",
       "RelativePath": "Bach2025-nortec.bundle.scp.css",
       "AssetKind": "All",
@@ -52,13 +52,13 @@
       "AssetTraitValue": "ProjectBundle",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
-      "OriginalItemSpec": "C:\\Users\\krist\\Desktop\\Bachelor\\Bach2025-nortec\\obj\\Debug\\net8.0\\scopedcss\\projectbundle\\Bach2025-nortec.bundle.scp.css"
+      "OriginalItemSpec": "C:\\Users\\aleks\\Bachelor2025-DataProject\\obj\\Debug\\net8.0\\scopedcss\\projectbundle\\Bach2025-nortec.bundle.scp.css"
     },
     {
-      "Identity": "C:\\Users\\krist\\Desktop\\Bachelor\\Bach2025-nortec\\wwwroot\\app.css",
+      "Identity": "C:\\Users\\aleks\\Bachelor2025-DataProject\\wwwroot\\app.css",
       "SourceId": "Bach2025-nortec",
       "SourceType": "Discovered",
-      "ContentRoot": "C:\\Users\\krist\\Desktop\\Bachelor\\Bach2025-nortec\\wwwroot\\",
+      "ContentRoot": "C:\\Users\\aleks\\Bachelor2025-DataProject\\wwwroot\\",
       "BasePath": "_content/Bach2025-nortec",
       "RelativePath": "app.css",
       "AssetKind": "All",
@@ -74,10 +74,10 @@
       "OriginalItemSpec": "wwwroot\\app.css"
     },
     {
-      "Identity": "C:\\Users\\krist\\Desktop\\Bachelor\\Bach2025-nortec\\wwwroot\\bootstrap\\bootstrap.min.css",
+      "Identity": "C:\\Users\\aleks\\Bachelor2025-DataProject\\wwwroot\\bootstrap\\bootstrap.min.css",
       "SourceId": "Bach2025-nortec",
       "SourceType": "Discovered",
-      "ContentRoot": "C:\\Users\\krist\\Desktop\\Bachelor\\Bach2025-nortec\\wwwroot\\",
+      "ContentRoot": "C:\\Users\\aleks\\Bachelor2025-DataProject\\wwwroot\\",
       "BasePath": "_content/Bach2025-nortec",
       "RelativePath": "bootstrap/bootstrap.min.css",
       "AssetKind": "All",
@@ -93,10 +93,10 @@
       "OriginalItemSpec": "wwwroot\\bootstrap\\bootstrap.min.css"
     },
     {
-      "Identity": "C:\\Users\\krist\\Desktop\\Bachelor\\Bach2025-nortec\\wwwroot\\bootstrap\\bootstrap.min.css.map",
+      "Identity": "C:\\Users\\aleks\\Bachelor2025-DataProject\\wwwroot\\bootstrap\\bootstrap.min.css.map",
       "SourceId": "Bach2025-nortec",
       "SourceType": "Discovered",
-      "ContentRoot": "C:\\Users\\krist\\Desktop\\Bachelor\\Bach2025-nortec\\wwwroot\\",
+      "ContentRoot": "C:\\Users\\aleks\\Bachelor2025-DataProject\\wwwroot\\",
       "BasePath": "_content/Bach2025-nortec",
       "RelativePath": "bootstrap/bootstrap.min.css.map",
       "AssetKind": "All",
@@ -112,10 +112,10 @@
       "OriginalItemSpec": "wwwroot\\bootstrap\\bootstrap.min.css.map"
     },
     {
-      "Identity": "C:\\Users\\krist\\Desktop\\Bachelor\\Bach2025-nortec\\wwwroot\\favicon.png",
+      "Identity": "C:\\Users\\aleks\\Bachelor2025-DataProject\\wwwroot\\favicon.png",
       "SourceId": "Bach2025-nortec",
       "SourceType": "Discovered",
-      "ContentRoot": "C:\\Users\\krist\\Desktop\\Bachelor\\Bach2025-nortec\\wwwroot\\",
+      "ContentRoot": "C:\\Users\\aleks\\Bachelor2025-DataProject\\wwwroot\\",
       "BasePath": "_content/Bach2025-nortec",
       "RelativePath": "favicon.png",
       "AssetKind": "All",
