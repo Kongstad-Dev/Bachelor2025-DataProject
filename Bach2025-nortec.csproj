@@ -27,4 +27,10 @@
       <PackageReference Include="MySql.EntityFrameworkCore" Version="8.0.8" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Compile Update="Program.cs">
+        <DependentUpon>Dockerfile</DependentUpon>
+      </Compile>
+    </ItemGroup>
+
 </Project>

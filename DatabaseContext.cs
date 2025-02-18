@@ -1,6 +1,9 @@
+using Bach2025_nortecnortec.Database;
+using Bach2025nortec.Migrations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using DotNetEnv;
+using DataEntity = Bach2025_nortecnortec.Database.DataEntity;
 
 public class YourDbContext : DbContext
 {
@@ -11,6 +14,7 @@ public class YourDbContext : DbContext
 
     // Define your DbSets here
     public DbSet<Laundromat> Laundromat { get; set; }
+    public DbSet<DataEntity> DataEntities { get; set; }
 }
 
 public class YourDbContextFactory : IDesignTimeDbContextFactory<YourDbContext>

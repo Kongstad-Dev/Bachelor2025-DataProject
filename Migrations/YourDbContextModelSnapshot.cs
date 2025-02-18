@@ -17,6 +17,75 @@ namespace Bach2025nortec.Migrations
                 .HasAnnotation("ProductVersion", "8.0.11")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
+            modelBuilder.Entity("Bach2025_nortecnortec.Database.DataEntity", b =>
+                {
+                    b.Property<int>("kId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<int>("amount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("currency")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("debug")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("dirty")
+                        .HasColumnType("int");
+
+                    b.Property<int>("externalId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("minuts")
+                        .HasColumnType("int");
+
+                    b.Property<int>("prewash")
+                        .HasColumnType("int");
+
+                    b.Property<int>("program")
+                        .HasColumnType("int");
+
+                    b.Property<int>("programtype")
+                        .HasColumnType("int");
+
+                    b.Property<int>("rinse")
+                        .HasColumnType("int");
+
+                    b.Property<int>("seconds")
+                        .HasColumnType("int");
+
+                    b.Property<int>("soapBrand")
+                        .HasColumnType("int");
+
+                    b.Property<int>("spin")
+                        .HasColumnType("int");
+
+                    b.Property<int>("temperature")
+                        .HasColumnType("int");
+
+                    b.Property<int>("transactionsType")
+                        .HasColumnType("int");
+
+                    b.Property<string>("unitName")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("unittype")
+                        .HasColumnType("int");
+
+                    b.Property<string>("user")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("kId");
+
+                    b.ToTable("DataEntities");
+                });
+
             modelBuilder.Entity("Laundromat", b =>
                 {
                     b.Property<int>("kId")
