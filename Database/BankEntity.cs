@@ -5,6 +5,6 @@ namespace Bach2025_nortec.Database;
 public class BankEntity
 {
     [Key]
-    public int BId{ get; set; }
+    public int bId { get; set; }
     public string? name { get; set; }
 }

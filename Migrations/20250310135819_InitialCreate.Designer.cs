@@ -9,8 +9,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Bach2025nortec.Migrations
 {
     [DbContext(typeof(YourDbContext))]
-    [Migration("20250310124826_LaundromatEntity")]
-    partial class LaundromatEntity
+    [Migration("20250310135819_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -20,7 +20,21 @@ namespace Bach2025nortec.Migrations
                 .HasAnnotation("ProductVersion", "8.0.11")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
-            modelBuilder.Entity("Bach2025_nortecnortec.Database.DataEntity", b =>
+            modelBuilder.Entity("Bach2025_nortec.Database.BankEntity", b =>
+                {
+                    b.Property<int>("bId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<string>("name")
+                        .HasColumnType("longtext");
+
+                    b.HasKey("bId");
+
+                    b.ToTable("bank", (string)null);
+                });
+
+            modelBuilder.Entity("Bach2025_nortec.Database.DataEntity", b =>
                 {
                     b.Property<int>("kId")
                         .ValueGeneratedOnAdd()
@@ -94,6 +108,9 @@ namespace Bach2025nortec.Migrations
                     b.Property<string>("kId")
                         .HasColumnType("varchar(255)");
 
+                    b.Property<int>("bId")
+                        .HasColumnType("int");
+
                     b.Property<string>("bank")
                         .HasColumnType("longtext");
 
@@ -114,7 +131,20 @@ namespace Bach2025nortec.Migrations
 
                     b.HasKey("kId");
 
-                    b.ToTable("Laundromat");
+                    b.HasIndex("bId");
+
+                    b.ToTable("laundromat", (string)null);
+                });
+
+            modelBuilder.Entity("Laundromat", b =>
+                {
+                    b.HasOne("Bach2025_nortec.Database.BankEntity", "Bank")
+                        .WithMany()
+                        .HasForeignKey("bId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Bank");
                 });
 #pragma warning restore 612, 618
         }
