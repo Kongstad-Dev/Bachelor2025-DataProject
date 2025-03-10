@@ -2,6 +2,7 @@ using Bach2025_nortec.Components;
 using Microsoft.EntityFrameworkCore;
 using MySql.EntityFrameworkCore.Extensions;
 using DotNetEnv;
+using System.Net.Http;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,18 @@ builder.Services.AddRazorComponents()
 var connectionString = $"Server={Env.GetString("DATABASE_HOST")};Database={Env.GetString("DATABASE_NAME")};User={Env.GetString("DATABASE_USERNAME")};Password={Env.GetString("DATABASE_PASSWORD")};";
 builder.Services.AddDbContext<YourDbContext>(options =>
     options.UseMySQL(connectionString));
+    
+// Register HttpClient and ExternalApiService
+builder.Services.AddHttpClient<ExternalApiService>();
+
+// Add controllers
+builder.Services.AddControllers();
+
+// Register HttpClient and ExternalApiService
+builder.Services.AddHttpClient<ExternalApiService>();
+
+// Add controllers
+builder.Services.AddControllers();
 
 var app = builder.Build();
 
@@ -32,7 +45,13 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseAntiforgery();
 
-app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
+app.UseRouting();
+
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapControllers();
+    endpoints.MapRazorComponents<App>()
+        .AddInteractiveServerRenderMode();
+});
 
 app.Run();

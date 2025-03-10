@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Bach2025-nortec")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+65436edef5e1a64d3312255eb2b41de808663b27")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ef5c5e6d9fb45592403d8bd12cde590efab35b42")]
 [assembly: System.Reflection.AssemblyProductAttribute("Bach2025-nortec")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Bach2025-nortec")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
