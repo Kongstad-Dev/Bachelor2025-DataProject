@@ -19,39 +19,49 @@ public class DataUpdateController : ControllerBase
         _dbContext = dbContext;
     }
 
-    [HttpPost("update-data-from-api1")]
+    [HttpPost("update-laundromats-banks")]
     public async Task<IActionResult> UpdateDataFromApi1()
     {
-        string baseEndpoint =
-            "https://datpro2.api.kombine.services/AleksanderKristoffer/Locations1/3E7Q77379418h77359418M/500/0";
+        string baseEndpoint = "https://datpro2.api.kombine.services/AleksanderKristoffer/Locations1/3E7Q77379418h77359418M/500/0";
+        
+        (string baseUrl, int initialPageNumber) = ParseEndpoint(baseEndpoint);
+        
+        int totalLaundromats = await FetchAndProcessAllLaundromatPages(baseUrl, initialPageNumber);
 
-        // Check if the baseEndpoint ends with a number
+        return Ok($"Data update completed. Added {totalLaundromats} new laundromats.");
+    }
+
+    private (string baseUrl, int initialPage) ParseEndpoint(string endpoint)
+    {
         string baseUrl;
         int pageNumber = 0;
 
-        // Get the base URL up to the last segment
-        int lastSlashIndex = baseEndpoint.LastIndexOf('/');
+        int lastSlashIndex = endpoint.LastIndexOf('/');
         if (lastSlashIndex != -1)
         {
-            string lastSegment = baseEndpoint.Substring(lastSlashIndex + 1);
+            string lastSegment = endpoint.Substring(lastSlashIndex + 1);
             if (int.TryParse(lastSegment, out pageNumber))
             {
-                baseUrl = baseEndpoint.Substring(0, lastSlashIndex);
+                baseUrl = endpoint.Substring(0, lastSlashIndex);
             }
             else
             {
-                // If the last segment isn't a number, use the entire endpoint as base
-                // and start from page 0
-                baseUrl = baseEndpoint;
+                baseUrl = endpoint;
             }
         }
         else
         {
-            baseUrl = baseEndpoint;
+            baseUrl = endpoint;
         }
 
+        return (baseUrl, pageNumber);
+    }
+
+    private async Task<int> FetchAndProcessAllLaundromatPages(string baseUrl, int startPage)
+    {
         int totalLaundromats = 0;
         bool hasMoreData = true;
+        int pageNumber = startPage;
 
         // Continue fetching pages until no more data is returned
         while (hasMoreData && pageNumber < 100)
@@ -61,7 +71,6 @@ public class DataUpdateController : ControllerBase
 
             if (string.IsNullOrEmpty(data))
             {
-                // No more data
                 hasMoreData = false;
                 continue;
             }
@@ -69,48 +78,60 @@ public class DataUpdateController : ControllerBase
             var laundromats = JsonConvert.DeserializeObject<List<Laundromat>>(data);
             if (laundromats == null || laundromats.Count == 0)
             {
-                // No more data
                 hasMoreData = false;
                 continue;
             }
 
-            foreach (var laundromat in laundromats)
-            {
-                var existingLaundromat = _dbContext.Laundromat.SingleOrDefault(l =>
-                    l.kId == laundromat.kId
-                );
-                if (existingLaundromat == null)
-                {
-                    // Check if a bank with the same name exists and create it if it doesn't
-                    var bank = _dbContext.Bank.SingleOrDefault(b => b.name == laundromat.bank);
-                    if (bank == null)
-                    {
-                        bank = new BankEntity { name = laundromat.bank };
-                        _dbContext.Bank.Add(bank);
-                        await _dbContext.SaveChangesAsync(); // Save changes to get the new bank's bId
-                    }
-
-                    // Create new laundromat with the bank reference
-                    var newLaundromat = new Laundromat
-                    {
-                        kId = laundromat.kId,
-                        externalId = laundromat.externalId,
-                        bank = laundromat.bank,
-                        name = laundromat.name,
-                        zip = laundromat.zip,
-                        longitude = laundromat.longitude,
-                        latitude = laundromat.latitude,
-                        bId = bank.bId,
-                    };
-                    _dbContext.Laundromat.Add(newLaundromat);
-                    totalLaundromats++;
-                }
-            }
-
-            await _dbContext.SaveChangesAsync();
-            pageNumber++; // Increment page number for the next request
+            int newLaundromats = await ProcessLaundromats(laundromats);
+            totalLaundromats += newLaundromats;
+            
+            pageNumber++;
         }
 
-        return Ok($"Data update completed. Added {totalLaundromats} new laundromats.");
+        return totalLaundromats;
+    }
+
+    private async Task<int> ProcessLaundromats(List<Laundromat> laundromats)
+    {
+        int newLaundromatCount = 0;
+
+        foreach (var laundromat in laundromats)
+        {
+            var existingLaundromat = _dbContext.Laundromat.SingleOrDefault(l => l.kId == laundromat.kId);
+            if (existingLaundromat == null)
+            {
+                var bank = await GetOrCreateBank(laundromat.bank);
+                
+                // Create new laundromat with the bank reference
+                var newLaundromat = new Laundromat
+                {
+                    kId = laundromat.kId,
+                    externalId = laundromat.externalId,
+                    bank = laundromat.bank,
+                    name = laundromat.name,
+                    zip = laundromat.zip,
+                    longitude = laundromat.longitude,
+                    latitude = laundromat.latitude,
+                    bId = bank.bId,
+                };
+                _dbContext.Laundromat.Add(newLaundromat);
+                newLaundromatCount++;
+            }
+        }
+
+        await _dbContext.SaveChangesAsync();
+        return newLaundromatCount;
+    }
+
+    private async Task<BankEntity> GetOrCreateBank(string bankName)
+    {
+        var bank = _dbContext.Bank.SingleOrDefault(b => b.name == bankName);
+        if (bank == null)
+        {
+            bank = new BankEntity { name = bankName };
+            _dbContext.Bank.Add(bank);
+            await _dbContext.SaveChangesAsync();
+        }
+        return bank;
     }
 }
