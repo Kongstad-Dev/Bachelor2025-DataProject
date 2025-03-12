@@ -13,17 +13,28 @@ public class YourDbContext : DbContext
     public DbSet<Laundromat> Laundromat { get; set; }
     public DbSet<DataEntity> DataEntities { get; set; }
     public DbSet<BankEntity> Bank { get; set; }
+    public DbSet<TransactionEntity> Transactions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
         // Configure the relationship between Laundromat and BankEntity
-        modelBuilder.Entity<Laundromat>().HasOne(l => l.Bank).WithMany().HasForeignKey(l => l.bId);
+        modelBuilder.Entity<Laundromat>()
+            .HasOne(l => l.Bank)
+            .WithMany(b => b.Laundromats)
+            .HasForeignKey(l => l.bId);
+
+        // Configure the relationship between Laundromat and TransactionEntity
+        modelBuilder.Entity<TransactionEntity>()
+            .HasOne(t => t.Laundromat)
+            .WithMany(l => l.Transactions)
+            .HasForeignKey(t => t.LaundromatId);
 
         // Specify existing table names (match your database exactly)
         modelBuilder.Entity<BankEntity>().ToTable("bank");
         modelBuilder.Entity<Laundromat>().ToTable("laundromat");
+        modelBuilder.Entity<TransactionEntity>().ToTable("transaction");
     }
 }
 
