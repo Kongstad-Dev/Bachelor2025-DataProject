@@ -36,7 +36,9 @@ public class TransactionEntity
 
     public int rinse { get; set; }
 
-    public int minutes { get; set; }
+    // Misspelled because of the api
+    // Changing it would break the DataUpdateController
+    public int minuts { get; set; }
 
     public int seconds { get; set; }
 

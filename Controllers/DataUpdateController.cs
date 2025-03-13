@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Bach2025_nortec.Database;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using DotNetEnv;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -12,79 +13,28 @@ public class DataUpdateController : ControllerBase
 {
     private readonly ExternalApiService _externalApiService;
     private readonly YourDbContext _dbContext;
+    private readonly string _locationsApiUrl;
+    private readonly string _transactionsApiUrl;
 
     public DataUpdateController(ExternalApiService externalApiService, YourDbContext dbContext)
     {
         _externalApiService = externalApiService;
         _dbContext = dbContext;
+        _locationsApiUrl = Env.GetString("API_LOCATIONS");
+        _transactionsApiUrl = Env.GetString("API_TRANSACTIIONS");
     }
 
-    // Renamed endpoint for updating all laundromats
+    // Adds new laundromats and banks to the database
     [HttpPost("update-all-laundromats")]
     public async Task<IActionResult> UpdateAllLaundromatsAndBanks()
     {
-        string baseEndpoint =
-            "https://datpro2.api.kombine.services/AleksanderKristoffer/Locations1/3E7Q77379418h77359418M/500/0";
+        string baseEndpoint = _locationsApiUrl;
 
         (string baseUrl, int initialPageNumber) = ParseEndpoint(baseEndpoint);
 
         int totalLaundromats = await FetchAndProcessAllLaundromatPages(baseUrl, initialPageNumber);
 
         return Ok($"Data update completed. Added {totalLaundromats} new laundromats.");
-    }
-
-    // New endpoint for updating a single laundromat by ID
-    [HttpPost("update-laundromat/{kId}")]
-    public async Task<IActionResult> UpdateSingleLaundromat(string kId)
-    {
-        if (string.IsNullOrEmpty(kId))
-        {
-            return BadRequest("Laundromat kId is required");
-        }
-
-        // Check if laundromat already exists
-        var existingLaundromat = _dbContext.Laundromat.SingleOrDefault(l => l.kId == kId);
-        if (existingLaundromat != null)
-        {
-            return Ok($"Laundromat with kId {kId} already exists in database");
-        }
-
-        // Fetch the specific laundromat from the API
-        string specificEndpoint =
-            $"https://datpro2.api.kombine.services/AleksanderKristoffer/Location/{kId}";
-
-        var data = await _externalApiService.FetchDataAsync(specificEndpoint);
-
-        if (string.IsNullOrEmpty(data))
-        {
-            return NotFound($"No data found for laundromat with kId {kId}");
-        }
-
-        var laundromat = JsonConvert.DeserializeObject<Laundromat>(data);
-        if (laundromat == null)
-        {
-            return NotFound($"Could not parse data for laundromat with kId {kId}");
-        }
-
-        // Process the single laundromat
-        var bank = await GetOrCreateBank(laundromat.bank);
-
-        var newLaundromat = new Laundromat
-        {
-            kId = laundromat.kId,
-            externalId = laundromat.externalId,
-            bank = laundromat.bank,
-            name = laundromat.name,
-            zip = laundromat.zip,
-            longitude = laundromat.longitude,
-            latitude = laundromat.latitude,
-            bId = bank.bId,
-        };
-
-        _dbContext.Laundromat.Add(newLaundromat);
-        await _dbContext.SaveChangesAsync();
-
-        return Ok($"Laundromat with kId {kId} added successfully");
     }
 
     [HttpPost("update-all-transactions")]
@@ -134,21 +84,18 @@ public class DataUpdateController : ControllerBase
 
     private async Task<int> UpdateTransactionsForLaundromat(string laundromatId)
     {
-        //Should get lastFetchDate from laundromat entity
-        //Should get lastFetchDate from laundromat entity
-        //Should get lastFetchDate from laundromat entity
-        //Should get lastFetchDate from laundromat entity
-        //Should get lastFetchDate from laundromat entity
-        //Should get lastFetchDate from laundromat entity
-        //Should get lastFetchDate from laundromat entity
+        var laundromat = _dbContext.Laundromat.SingleOrDefault(l => l.kId == laundromatId);
+        if (laundromat == null)
+        {
+            System.Console.WriteLine("Laundromat not found in database");
+            return 0;
+        }
 
-        // Replace with your actual transaction API endpoint
-        string transactionEndpoint =
-            $"https://datpro2.api.kombine.services/AleksanderKristoffer/Transactions1/{laundromatId}/{lastFetchDate}/{currentDate}";
+        var lastFetchDate = laundromat.lastFetchDate?.ToString("yyyy-MM-dd") ?? "2025-01-01";
+        var currentDate = DateTime.Now.AddDays(1).ToString("yyyy-MM-dd");
 
-        (string baseUrl, int initialPageNumber) = ParseEndpoint(transactionEndpoint);
-        // Continue fetching pages until no more data is returned
-        ;
+        string transactionEndpoint = $"{_transactionsApiUrl}{laundromatId}/{lastFetchDate}/{currentDate}";
+
         var data = await _externalApiService.FetchDataAsync(transactionEndpoint);
 
         if (string.IsNullOrEmpty(data))
@@ -168,15 +115,10 @@ public class DataUpdateController : ControllerBase
 
         // Process and save transactions
         int newTransactions = await ProcessTransactions(transactions, laundromatId);
-        
-        //Should update lastFetchDate in laundromat entity
-        //Should update lastFetchDate in laundromat entity
-        //Should update lastFetchDate in laundromat entity
-        //Should update lastFetchDate in laundromat entity
-        //Should update lastFetchDate in laundromat entity
-        //Should update lastFetchDate in laundromat entity
-        //Should update lastFetchDate in laundromat entity
-        //Should update lastFetchDate in laundromat entity
+
+        // Update last fetch date for laundromat
+        laundromat.lastFetchDate = DateTime.Now;
+        await _dbContext.SaveChangesAsync();
 
         return newTransactions;
     }
@@ -190,6 +132,23 @@ public class DataUpdateController : ControllerBase
 
         foreach (var transaction in transactions)
         {
+            // Maybe dont add transactions with unitType or unitName caontaining Dør
+            // Maybe dont add transactions with unitType or unitName caontaining Dør
+            // Maybe dont add transactions with unitType or unitName caontaining Dør
+            // Maybe dont add transactions with unitType or unitName caontaining Dør
+            // Maybe dont add transactions with unitType or unitName caontaining Dør
+            // Maybe dont add transactions with unitType or unitName caontaining Dør
+            // Maybe dont add transactions with unitType or unitName caontaining Dør
+            // Maybe dont add transactions with unitType or unitName caontaining Dør
+            // Maybe dont add transactions with unitType or unitName caontaining Dør
+            // Maybe dont add transactions with unitType or unitName caontaining Dør
+            // Maybe dont add transactions with unitType or unitName caontaining Dør
+            // Maybe dont add transactions with unitType or unitName caontaining Dør
+            // Maybe dont add transactions with unitType or unitName caontaining Dør
+            // Maybe dont add transactions with unitType or unitName caontaining Dør
+            // Maybe dont add transactions with unitType or unitName caontaining Dør
+            // Maybe dont add transactions with unitType or unitName caontaining Dør
+
             // Check if transaction already exists in database
             var existingTransaction = _dbContext.Transactions.SingleOrDefault(t =>
                 t.kId == transaction.kId

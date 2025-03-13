@@ -24,11 +24,8 @@ builder.Services.AddHttpClient<ExternalApiService>();
 // Add controllers
 builder.Services.AddControllers();
 
-// Register HttpClient and ExternalApiService
-builder.Services.AddHttpClient<ExternalApiService>();
-
-// Add controllers
-builder.Services.AddControllers();
+// Add antiforgery services
+builder.Services.AddAntiforgery();
 
 var app = builder.Build();
 
@@ -41,17 +38,17 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseStaticFiles();
-app.UseAntiforgery();
+
 
 app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseAntiforgery();
 
-app.UseEndpoints(endpoints =>
-{
-    endpoints.MapControllers();
-    endpoints.MapRazorComponents<App>()
-        .AddInteractiveServerRenderMode();
-});
+// Use MapGroup to separate API controllers from Razor components
+app.MapControllers();
+app.MapRazorComponents<App>()
+    .AddInteractiveServerRenderMode();
 
 app.Run();
