@@ -2,6 +2,7 @@ using Bach2025_nortec.Components;
 using Microsoft.EntityFrameworkCore;
 using MySql.EntityFrameworkCore.Extensions;
 using DotNetEnv;
+using System.Net.Http;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,15 @@ builder.Services.AddRazorComponents()
 var connectionString = $"Server={Env.GetString("DATABASE_HOST")};Database={Env.GetString("DATABASE_NAME")};User={Env.GetString("DATABASE_USERNAME")};Password={Env.GetString("DATABASE_PASSWORD")};";
 builder.Services.AddDbContext<YourDbContext>(options =>
     options.UseMySQL(connectionString));
+    
+// Register HttpClient and ExternalApiService
+builder.Services.AddHttpClient<ExternalApiService>();
+
+// Add controllers
+builder.Services.AddControllers();
+
+// Add antiforgery services
+builder.Services.AddAntiforgery();
 
 var app = builder.Build();
 
@@ -28,10 +38,16 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseStaticFiles();
+
+
+app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseAntiforgery();
 
+// Use MapGroup to separate API controllers from Razor components
+app.MapControllers();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 

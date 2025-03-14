@@ -1,4 +1,4 @@
-namespace Bach2025_nortecnortec.Database;
+namespace Bach2025_nortec.Database;
 using System.ComponentModel.DataAnnotations;
 
 public class DataEntity
