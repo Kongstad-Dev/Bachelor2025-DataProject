@@ -331,4 +331,52 @@ public class TransactionController : ControllerBase
         await _dbContext.SaveChangesAsync();
         return newTransactionCount;
     }
+    
+    
+    
+    
+    [HttpGet("bank/{bId}/revenue")]
+    public async Task<IActionResult> GetBankRevenue(int bId)
+    {
+        // Ensure the bank exists
+        var bankExists = await _dbContext.Bank.AnyAsync(b => b.bId == bId);
+        if (!bankExists)
+        {
+            return NotFound($"Bank with ID {bId} not found");
+        }
+    
+        // Get laundromat IDs for this bank
+        var laundromatIds = await _dbContext.Laundromat
+            .Where(l => l.bId == bId)
+            .Select(l => l.kId)
+            .ToListAsync();
+    
+        if (laundromatIds.Count == 0)
+        {
+            Console.WriteLine($"[API] No laundromats found for bank {bId}");
+            return Ok(new { BankId = bId, Revenue = 0 });
+        }
+    
+        Console.WriteLine($"[API] Laundromats under bank {bId}: {string.Join(", ", laundromatIds)}");
+    
+        // Find transactions linked to these laundromats
+        var transactions = await _dbContext.Transactions
+            .Where(t => laundromatIds.Contains(t.LaundromatId))
+            .ToListAsync();
+    
+        if (transactions.Count == 0)
+        {
+            Console.WriteLine($"[API] No transactions found for bank {bId}");
+            return Ok(new { BankId = bId, Revenue = 0 });
+        }
+    
+        Console.WriteLine($"[API] Found {transactions.Count} transactions for bank {bId}");
+    
+        // Calculate total revenue
+        var totalRevenue = transactions.Sum(t => (decimal)t.amount);
+        Console.WriteLine($"[API] Total revenue for bank {bId}: {totalRevenue}");
+    
+        return Ok(new { BankId = bId, Revenue = totalRevenue });
+    }
+
 }
