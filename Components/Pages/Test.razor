@@ -1,0 +1,119 @@
+﻿@page "/test"
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+<h3>Bank Revenue Chart</h3>
+
+<canvas id="bankRevenueChart"></canvas>
+
+@if (isLoading)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <p><strong>Bank ID:</strong> @bankId</p>
+    <p><strong>Total Revenue:</strong> @totalRevenue</p>
+}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    window.drawChart = function (revenue) {
+        console.log("JavaScript function drawChart called with revenue:", revenue);
+
+        var ctx = document.getElementById("bankRevenueChart");
+
+        if (!ctx) {
+            console.error("Canvas element 'bankRevenueChart' not found!");
+            return;
+        }
+
+        console.log("Canvas element 'bankRevenueChart' found!");
+
+        // Destroy existing chart instance if it exists
+        if (window.myChart instanceof Chart) {
+            console.log("Destroying existing chart instance...");
+            window.myChart.destroy();
+        }
+
+        // Draw the new chart
+        window.myChart = new Chart(ctx.getContext("2d"), {
+            type: "bar",
+            data: {
+                labels: ["Total Revenue"],
+                datasets: [{
+                    label: "Revenue",
+                    data: [revenue],
+                    backgroundColor: "rgba(75, 192, 192, 0.2)",
+                    borderColor: "rgba(75, 192, 192, 1)",
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        console.log("Chart drawn successfully!");
+    };
+</script>
+
+@code {
+    private decimal totalRevenue;
+    private int bankId = 1; // Change this to the correct bank ID
+    private bool isLoading = true;
+    private bool isRendered = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await FetchRevenueData();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (isRendered && totalRevenue != 0)
+        {
+            Console.WriteLine("[Blazor] Calling JavaScript interop to draw the chart...");
+            await JS.InvokeVoidAsync("drawChart", totalRevenue);
+        }
+    }
+
+    private async Task FetchRevenueData()
+    {
+        try
+        {
+            var apiUrl = $"http://localhost:5251/api/Transaction/bank/{bankId}/revenue";
+            Console.WriteLine($"[Blazor] Fetching data from {apiUrl}");
+
+            var response = await Http.GetFromJsonAsync<RevenueResponse>(apiUrl);
+
+            if (response != null)
+            {
+                totalRevenue = response.Revenue;
+                Console.WriteLine($"[Blazor] Bank {bankId} Revenue: {totalRevenue}");
+                isRendered = true;
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Blazor] API Error: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private class RevenueResponse
+    {
+        public int BankId { get; set; }
+        public decimal Revenue { get; set; }
+    }
+}

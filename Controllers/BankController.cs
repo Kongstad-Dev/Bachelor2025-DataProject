@@ -34,7 +34,7 @@ namespace Bach2025_nortec.Controllers
             if (!string.IsNullOrEmpty(searchTerm))
             {
                 searchTerm = searchTerm.ToLower();
-                query = query.Where(b => 
+                query = query.Where(b =>
                     b.name != null && b.name.ToLower().Contains(searchTerm)
                 );
             }
@@ -52,7 +52,8 @@ namespace Bach2025_nortec.Controllers
                     .ToListAsync();
 
             // Create a response that avoids circular references
-            var banksResponse = banks.Select(b => new {
+            var banksResponse = banks.Select(b => new
+            {
                 b.bId,
                 b.name,
                 LaundromatCount = _dbContext.Laundromat.Count(l => l.bId == b.bId)
@@ -99,7 +100,7 @@ namespace Bach2025_nortec.Controllers
 
             return Ok(response);
         }
-        
+
         // Get a specific bank by name
         [HttpGet("by-name/{name}")]
         public async Task<IActionResult> GetBankByName(string name)
@@ -129,5 +130,6 @@ namespace Bach2025_nortec.Controllers
 
             return Ok(response);
         }
+
     }
 }
