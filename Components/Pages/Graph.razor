@@ -17,7 +17,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <script>
   window.onload = function() {
     const ctx = document.getElementById('myChart').getContext('2d');
@@ -32,12 +31,9 @@
         ctx.save();
         ctx.globalCompositeOperation = 'destination-over';
         ctx.fillStyle = options.color || '#99ffff';
-        ctx.fillRect(0, 0, chart.width, chart.height);
-        ctx.restore();
       }
     };
-    
-    
+
     new Chart(ftx, {
       type: 'doughnut',
       data: {
@@ -51,7 +47,6 @@
             'rgba(255, 206, 86, 0.2)',
             'rgba(75, 192, 192, 0.2)',
             'rgba(153, 102, 255, 0.2)',
-            'rgba(255, 159, 64, 0.2)'
           ],
           hoverOffset: 4
         }]
@@ -70,7 +65,7 @@
       },
       plugins: [plugin]
     });
-    
+
     new Chart(etx, {
       type: 'doughnut',
       data: {
