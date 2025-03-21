@@ -10,4 +10,3 @@ bin/
 /.idea/
 /bin/
 /obj/
-/obj/Debug/net8.0/BlazorTest.RazorAssemblyInfo.cs
