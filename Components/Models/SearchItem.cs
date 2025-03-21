@@ -1,4 +1,4 @@
-namespace Bach2025_nortec.Models
+namespace BlazorTest.Models
 {
     public class SearchItem
     {

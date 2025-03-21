@@ -1,4 +1,4 @@
-using Bach2025_nortec.Database;
+using BlazorTest.Database;
 using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;

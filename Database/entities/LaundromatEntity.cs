@@ -2,9 +2,9 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
-using Bach2025_nortec.Database;
+using BlazorTest.Database;
 
-namespace Bach2025_nortec.Database;
+namespace BlazorTest.Database;
 
 public class Laundromat
 {

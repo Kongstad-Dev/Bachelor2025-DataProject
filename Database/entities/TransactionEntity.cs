@@ -2,7 +2,7 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Bach2025_nortec.Database;
+namespace BlazorTest.Database;
 
 public class TransactionEntity
 {
