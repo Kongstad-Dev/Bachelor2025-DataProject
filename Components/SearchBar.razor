@@ -1,0 +1,152 @@
+@using System.Linq
+@using System.Threading.Tasks
+@using Microsoft.AspNetCore.Components.Web
+@using Bach2025_nortec.Models
+@rendermode InteractiveServer
+
+<div class="search-container" id="@Id" @onclick:stopPropagation="true" style="position: relative;">
+    <input type="text" class="search-input @AdditionalClasses" placeholder="@Placeholder" value="@SearchText"
+        @oninput="HandleInput" @onclick="HandleClick" @onkeyup="FilterItems" id="@InputId" />
+
+    <!-- Debug info & controls -->
+    <div style="color: red; font-size: 10px;">
+        ShowDropdown: @ShowDropdown, Items: @FilteredItems.Count
+        <button @onclick="ToggleDropdownManually" style="font-size: 10px; padding: 2px; margin-left: 5px;">
+            Toggle
+        </button>
+    </div>
+
+    @if (ShowDropdown && FilteredItems.Any())
+    {
+        <div class="search-dropdown"
+            style="display: block !important; position: absolute; top: 40px; left: 0; background-color: white; border: 2px solid red; max-height: 200px; overflow-y: auto; z-index: 9999; width: 100%;">
+            <div style="padding: 8px; background: #f0f0f0; font-weight: bold;">
+                Dropdown Header (@FilteredItems.Count items)
+            </div>
+            @foreach (var item in FilteredItems.Take(20))
+            {
+                <div class="search-item @(SelectedItems.Contains(item) ? "selected" : "")" 
+                     @onclick="() => ToggleItem(item)"
+                     style="padding: 8px; border-bottom: 1px solid #ddd; cursor: pointer;">
+                    <span class="search-checkbox" style="display: inline-block; width: 20px;">
+                        @if (SelectedItems.Contains(item))
+                        {
+                            <svg viewBox="0 0 24 24" width="16" height="16">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="currentColor" />
+                            </svg>
+                        }
+                    </span>
+                    <span class="search-item-text" style="margin-left: 5px;">@item.DisplayText</span>
+                </div>
+            }
+            @if(FilteredItems.Count > 20)
+            {
+                <div style="padding: 8px; font-style: italic;">
+                    Showing 20 of @FilteredItems.Count items...
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string Placeholder { get; set; } = "Search...";
+
+    [Parameter]
+    public string AdditionalClasses { get; set; } = "";
+
+    [Parameter]
+    public List<SearchItem> Items { get; set; } = new List<SearchItem>();
+
+    [Parameter]
+    public EventCallback<List<SearchItem>> OnSelectionChanged { get; set; }
+
+    // Add a unique ID for this instance
+    private string Id { get; set; } = $"search-{Guid.NewGuid().ToString("N")}";
+    private string InputId { get; set; } = $"search-input-{Guid.NewGuid().ToString("N")}";
+
+    private string SearchText { get; set; } = "";
+    private bool ShowDropdown { get; set; } = false;
+    private List<SearchItem> FilteredItems { get; set; } = new List<SearchItem>();
+    private List<SearchItem> SelectedItems { get; set; } = new List<SearchItem>();
+
+    // Add a method to manually toggle the dropdown for testing
+    private void ToggleDropdownManually()
+    {
+        ShowDropdown = !ShowDropdown;
+        Console.WriteLine($"Manually toggled dropdown: {ShowDropdown}");
+        StateHasChanged();
+    }
+
+    protected override void OnInitialized()
+    {
+        FilteredItems = Items.ToList();
+        Console.WriteLine($"Created {FilteredItems.Count} search items in SearchBar.razor");
+    }
+
+    protected override void OnParametersSet()
+    {
+        FilteredItems = Items.ToList();
+        Console.WriteLine($"Created {FilteredItems.Count} search items in SearchBar.razor");
+    }
+
+    private void FilterItems(KeyboardEventArgs e = null)
+    {
+        Console.WriteLine("Filtering items...");
+        if (string.IsNullOrWhiteSpace(SearchText))
+        {
+            FilteredItems = Items.ToList();
+        }
+        else
+        {
+            FilteredItems = Items
+            .Where(i => i.DisplayText.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        }
+
+        ShowDropdown = true;
+        Console.WriteLine($"Filtered {FilteredItems.Count} items");
+        Console.WriteLine($"Search text: {SearchText}");
+        Console.WriteLine($"ShowDropdown: {ShowDropdown}");
+        StateHasChanged();
+    }
+
+    private void HandleInput(ChangeEventArgs e)
+    {
+        Console.WriteLine("Input changed");
+        SearchText = e.Value?.ToString() ?? "";
+        FilterItems();
+    }
+
+    private void HandleClick()
+    {
+        Console.WriteLine("Input clicked");
+        ShowDropdown = true;
+        StateHasChanged();
+    }
+
+    private async Task ToggleItem(SearchItem item)
+    {
+        Console.WriteLine("Item clicked: " + item.DisplayText);
+        if (SelectedItems.Contains(item))
+        {
+            SelectedItems.Remove(item);
+        }
+        else
+        {
+            SelectedItems.Add(item);
+        }
+
+        await OnSelectionChanged.InvokeAsync(SelectedItems);
+        StateHasChanged();
+    }
+
+    // Close dropdown when clicking outside
+    private void CloseDropdown()
+    {
+        Console.WriteLine("Closing dropdown...");
+        ShowDropdown = false;
+        StateHasChanged();
+    }
+}

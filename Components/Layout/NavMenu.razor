@@ -1,29 +1,91 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">Bach2025-nortec</a>
+﻿@using Bach2025_nortec.Models
+@using Bach2025_nortec.Database
+@using Microsoft.EntityFrameworkCore
+@inject YourDbContext DbContext
+@rendermode InteractiveServer
+
+<div class="nav-container" style="position: relative; z-index: 10;">
+    <div class="nav-search-container" style="position: relative; z-index: 1000;">
+        <div class="nav-home-icon" onclick="window.location.href = ''"></div>
+        <SearchBar Placeholder="Search laundromats..." Items="@laundromatItems"
+            OnSelectionChanged="@HandleLaundromatSelection" />
+    </div>
+    <div class="nav-navigation-container">
+        <div class="nav-item" onclick="window.location.href = 'compare'">
+            <p>
+                Compare
+            </p>
+        </div>
+        <div class="nav-item" onclick="window.location.href = 'report'">
+            <p>
+                Report
+            </p>
+        </div>
     </div>
 </div>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler"/>
+<style>
+    /* Ensure dropdown is visible */
+    .search-container {
+        position: relative;
+        z-index: 1000;
+    }
 
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
+    .search-dropdown {
+        display: block !important;
+        z-index: 9999;
+        background-color: white;
+        border: 2px solid #ccc;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+</style>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
+@code {
+    private List<SearchItem> laundromatItems = new List<SearchItem>();
+    private List<Laundromat> selectedLaundromats = new List<Laundromat>();
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
-    </nav>
-</div>
+    protected override async Task OnInitializedAsync()
+    {
+        // Load laundromats when the component initializes
+        await LoadLaundromats();
+    }
+
+    private async Task LoadLaundromats()
+    {
+        // Get laundromats from your database
+        var laundromats = await DbContext.Laundromat.ToListAsync();
+
+        // Convert to SearchItems for the dropdown
+        laundromatItems = laundromats.Select(l => new SearchItem
+        {
+            Id = l.kId,
+            DisplayText = l.name ?? "Unnamed Laundromat",
+            Data = l // Store the full laundromat entity
+        }).ToList();
+
+        StateHasChanged();
+    }
+
+    private void HandleLaundromatSelection(List<SearchItem> items)
+    {
+        // Clear previous selections
+        selectedLaundromats.Clear();
+
+        // Add new selections
+        foreach (var item in items)
+        {
+            if (item.Data is Laundromat laundromat)
+            {
+                selectedLaundromats.Add(laundromat);
+            }
+        }
+
+        // Do something with the selected laundromats
+        // Example: Navigate to a compare page with the selected IDs
+        if (selectedLaundromats.Count > 0)
+        {
+            var ids = string.Join(",", selectedLaundromats.Select(l => l.kId));
+            // NavigationManager.NavigateTo($"compare?ids={ids}");
+        }
+    }
+}
