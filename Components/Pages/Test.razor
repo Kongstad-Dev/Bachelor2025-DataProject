@@ -51,34 +51,36 @@ else
             window.myChart.destroy();
         }
 
-        // Build the full color list
+        // Assign unique colors
         const totalPoints = chartData.values.length;
         const colors = [];
-
         for (let i = 0; i < totalPoints; i++) {
-            if (i < defaultColors.length) {
-                colors.push(defaultColors[i]);
-            } else {
-                colors.push(getRandomColor());
-            }
+            colors.push(i < defaultColors.length ? defaultColors[i] : getRandomColor());
         }
+
+        // Creating multiple datasets, each with its own label
+        const datasets = chartData.labels.map((label, index) => ({
+            label: label, // This ensures unique labels in the legend
+            data: [chartData.values[index]],
+            backgroundColor: colors[index],
+            borderColor: colors[index],
+            borderWidth: 1
+        }));
 
         window.myChart = new Chart(ctx.getContext("2d"), {
             type: "bar",
             data: {
-                //Bottom of the chars
-                labels: chartData.labels,
-                datasets: [{
-                    //Top of the chars
-                    label: chartData.labels,
-                    data: chartData.values,
-                    backgroundColor: colors,
-                    borderColor: colors,
-                    borderWidth: 1
-                }]
+                labels: ["Revenue"], // X-axis label
+                datasets: datasets // Each dataset gets a separate legend entry
             },
             options: {
                 responsive: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: "top"
+                    }
+                },
                 scales: {
                     y: {
                         beginAtZero: true
@@ -89,6 +91,7 @@ else
 
         console.log("Chart drawn successfully!");
     };
+
 </script>
 
 
