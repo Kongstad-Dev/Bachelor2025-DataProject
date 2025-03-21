@@ -1,0 +1,170 @@
+@using System.Linq
+@using System.Threading.Tasks
+@using Microsoft.AspNetCore.Components.Web
+@using Bach2025_nortec.Models
+@implements IDisposable
+@rendermode InteractiveServer
+
+<div class="search-container" @onclick:stopPropagation="true">
+    <div class="search-input-wrapper">
+<input type="text" 
+       class="search-input @AdditionalClasses" 
+       placeholder="@Placeholder" 
+       value="@SearchText"
+       @oninput="HandleInput" 
+       @onclick="HandleClick" 
+       @onclick:preventDefault
+       @onfocus="HandleClick"
+       @onkeydown="HandleKeyDown"
+       @ref="searchInput"
+       aria-expanded="@ShowDropdown"
+       role="combobox"
+       aria-haspopup="listbox"
+       aria-owns="@dropdownId"
+       aria-autocomplete="list" />
+    </div>
+
+    @if (ShowDropdown && FilteredItems.Any())
+    {
+        <div id="@dropdownId" class="search-dropdown" role="listbox">
+            @foreach (var item in FilteredItems.Take(MaxDisplayItems))
+            {
+                <div class="search-item @(SelectedItems.Contains(item) ? "selected" : "")" @onclick="() => ToggleItem(item)"
+                    role="option" aria-selected="@SelectedItems.Contains(item)">
+                    <span class="search-checkbox">
+                        @if (SelectedItems.Contains(item))
+                        {
+                            <span class="search-checkbox-checked">✓</span>
+                        }
+                    </span>
+                    <span class="search-item-text">@item.DisplayText</span>
+                </div>
+            }
+            @if (FilteredItems.Count > MaxDisplayItems)
+            {
+                <div class="search-more-items">
+                    Showing @MaxDisplayItems of @FilteredItems.Count items...
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string Placeholder { get; set; } = "Search...";
+
+    [Parameter]
+    public string AdditionalClasses { get; set; } = "";
+
+    [Parameter]
+    public List<SearchItem> Items { get; set; } = new List<SearchItem>();
+
+    [Parameter]
+    public EventCallback<List<SearchItem>> OnSelectionChanged { get; set; }
+
+    [Parameter]
+    public int MaxDisplayItems { get; set; } = 20;
+
+    private string SearchText { get; set; } = "";
+    private bool ShowDropdown { get; set; } = false;
+    private List<SearchItem> FilteredItems { get; set; } = new List<SearchItem>();
+    private List<SearchItem> SelectedItems { get; set; } = new List<SearchItem>();
+    private ElementReference searchInput;
+
+    private string dropdownId = $"search-dropdown-{Guid.NewGuid():N}";
+    private IJSObjectReference? module;
+
+    protected override void OnInitialized()
+    {
+        FilteredItems = Items.ToList();
+    }
+
+    protected override void OnParametersSet()
+    {
+        FilteredItems = Items.ToList();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Register click outside event handler through JS interop
+            // This is a placeholder - actual implementation would require JS code
+            // module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/searchBarInterop.js");
+            // await module.InvokeVoidAsync("registerClickOutside", searchInput, DotNetObjectReference.Create(this));
+        }
+    }
+
+    private void FilterItems()
+    {
+        if (string.IsNullOrWhiteSpace(SearchText))
+        {
+            FilteredItems = Items.ToList();
+        }
+        else
+        {
+            FilteredItems = Items
+            .Where(i => i.DisplayText.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        }
+
+        ShowDropdown = true;
+        StateHasChanged();
+    }
+
+    private void HandleClick()
+    {
+        Console.WriteLine("HandleClick called"); // Add this debug line
+        ShowDropdown = true;
+        StateHasChanged();
+    }
+
+    private void HandleInput(ChangeEventArgs e)
+    {
+        Console.WriteLine("HandleInput called"); // Add this debug line
+        SearchText = e.Value?.ToString() ?? "";
+        FilterItems();
+    }
+
+    private void HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            ShowDropdown = false;
+            StateHasChanged();
+        }
+        else if (e.Key == "Enter" && ShowDropdown && FilteredItems.Any())
+        {
+            // Select the first item on Enter
+            ToggleItem(FilteredItems.First());
+        }
+    }
+
+    private async Task ToggleItem(SearchItem item)
+    {
+        if (SelectedItems.Contains(item))
+        {
+            SelectedItems.Remove(item);
+        }
+        else
+        {
+            SelectedItems.Add(item);
+        }
+
+        await OnSelectionChanged.InvokeAsync(SelectedItems);
+    }
+
+    [JSInvokable]
+    public void CloseDropdown()
+    {
+        ShowDropdown = false;
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        // Clean up JS interop
+        module?.DisposeAsync();
+    }
+}

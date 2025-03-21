@@ -1,4 +1,4 @@
-using Bach2025_nortec.Components;
+using BlazorTest.Components;
 using Microsoft.EntityFrameworkCore;
 using MySql.EntityFrameworkCore.Extensions;
 using DotNetEnv;
@@ -39,7 +39,6 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 
 app.UseRouting();
 app.UseAuthentication();
