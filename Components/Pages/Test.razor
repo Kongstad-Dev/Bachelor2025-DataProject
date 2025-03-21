@@ -22,35 +22,58 @@ else
 }
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
-    window.drawChart = function (revenue) {
-        console.log("JavaScript function drawChart called with revenue:", revenue);
+    window.drawChart = function (chartData) {
+        console.log("JavaScript function drawChart called with data:", chartData);
+
+        const defaultColors = [
+            "#3366CC", "#DC3912", "#FF9900", "#109618", "#990099",
+            "#3B3EAC", "#0099C6", "#DD4477", "#66AA00", "#B82E2E"
+        ];
+
+        function getRandomColor() {
+            const letters = "0123456789ABCDEF";
+            let color = "#";
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
 
         var ctx = document.getElementById("bankRevenueChart");
-
         if (!ctx) {
             console.error("Canvas element 'bankRevenueChart' not found!");
             return;
         }
 
-        console.log("Canvas element 'bankRevenueChart' found!");
-
-        // Destroy existing chart instance if it exists
         if (window.myChart instanceof Chart) {
-            console.log("Destroying existing chart instance...");
             window.myChart.destroy();
         }
 
-        // Draw the new chart
+        // Build the full color list
+        const totalPoints = chartData.values.length;
+        const colors = [];
+
+        for (let i = 0; i < totalPoints; i++) {
+            if (i < defaultColors.length) {
+                colors.push(defaultColors[i]);
+            } else {
+                colors.push(getRandomColor());
+            }
+        }
+
         window.myChart = new Chart(ctx.getContext("2d"), {
             type: "bar",
             data: {
-                labels: ["Total Revenue"],
+                //Bottom of the chars
+                labels: chartData.labels,
                 datasets: [{
-                    label: "Revenue",
-                    data: [revenue],
-                    backgroundColor: "rgba(75, 192, 192, 0.2)",
-                    borderColor: "rgba(75, 192, 192, 1)",
+                    //Top of the chars
+                    label: chartData.labels,
+                    data: chartData.values,
+                    backgroundColor: colors,
+                    borderColor: colors,
                     borderWidth: 1
                 }]
             },
@@ -68,6 +91,7 @@ else
     };
 </script>
 
+
 @code {
     private decimal totalRevenue;
     private int bankId = 1; // Change this to the correct bank ID
@@ -83,8 +107,13 @@ else
     {
         if (isRendered && totalRevenue != 0)
         {
-            Console.WriteLine("[Blazor] Calling JavaScript interop to draw the chart...");
-            await JS.InvokeVoidAsync("drawChart", totalRevenue);
+            var chartPayload = new
+            {
+                labels = new[] { "Total RevenueA", "Total RevenueB", "Total RevenueC" },
+                values = new[] { totalRevenue, 100000, 120000 },
+                colors = new[] { "rgba(14, 28, 56, 1)", "rgba(54, 162, 235, 0.2)", "rgba(153, 102, 255, 0.2)" }
+            };
+            await JS.InvokeVoidAsync("drawChart", chartPayload);
         }
     }
 

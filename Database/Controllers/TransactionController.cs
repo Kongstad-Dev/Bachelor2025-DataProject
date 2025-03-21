@@ -254,7 +254,7 @@ public class TransactionController : ControllerBase
             return 0;
         }
 
-        var lastFetchDate = laundromat.lastFetchDate?.ToString("yyyy-MM-dd") ?? "2025-01-01";
+        var lastFetchDate = laundromat.lastFetchDate?.ToString("yyyy-MM-dd") ?? "2024-07-01";
         var currentDate = DateTime.Now.AddDays(1).ToString("yyyy-MM-dd");
 
         string transactionEndpoint =
@@ -371,7 +371,7 @@ public class TransactionController : ControllerBase
         Console.WriteLine($"[API] Found {transactions.Count} transactions for bank {bId}");
     
         // Calculate total revenue
-        var totalRevenue = transactions.Sum(t => (decimal)t.amount);
+        var totalRevenue = transactions.Sum(t => Math.Abs(Convert.ToDecimal(t.amount))) / 100;
         Console.WriteLine($"[API] Total revenue for bank {bId}: {totalRevenue}");
     
         return Ok(new { BankId = bId, Revenue = totalRevenue });

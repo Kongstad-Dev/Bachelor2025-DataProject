@@ -14,6 +14,6 @@ public class DataAnalysisService
         return _dbContext.Transactions
             .Where(t => _dbContext.Laundromat
                 .Any(l => l.bId == bankId && l.kId == t.LaundromatId))
-            .Sum(t => (decimal)t.amount);
+            .Sum(t => Math.Abs((Convert.ToDecimal(t.amount)))) / 100;
     }
 }
