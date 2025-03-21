@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Bach2025_nortec.Database;
+using BlazorTest.Database;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace Bach2025_nortec.Controllers
+namespace BlazorTest.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]

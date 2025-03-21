@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
-namespace Bach2025_nortec.Database;
+namespace BlazorTest.Database;
 
 public class BankEntity
 {
