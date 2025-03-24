@@ -1,37 +1,15 @@
 ﻿@page "/"
-
 @using Microsoft.EntityFrameworkCore
-@inject YourDbContext DbContext
+@using BlazorTest.Services
+@using BlazorTest.Components
+@using BlazorTest.Database
+@rendermode InteractiveServer
 
 <PageTitle>Home</PageTitle>
 
 <h1>Home</h1>
+<SelectedLaudromats />
 
-@if (isConnected)
-{
-    <p>Connected</p>
-}
-else
-{
-    <p>Not Connected</p>
-}
 
 @code {
-    private bool isConnected;
-
-    protected override async Task OnInitializedAsync()
-    {
-        try
-        {
-            // Try to query the database to check the connection
-             await DbContext.Database.CanConnectAsync();
-
-            
-            isConnected = true;
-        }
-        catch
-        {
-            isConnected = false;
-        }
-    }
 }

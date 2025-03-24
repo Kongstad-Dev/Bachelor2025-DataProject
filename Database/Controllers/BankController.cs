@@ -25,7 +25,9 @@ namespace BlazorTest.Controllers
             [FromQuery] bool all = false,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 50,
-            [FromQuery] string? searchTerm = null
+            [FromQuery] string? searchTerm = null,
+            [FromQuery] bool includeLaundromatCounts = true, // New parameter
+            [FromQuery] bool includeLaundromats = false // New parameter to include full laundromat data
         )
         {
             // Build query with filters
@@ -34,29 +36,54 @@ namespace BlazorTest.Controllers
             if (!string.IsNullOrEmpty(searchTerm))
             {
                 searchTerm = searchTerm.ToLower();
-                query = query.Where(b => 
-                    b.name != null && b.name.ToLower().Contains(searchTerm)
-                );
+                query = query.Where(b => b.name != null && b.name.ToLower().Contains(searchTerm));
             }
 
             // Get total count for metadata
             var totalCount = await query.CountAsync();
 
+            // Create query for banks with optimized laundromat counts in a single database operation
+            // This avoids the N+1 query problem you're seeing
+            var banksWithCountQuery =
+                from b in query
+                select new
+                {
+                    Bank = b,
+                    LaundromatCount = includeLaundromatCounts
+                        ? _dbContext.Laundromat.Count(l => l.bId == b.bId)
+                        : 0,
+                };
+
             // Apply pagination unless "all" is requested
-            var banks = all
-                ? await query.OrderBy(b => b.name).ToListAsync()
-                : await query
-                    .OrderBy(b => b.name)
+            var banksWithCount = all
+                ? await banksWithCountQuery.OrderBy(b => b.Bank.name).ToListAsync()
+                : await banksWithCountQuery
+                    .OrderBy(b => b.Bank.name)
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
 
-            // Create a response that avoids circular references
-            var banksResponse = banks.Select(b => new {
-                b.bId,
-                b.name,
-                LaundromatCount = _dbContext.Laundromat.Count(l => l.bId == b.bId)
-            }).ToList();
+            // Create the response based on the include parameters
+            var banksResponse = banksWithCount
+                .Select(b => new
+                {
+                    b.Bank.bId,
+                    b.Bank.name,
+                    // Fix error 1: Use int? instead of mixing int and null
+                    LaundromatCount = includeLaundromatCounts ? (int?)b.LaundromatCount : null,
+                    Laundromats = includeLaundromats
+                        ? _dbContext
+                            .Laundromat.Where(l => l.bId == b.Bank.bId)
+                            .Select(l => new
+                            {
+                                l.kId,
+                                l.name,
+                                l.bId,
+                            })
+                            .ToList()
+                        : null,
+                })
+                .ToList();
 
             // Return result with pagination metadata
             return Ok(
@@ -70,7 +97,7 @@ namespace BlazorTest.Controllers
                         TotalPages = all ? 1 : (int)Math.Ceiling(totalCount / (double)pageSize),
                         AllRecordsReturned = all,
                     },
-                    Banks = banksResponse
+                    Banks = banksResponse,
                 }
             );
         }
@@ -94,12 +121,12 @@ namespace BlazorTest.Controllers
             {
                 bId = bank.bId,
                 name = bank.name,
-                LaundromatCount = laundromatCount
+                LaundromatCount = laundromatCount,
             };
 
             return Ok(response);
         }
-        
+
         // Get a specific bank by name
         [HttpGet("by-name/{name}")]
         public async Task<IActionResult> GetBankByName(string name)
@@ -124,7 +151,7 @@ namespace BlazorTest.Controllers
             {
                 bId = bank.bId,
                 name = bank.name,
-                LaundromatCount = laundromatCount
+                LaundromatCount = laundromatCount,
             };
 
             return Ok(response);

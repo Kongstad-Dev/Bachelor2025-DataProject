@@ -2,6 +2,10 @@
     --main: #86dd5a;
     --main-light: #a5e882;
     --main-dark: #68b542;
+
+    --main-red: #dd5a5a;
+    --main-red-light: #e88282;
+    --main-red-dark: #b54242;
 }
 
 html,
@@ -60,4 +64,27 @@ h1:focus {
 
 .darker-border-checkbox.form-check-input {
     border-color: #929292;
+}
+
+.trash-icon {
+    width: 3vh;
+    height: 3vh;
+    background-color: var(--main-red);
+    mask-image: url("/icons/trash-icon.svg");
+    mask-size: contain;
+    mask-repeat: no-repeat;
+    -webkit-mask-image: url("/icons/trash-icon.svg");
+    -webkit-mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    cursor: pointer;
+}
+
+.trash-icon:hover {
+    background-color: var(--main-red-light);
+    box-shadow: 0 0.5vw 1vw rgba(0, 0, 0, 0.3)
+}
+
+.trash-icon:active {
+    background-color: var(--main-red-dark);
+    box-shadow: inset 0 0.5vw 1vw rgba(0, 0, 0, 0.3);
 }

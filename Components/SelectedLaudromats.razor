@@ -1,0 +1,88 @@
+@using Microsoft.EntityFrameworkCore
+@using BlazorTest.Services
+@using BlazorTest.Database
+@inject YourDbContext DbContext
+@inject LaundryStateService LaundryState
+@rendermode InteractiveServer
+
+<div class="selected-laundromats-container">
+    <h2>Selected Laundromats</h2>
+
+    <div class="selected-laundromats-container-content">
+        @if (effectiveLaundromats.Any())
+        {
+            <div class="laundromat-grid">
+                @foreach (var laundromat in effectiveLaundromats)
+                {
+                    <div class="laundromat-card">
+                        <div class="info">
+                        <h3>@(string.IsNullOrWhiteSpace(laundromat.name) ? "Unnamed Laundromat" : laundromat.name)</h3>
+                        <p><strong>Bank:</strong> @(string.IsNullOrWhiteSpace(GetBankName(laundromat.bId)) ? "None" : @GetBankName(laundromat.bId))</p>
+                        <p><strong>ERP ID:</strong> @(string.IsNullOrWhiteSpace(laundromat.externalId) ? "None" : laundromat.externalId)</p>
+                        </div>
+                        <div class="trash">
+                            <div class="trash-icon" @onclick="() => LaundryState.RemoveSelectedLaundromat(laundromat)"></div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <p>No laundromats selected. Use the filters above to select laundromats.</p>
+        }
+    </div>
+</div>
+
+@code {
+    private List<Laundromat> effectiveLaundromats = new List<Laundromat>();
+    private Dictionary<int, string> bankNames = new Dictionary<int, string>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await DbContext.Database.CanConnectAsync();
+
+            await LoadBankNames();
+
+            // Subscribe to state changes
+            LaundryState.OnStateChanged += HandleStateChanged;
+
+            // Initialize with current state
+            UpdateEffectiveLaundromats();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error connecting to database: {ex.Message}");
+        }
+    }
+
+    private void HandleStateChanged()
+    {
+        UpdateEffectiveLaundromats();
+        StateHasChanged();
+    }
+
+    private void UpdateEffectiveLaundromats()
+    {
+        effectiveLaundromats = LaundryState.GetEffectiveSelectedLaundromats();
+    }
+
+    private async Task LoadBankNames()
+    {
+        var banks = await DbContext.Bank.ToListAsync();
+        bankNames = banks.ToDictionary(b => b.bId, b => b.name ?? "Unnamed Bank");
+    }
+
+    private string GetBankName(int bankId)
+    {
+        return bankNames.TryGetValue(bankId, out var name) ? name : "Unknown Bank";
+    }
+
+    public void Dispose()
+    {
+        // Unsubscribe to prevent memory leaks
+        LaundryState.OnStateChanged -= HandleStateChanged;
+    }
+}

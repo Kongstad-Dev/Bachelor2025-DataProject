@@ -1,96 +1,292 @@
 ﻿@using BlazorTest.Models
 @using BlazorTest.Database
 @using Microsoft.EntityFrameworkCore
+@using System.Net.Http
+@using System.Net.Http.Json
+@using BlazorTest.Components
+@using BlazorTest.Services
 @inject YourDbContext DbContext
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager NavigationManager
+@inject LaundryStateService LaundryState
 @rendermode InteractiveServer
 
 <div class="nav-container" style="position: relative; z-index: 10;">
     <div class="nav-search-container" style="position: relative; z-index: 1000;">
-        <div class="nav-home-icon" onclick="window.location.href = ''"></div>
+        <div class="nav-home-icon" @onclick='() => NavigationManager.NavigateTo("/")'></div>
+        <SearchBar Placeholder="Search Banks..." Items="@bankItems" OnSelectionChanged="@HandleBankSelection"
+            SelectedItemsFromParent="@GetSelectedBankItems()" />
         <SearchBar Placeholder="Search laundromats..." Items="@laundromatItems"
-            OnSelectionChanged="@HandleLaundromatSelection" />
+            OnSelectionChanged="@HandleLaundromatSelection" SelectedItemsFromParent="@GetSelectedLaundromatItems()" />
+        <SearchBar Placeholder="Search ERP ID..." Items="@erpIdItems" OnSelectionChanged="@HandleLaundromatSelection"
+            SelectedItemsFromParent="@GetSelectedErpIdItems()" />
     </div>
     <div class="nav-navigation-container">
-        <div class="nav-item" onclick="window.location.href = 'compare'">
-            <p>
-                Compare
-            </p>
+        <div class="nav-item" @onclick='() => NavigationManager.NavigateTo("compare")'>
+            <p>Compare</p>
         </div>
-        <div class="nav-item" onclick="window.location.href = 'report'">
-            <p>
-                Report
-            </p>
+        <div class="nav-item" @onclick='() => NavigationManager.NavigateTo("report")'>
+            <p>Report</p>
         </div>
-        <div class="nav-item" onclick="window.location.href = 'Test'">
-            <p>
-                Test
-            </p>
+        <div class="nav-item" @onclick='() => NavigationManager.NavigateTo("Test")'>
+            <p>Test</p>
         </div>
     </div>
 </div>
 
-<style>
-    /* Ensure dropdown is visible */
-    .search-container {
-        position: relative;
-        z-index: 1000;
-    }
-
-    .search-dropdown {
-        display: block !important;
-        z-index: 9999;
-        background-color: white;
-        border: 2px solid #ccc;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-    }
-</style>
-
 @code {
-    private List<SearchItem> laundromatItems = new List<SearchItem>();
-    private List<Laundromat> selectedLaundromats = new List<Laundromat>();
+    private HttpClient client;
+
+    private List<SearchItem> bankItems = new();
+    private List<BankEntity> selectedBanks = new();
+
+    private List<SearchItem> laundromatItems = new();
+    private List<Laundromat> selectedLaundromats = new();
+    private List<SearchItem> laundromatItemsOriginal = new();
+
+    private List<SearchItem> erpIdItems = new();
+
+    protected override void OnInitialized()
+    {
+        client = HttpClientFactory.CreateClient("API");
+        client.BaseAddress ??= new Uri(NavigationManager.BaseUri);
+
+        // Subscribe to state changes from the service
+        LaundryState.OnStateChanged += HandleStateChanged;
+    }
 
     protected override async Task OnInitializedAsync()
     {
-        // Load laundromats when the component initializes
         await LoadLaundromats();
+        await LoadBanks();
+    }
+
+    private List<Laundromat> GetEffectiveSelectedLaundromats() =>
+    selectedLaundromats.Any() ? selectedLaundromats : laundromatItems.Select(item => item.Data as Laundromat).Where(l => l
+    != null).ToList();
+
+    private List<SearchItem> GetSelectedLaundromatItems() =>
+    laundromatItems.Where(item => selectedLaundromats.Any(l => l.kId == item.Id)).ToList();
+
+    private List<SearchItem> GetSelectedErpIdItems() =>
+    erpIdItems.Where(item => selectedLaundromats.Any(l => l.kId == item.Id)).ToList();
+
+    private List<SearchItem> GetSelectedBankItems() =>
+    bankItems.Where(item => selectedBanks.Any(b => b.bId.ToString() == item.Id)).ToList();
+
+    private void HandleStateChanged()
+    {
+        if (LaundryState.SelectedLaundromats.Count != selectedLaundromats.Count ||
+        !LaundryState.SelectedLaundromats.SequenceEqual(selectedLaundromats))
+        {
+            selectedLaundromats = LaundryState.SelectedLaundromats.ToList();
+            Console.WriteLine($"NavMenu: Updated local selectedLaundromats from service. Count: {selectedLaundromats.Count}");
+        }
+
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        LaundryState.OnStateChanged -= HandleStateChanged;
+    }
+
+    private async Task LoadBanks()
+    {
+        try
+        {
+            var response = await client.GetFromJsonAsync<BankApiResponse>("api/bank?all=true");
+
+            if (response?.Banks != null)
+            {
+                bankItems = response.Banks.Select(b => new SearchItem
+                {
+                    Id = b.bId.ToString(),
+                    DisplayText = b.name ?? "Unnamed Bank",
+                    Data = b
+                }).OrderBy(b => b.DisplayText).ToList();
+
+                LaundryState.UpdateBankItems(bankItems);
+                LaundryState.UpdateSelectedBanks(selectedBanks);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading banks: {ex.Message}");
+        }
     }
 
     private async Task LoadLaundromats()
     {
-        // Get laundromats from your database
-        var laundromats = await DbContext.Laundromat.ToListAsync();
-
-        // Convert to SearchItems for the dropdown
-        laundromatItems = laundromats.Select(l => new SearchItem
+        try
         {
-            Id = l.kId,
-            DisplayText = l.name ?? "Unnamed Laundromat",
-            Data = l // Store the full laundromat entity
-        }).ToList();
+            var response = await client.GetFromJsonAsync<LaundromatApiResponse>("api/laundromat?all=true");
+
+            if (response?.Laundromats != null)
+            {
+                laundromatItems = response.Laundromats.Select(l => new SearchItem
+                {
+                    Id = l.kId,
+                    DisplayText = l.name ?? "Unnamed Laundromat",
+                    Data = l
+                }).OrderBy(l => l.DisplayText).ToList();
+
+                erpIdItems = response.Laundromats.Select(l => new SearchItem
+                {
+                    Id = l.kId,
+                    DisplayText = l.externalId ?? "No ERP ID",
+                    Data = l
+                }).OrderBy(l => l.DisplayText).ToList();
+
+                laundromatItemsOriginal = new List<SearchItem>(laundromatItems);
+                selectedLaundromats = new List<Laundromat>();
+
+                LaundryState.UpdateLaundromatItems(laundromatItems);
+                LaundryState.UpdateErpIdItems(erpIdItems);
+                LaundryState.UpdateOriginalLaundromats(laundromatItemsOriginal);
+                LaundryState.UpdateSelectedLaundromats(selectedLaundromats);
+
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading laundromats: {ex.Message}");
+        }
+    }
+
+    private void HandleBankSelection(List<SearchItem> items)
+    {
+        var previouslySelectedBankIds = selectedBanks.Select(b => b.bId).ToHashSet();
+        var previousSelectedLaundromats = selectedLaundromats.ToList();
+
+        selectedBanks.Clear();
+        foreach (var item in items)
+        {
+            if (item.Data is BankEntity bank)
+            {
+                selectedBanks.Add(bank);
+            }
+        }
+
+        var selectedBankIds = selectedBanks.Select(b => b.bId).ToHashSet();
+        bool bankSelectionChanged = !previouslySelectedBankIds.SetEquals(selectedBankIds);
+
+        if (!laundromatItemsOriginal.Any())
+        {
+            laundromatItemsOriginal = new List<SearchItem>(laundromatItems);
+        }
+
+        if (selectedBankIds.Any())
+        {
+            bankItems = bankItems.OrderByDescending(item => selectedBankIds.Contains(int.Parse(item.Id))).ThenBy(item =>
+            item.DisplayText).ToList();
+
+            if (bankSelectionChanged)
+            {
+                selectedLaundromats = previousSelectedLaundromats.Where(l => selectedBankIds.Contains(l.bId)).ToList();
+                Console.WriteLine($"Bank selection changed - kept {selectedLaundromats.Count} valid laundromat selections");
+            }
+
+            var selectedLaundromatIds = selectedLaundromats.Select(l => l.kId).ToHashSet();
+            laundromatItems = laundromatItemsOriginal.Where(item => item.Data is Laundromat laundromat &&
+            selectedBankIds.Contains(laundromat.bId))
+            .OrderByDescending(item => selectedLaundromatIds.Contains(item.Id)).ThenBy(item => item.DisplayText).ToList();
+
+            var visibleLaundromatIds = laundromatItems.Select(item => item.Id).ToHashSet();
+            erpIdItems = erpIdItems.Where(item => visibleLaundromatIds.Contains(item.Id))
+            .OrderByDescending(item => selectedLaundromatIds.Contains(item.Id)).ThenBy(item => item.DisplayText).ToList();
+
+            selectedLaundromats = selectedLaundromats.Where(l => selectedBankIds.Contains(l.bId)).ToList();
+        }
+        else
+        {
+            bankItems = bankItems.OrderBy(item => item.DisplayText).ToList();
+
+            if (laundromatItemsOriginal.Any())
+            {
+                var selectedLaundromatIds = selectedLaundromats.Select(l => l.kId).ToHashSet();
+                laundromatItems = laundromatItemsOriginal.OrderByDescending(item => selectedLaundromatIds.Contains(item.Id)).ThenBy(item
+                => item.DisplayText).ToList();
+
+                erpIdItems = laundromatItemsOriginal.Select(item =>
+                {
+                    var laundromat = item.Data as Laundromat;
+                    return new SearchItem
+                    {
+                        Id = item.Id,
+                        DisplayText = laundromat?.externalId ?? "No ERP ID",
+                        Data = laundromat
+                    };
+                }).OrderByDescending(item => selectedLaundromatIds.Contains(item.Id)).ThenBy(item => item.DisplayText).ToList();
+            }
+        }
+
+        LaundryState.UpdateSelectedLaundromats(selectedLaundromats);
+        LaundryState.UpdateBankItems(bankItems);
+        LaundryState.UpdateSelectedBanks(selectedBanks);
+        LaundryState.UpdateLaundromatItems(laundromatItems);
+        LaundryState.UpdateErpIdItems(erpIdItems);
+        LaundryState.UpdateOriginalLaundromats(laundromatItemsOriginal);
 
         StateHasChanged();
     }
 
     private void HandleLaundromatSelection(List<SearchItem> items)
     {
-        // Clear previous selections
         selectedLaundromats.Clear();
+        var selectedBankIds = selectedBanks.Select(b => b.bId).ToHashSet();
 
-        // Add new selections
         foreach (var item in items)
         {
-            if (item.Data is Laundromat laundromat)
+            if (item.Data is Laundromat laundromat && (!selectedBankIds.Any() || selectedBankIds.Contains(laundromat.bId)))
             {
                 selectedLaundromats.Add(laundromat);
             }
         }
 
-        // Do something with the selected laundromats
-        // Example: Navigate to a compare page with the selected IDs
-        if (selectedLaundromats.Count > 0)
+        var selectedLaundromatIds = selectedLaundromats.Select(l => l.kId).ToHashSet();
+
+        if (selectedLaundromatIds.Any())
         {
-            var ids = string.Join(",", selectedLaundromats.Select(l => l.kId));
-            // NavigationManager.NavigateTo($"compare?ids={ids}");
+            laundromatItems = laundromatItems.OrderByDescending(item => selectedLaundromatIds.Contains(item.Id)).ThenBy(item =>
+            item.DisplayText).ToList();
+            erpIdItems = erpIdItems.OrderByDescending(item => selectedLaundromatIds.Contains(item.Id)).ThenBy(item =>
+            item.DisplayText).ToList();
+            Console.WriteLine($"Manually selected {selectedLaundromats.Count} laundromats");
         }
+        else
+        {
+            laundromatItems = laundromatItems.OrderBy(item => item.DisplayText).ToList();
+            erpIdItems = erpIdItems.OrderBy(item => item.DisplayText).ToList();
+            Console.WriteLine("No laundromats selected");
+        }
+
+        LaundryState.UpdateSelectedLaundromats(selectedLaundromats);
+        LaundryState.UpdateLaundromatItems(laundromatItems);
+        LaundryState.UpdateErpIdItems(erpIdItems);
+
+        StateHasChanged();
+    }
+
+    private class BankApiResponse
+    {
+        public PageInfo PageInfo { get; set; }
+        public List<BankEntity> Banks { get; set; }
+    }
+
+    private class LaundromatApiResponse
+    {
+        public PageInfo PageInfo { get; set; }
+        public List<Laundromat> Laundromats { get; set; }
+    }
+
+    private class PageInfo
+    {
+        public int CurrentPage { get; set; }
+        public int PageSize { get; set; }
+        public int TotalCount { get; set; }
+        public int TotalPages { get; set; }
+        public bool AllRecordsReturned { get; set; }
     }
 }

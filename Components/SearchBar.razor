@@ -1,36 +1,28 @@
 @using System.Linq
 @using System.Threading.Tasks
 @using Microsoft.AspNetCore.Components.Web
+@using Microsoft.JSInterop
 @using BlazorTest.Models
 @implements IDisposable
 @rendermode InteractiveServer
+@inject IJSRuntime JS
 
 <div class="search-container" @onclick:stopPropagation="true">
     <div class="search-input-wrapper">
-<input type="text" 
-       class="search-input @AdditionalClasses" 
-       placeholder="@Placeholder" 
-       value="@SearchText"
-       @oninput="HandleInput" 
-       @onclick="HandleClick" 
-       @onclick:preventDefault
-       @onfocus="HandleClick"
-       @onkeydown="HandleKeyDown"
-       @ref="searchInput"
-       aria-expanded="@ShowDropdown"
-       role="combobox"
-       aria-haspopup="listbox"
-       aria-owns="@dropdownId"
-       aria-autocomplete="list" />
+        <input type="text" class="search-input @AdditionalClasses" placeholder="@Placeholder" value="@SearchText"
+            @oninput="HandleInput" @onfocus="HandleClick" @onblur="HandleBlur" @onkeydown="HandleKeyDown"
+            @ref="searchInput" aria-expanded="@ShowDropdown" role="combobox" aria-haspopup="listbox"
+            aria-owns="@dropdownId" aria-autocomplete="list" />
     </div>
 
     @if (ShowDropdown && FilteredItems.Any())
     {
-        <div id="@dropdownId" class="search-dropdown" role="listbox">
+        <div id="@dropdownId" class="search-dropdown" role="listbox" @onmousedown="HandleDropdownMouseDown"
+            @onmousedown:preventDefault>
             @foreach (var item in FilteredItems.Take(MaxDisplayItems))
             {
                 <div class="search-item @(SelectedItems.Contains(item) ? "selected" : "")" @onclick="() => ToggleItem(item)"
-                    role="option" aria-selected="@SelectedItems.Contains(item)">
+                    @onclick:stopPropagation role="option" aria-selected="@SelectedItems.Contains(item)">
                     <span class="search-checkbox">
                         @if (SelectedItems.Contains(item))
                         {
@@ -66,6 +58,9 @@
     [Parameter]
     public int MaxDisplayItems { get; set; } = 20;
 
+    [Parameter]
+    public List<SearchItem> SelectedItemsFromParent { get; set; } = new List<SearchItem>();
+
     private string SearchText { get; set; } = "";
     private bool ShowDropdown { get; set; } = false;
     private List<SearchItem> FilteredItems { get; set; } = new List<SearchItem>();
@@ -74,55 +69,134 @@
 
     private string dropdownId = $"search-dropdown-{Guid.NewGuid():N}";
     private IJSObjectReference? module;
+    private bool isMouseOverDropdown = false;
+    private bool ignoreBlur = false;
+    private bool isUpdatingFromParent = false;
 
     protected override void OnInitialized()
     {
         FilteredItems = Items.ToList();
+        if (SelectedItemsFromParent?.Any() == true)
+        {
+            SelectedItems = SelectedItemsFromParent.ToList();
+        }
     }
 
     protected override void OnParametersSet()
     {
-        FilteredItems = Items.ToList();
+        if (!isUpdatingFromParent && SelectedItemsFromParent != null)
+        {
+            isUpdatingFromParent = true;
+            UpdateSelectedItemsFromParent();
+            isUpdatingFromParent = false;
+            FilterItems();
+        }
+    }
+
+    private void UpdateSelectedItemsFromParent()
+    {
+        SelectedItems.Clear();
+        foreach (var item in SelectedItemsFromParent)
+        {
+            var matchingItem = Items.FirstOrDefault(i => i.Id == item.Id);
+            if (matchingItem != null)
+            {
+                SelectedItems.Add(matchingItem);
+            }
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            // Register click outside event handler through JS interop
-            // This is a placeholder - actual implementation would require JS code
-            // module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/searchBarInterop.js");
-            // await module.InvokeVoidAsync("registerClickOutside", searchInput, DotNetObjectReference.Create(this));
+            try
+            {
+                module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/searchBarInterop.js");
+                await module.InvokeVoidAsync("registerClickOutside", searchInput, DotNetObjectReference.Create(this));
+                Console.WriteLine("SearchBar JS interop initialized");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error initializing JS interop: {ex.Message}");
+            }
         }
     }
 
     private void FilterItems()
     {
-        if (string.IsNullOrWhiteSpace(SearchText))
-        {
-            FilteredItems = Items.ToList();
-        }
-        else
-        {
-            FilteredItems = Items
-            .Where(i => i.DisplayText.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
+        FilteredItems = Items
+            .Where(i => string.IsNullOrWhiteSpace(SearchText) || i.DisplayText.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(item => SelectedItems.Contains(item))
+            .ThenBy(item => item.DisplayText)
             .ToList();
-        }
 
-        ShowDropdown = true;
         StateHasChanged();
     }
 
     private void HandleClick()
     {
-        Console.WriteLine("HandleClick called"); // Add this debug line
         ShowDropdown = true;
         StateHasChanged();
     }
 
+    private async Task HandleBlur()
+    {
+        if (ignoreBlur)
+        {
+            ignoreBlur = false;
+            return;
+        }
+
+        await Task.Delay(200);
+
+        if (!isMouseOverDropdown && !ignoreBlur)
+        {
+            ShowDropdown = false;
+            StateHasChanged();
+        }
+    }
+
+    private void HandleDropdownMouseDown(MouseEventArgs e)
+    {
+        isMouseOverDropdown = true;
+        ignoreBlur = true;
+    }
+
+    private async Task ToggleItem(SearchItem item)
+    {
+        ignoreBlur = true;
+
+        if (SelectedItems.Contains(item))
+        {
+            SelectedItems.Remove(item);
+        }
+        else
+        {
+            SelectedItems.Add(item);
+        }
+
+        isMouseOverDropdown = true;
+        ShowDropdown = true;
+
+        try
+        {
+            if (module != null)
+            {
+                await module.InvokeVoidAsync("focusElement", searchInput);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error focusing element: {ex.Message}");
+        }
+
+        await OnSelectionChanged.InvokeAsync(SelectedItems);
+        FilterItems();
+    }
+
     private void HandleInput(ChangeEventArgs e)
     {
-        Console.WriteLine("HandleInput called"); // Add this debug line
         SearchText = e.Value?.ToString() ?? "";
         FilterItems();
     }
@@ -136,23 +210,8 @@
         }
         else if (e.Key == "Enter" && ShowDropdown && FilteredItems.Any())
         {
-            // Select the first item on Enter
             ToggleItem(FilteredItems.First());
         }
-    }
-
-    private async Task ToggleItem(SearchItem item)
-    {
-        if (SelectedItems.Contains(item))
-        {
-            SelectedItems.Remove(item);
-        }
-        else
-        {
-            SelectedItems.Add(item);
-        }
-
-        await OnSelectionChanged.InvokeAsync(SelectedItems);
     }
 
     [JSInvokable]
@@ -164,7 +223,6 @@
 
     public void Dispose()
     {
-        // Clean up JS interop
         module?.DisposeAsync();
     }
 }

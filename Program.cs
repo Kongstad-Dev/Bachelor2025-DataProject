@@ -1,4 +1,5 @@
 using BlazorTest.Components;
+using BlazorTest.Services;
 using Microsoft.EntityFrameworkCore;
 using MySql.EntityFrameworkCore.Extensions;
 using DotNetEnv;
@@ -21,8 +22,16 @@ builder.Services.AddDbContext<YourDbContext>(options =>
 // Register HttpClient and ExternalApiService
 builder.Services.AddHttpClient<ExternalApiService>();
 
+// Configure the named HttpClient - MOVED HERE BEFORE builder.Build()
+builder.Services.AddHttpClient("API", client => 
+{
+    client.BaseAddress = new Uri("http://localhost:5171/");
+});
+
 // Add controllers
 builder.Services.AddControllers();
+
+builder.Services.AddScoped<LaundryStateService>();
 
 // Add antiforgery services
 builder.Services.AddAntiforgery();
