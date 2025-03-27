@@ -8,7 +8,7 @@
 }
 
 .search-container.small {
-    width: 10%;
+    width: 15%;
 }
 
 .search-input-wrapper {
@@ -26,8 +26,8 @@
 }
 
 .small .search-input {
-    padding: 0.25vw;
-    font-size: 0.8vw;
+    padding: 0.35vw;
+    font-size: 1vw;
 }
 
 .search-input:focus {
@@ -98,7 +98,7 @@
 }
 
 .small .search-item-text {
-    font-size: 0.8vw;
+    font-size: 1vw;
 }
 
 .search-more-items {
@@ -110,5 +110,5 @@
 }
 
 .small .search-more-items {
-    font-size: 0.6vw;
+    font-size: 0.8vw;
 }

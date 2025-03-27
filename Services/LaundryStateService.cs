@@ -19,7 +19,7 @@ namespace BlazorTest.Services
         public List<SearchItem> ErpIdItems { get; private set; } = new List<SearchItem>();
 
         // State change event
-        public event Action OnStateChanged;
+        public event Action? OnStateChanged;
 
         // Updates collections with external values
         public void UpdateBankItems(List<SearchItem> items)
@@ -67,10 +67,7 @@ namespace BlazorTest.Services
             }
 
             // Otherwise use ALL available laundromats as selected
-            return LaundromatItems
-                .Select(item => item.Data as Laundromat)
-                .Where(l => l != null)
-                .ToList();
+            return LaundromatItems.Select(item => item.Data).OfType<Laundromat>().ToList();
         }
 
         public void RemoveSelectedLaundromat(Laundromat laundromat)
@@ -80,6 +77,7 @@ namespace BlazorTest.Services
                 SelectedLaundromats = LaundromatItems
                     .Select(item => item.Data as Laundromat)
                     .Where(l => l != null && l.kId != laundromat.kId)
+                    .Cast<Laundromat>()
                     .ToList();
 
                 Console.WriteLine($"Selected all ({SelectedLaundromats.Count}) except one");
@@ -90,6 +88,21 @@ namespace BlazorTest.Services
                 SelectedLaundromats.Remove(laundromat);
                 NotifyStateChanged();
             }
+        }
+
+        public DateTime? StartDate { get; private set; }
+        public DateTime? EndDate { get; private set; }
+
+        public void UpdateStartDate(DateTime? startDate)
+        {
+            StartDate = startDate;
+            NotifyStateChanged();
+        }
+
+        public void UpdateEndDate(DateTime? endDate)
+        {
+            EndDate = endDate;
+            NotifyStateChanged();
         }
 
         private void NotifyStateChanged() => OnStateChanged?.Invoke();

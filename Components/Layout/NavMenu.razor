@@ -19,9 +19,10 @@
         <SearchBar Placeholder="Search laundromats..." Items="@laundromatItems"
             OnSelectionChanged="@HandleLaundromatSelection" SelectedItemsFromParent="@GetSelectedLaundromatItems()" />
         <SearchBar Placeholder="Search ERP ID..." Items="@erpIdItems" OnSelectionChanged="@HandleLaundromatSelection"
-            SelectedItemsFromParent="@GetSelectedErpIdItems()" Size="small"/>
+            SelectedItemsFromParent="@GetSelectedErpIdItems()" Size="small" />
 
-        <Calender @bind-selectedStartDate="selectedDate" Placeholder="Select a date..." />
+        <Calender SelectedStartDateChanged="@((date) => UpdateStartDate(date))"
+            SelectedEndDateChanged="@((date) => UpdateEndDate(date))" />
     </div>
     <div class="nav-navigation-container">
         <div class="nav-item" @onclick='() => NavigationManager.NavigateTo("compare")'>
@@ -34,7 +35,7 @@
 </div>
 
 @code {
-    private HttpClient client;
+    private HttpClient? client;
 
     private List<SearchItem> bankItems = new();
     private List<BankEntity> selectedBanks = new();
@@ -45,7 +46,8 @@
 
     private List<SearchItem> erpIdItems = new();
 
-    private DateTime? selectedDate;
+    private DateTime? startDate;
+    private DateTime? endDate;
 
 
     protected override void OnInitialized()
@@ -55,7 +57,6 @@
 
         // Subscribe to state changes from the service
         LaundryState.OnStateChanged += HandleStateChanged;
-        selectedDate = DateTime.Today;
     }
 
     protected override async Task OnInitializedAsync()
@@ -64,9 +65,25 @@
         await LoadBanks();
     }
 
+    private Task UpdateStartDate(DateTime? date)
+    {
+        startDate = date;
+        LaundryState.UpdateStartDate(startDate);
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task UpdateEndDate(DateTime? date)
+    {
+        endDate = date;
+        LaundryState.UpdateEndDate(endDate);
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
     private List<Laundromat> GetEffectiveSelectedLaundromats() =>
-    selectedLaundromats.Any() ? selectedLaundromats : laundromatItems.Select(item => item.Data as Laundromat).Where(l => l
-    != null).ToList();
+    selectedLaundromats.Any() ? selectedLaundromats : laundromatItems.Select(item =>
+    item.Data).OfType<Laundromat>().ToList();
 
     private List<SearchItem> GetSelectedLaundromatItems() =>
     laundromatItems.Where(item => selectedLaundromats.Any(l => l.kId == item.Id)).ToList();
@@ -98,6 +115,11 @@
     {
         try
         {
+            if (client == null)
+            {
+                throw new InvalidOperationException("HttpClient is not initialized.");
+            }
+
             var response = await client.GetFromJsonAsync<BankApiResponse>("api/bank?all=true");
 
             if (response?.Banks != null)
@@ -123,6 +145,11 @@
     {
         try
         {
+            if (client == null)
+            {
+                throw new InvalidOperationException("HttpClient is not initialized.");
+            }
+
             var response = await client.GetFromJsonAsync<LaundromatApiResponse>("api/laundromat?all=true");
 
             if (response?.Laundromats != null)
@@ -182,8 +209,10 @@
 
         if (selectedBankIds.Any())
         {
-            bankItems = bankItems.OrderByDescending(item => selectedBankIds.Contains(int.Parse(item.Id))).ThenBy(item =>
-            item.DisplayText).ToList();
+            bankItems = bankItems.OrderByDescending(item =>
+            !string.IsNullOrEmpty(item.Id) && selectedBankIds.Contains(int.Parse(item.Id)))
+            .ThenBy(item => item.DisplayText)
+            .ToList();
 
             if (bankSelectionChanged)
             {
@@ -274,14 +303,14 @@
 
     private class BankApiResponse
     {
-        public PageInfo PageInfo { get; set; }
-        public List<BankEntity> Banks { get; set; }
+        public PageInfo? PageInfo { get; set; }
+        public List<BankEntity>? Banks { get; set; }
     }
 
     private class LaundromatApiResponse
     {
-        public PageInfo PageInfo { get; set; }
-        public List<Laundromat> Laundromats { get; set; }
+        public PageInfo? PageInfo { get; set; }
+        public List<Laundromat>? Laundromats { get; set; }
     }
 
     private class PageInfo

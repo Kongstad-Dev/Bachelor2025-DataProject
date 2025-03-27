@@ -117,7 +117,6 @@
             {
                 module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/searchBarInterop.js");
                 await module.InvokeVoidAsync("registerClickOutside", searchInput, DotNetObjectReference.Create(this));
-                Console.WriteLine("SearchBar JS interop initialized");
             }
             catch (Exception ex)
             {
@@ -129,7 +128,7 @@
     private void FilterItems()
     {
         FilteredItems = Items
-            .Where(i => string.IsNullOrWhiteSpace(SearchText) || i.DisplayText.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
+            .Where(i => string.IsNullOrWhiteSpace(SearchText) || (i.DisplayText != null && i.DisplayText.Contains(SearchText, StringComparison.OrdinalIgnoreCase)))
             .OrderByDescending(item => SelectedItems.Contains(item))
             .ThenBy(item => item.DisplayText)
             .ToList();
@@ -204,7 +203,7 @@
         FilterItems();
     }
 
-    private void HandleKeyDown(KeyboardEventArgs e)
+    private async Task HandleKeyDown(KeyboardEventArgs e)
     {
         if (e.Key == "Escape")
         {
@@ -213,7 +212,7 @@
         }
         else if (e.Key == "Enter" && ShowDropdown && FilteredItems.Any())
         {
-            ToggleItem(FilteredItems.First());
+            await ToggleItem(FilteredItems.First());
         }
     }
 

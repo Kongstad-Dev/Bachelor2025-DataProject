@@ -230,6 +230,10 @@ public class LaundromatController : ControllerBase
             );
             if (existingLaundromat == null)
             {
+                if (string.IsNullOrEmpty(laundromat.bank))
+                {
+                    throw new ArgumentException("Bank name cannot be null or empty.");
+                }
                 var bank = await GetOrCreateBank(laundromat.bank);
 
                 // Create new laundromat with the bank reference
