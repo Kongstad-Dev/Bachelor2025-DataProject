@@ -19,7 +19,9 @@
         <SearchBar Placeholder="Search laundromats..." Items="@laundromatItems"
             OnSelectionChanged="@HandleLaundromatSelection" SelectedItemsFromParent="@GetSelectedLaundromatItems()" />
         <SearchBar Placeholder="Search ERP ID..." Items="@erpIdItems" OnSelectionChanged="@HandleLaundromatSelection"
-            SelectedItemsFromParent="@GetSelectedErpIdItems()" />
+            SelectedItemsFromParent="@GetSelectedErpIdItems()" Size="small"/>
+
+        <Calender @bind-selectedStartDate="selectedDate" Placeholder="Select a date..." />
     </div>
     <div class="nav-navigation-container">
         <div class="nav-item" @onclick='() => NavigationManager.NavigateTo("compare")'>
@@ -27,9 +29,6 @@
         </div>
         <div class="nav-item" @onclick='() => NavigationManager.NavigateTo("report")'>
             <p>Report</p>
-        </div>
-        <div class="nav-item" @onclick='() => NavigationManager.NavigateTo("Test")'>
-            <p>Test</p>
         </div>
     </div>
 </div>
@@ -46,6 +45,9 @@
 
     private List<SearchItem> erpIdItems = new();
 
+    private DateTime? selectedDate;
+
+
     protected override void OnInitialized()
     {
         client = HttpClientFactory.CreateClient("API");
@@ -53,6 +55,7 @@
 
         // Subscribe to state changes from the service
         LaundryState.OnStateChanged += HandleStateChanged;
+        selectedDate = DateTime.Today;
     }
 
     protected override async Task OnInitializedAsync()

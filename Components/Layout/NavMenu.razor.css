@@ -31,7 +31,7 @@
 .nav-home-icon {
     width: 5vh;
     height: 5vh;
-    margin: 0.5vh;
+    margin-left: 1vw;
     background-color: var(--main);
     mask-image: url("/icons/home-icon.svg");
     mask-size: contain;

@@ -7,7 +7,7 @@
 @rendermode InteractiveServer
 @inject IJSRuntime JS
 
-<div class="search-container" @onclick:stopPropagation="true">
+<div class="search-container @(Size == "small" ? "small" : "")" @onclick:stopPropagation="true">
     <div class="search-input-wrapper">
         <input type="text" class="search-input @AdditionalClasses" placeholder="@Placeholder" value="@SearchText"
             @oninput="HandleInput" @onfocus="HandleClick" @onblur="HandleBlur" @onkeydown="HandleKeyDown"
@@ -60,6 +60,9 @@
 
     [Parameter]
     public List<SearchItem> SelectedItemsFromParent { get; set; } = new List<SearchItem>();
+
+    [Parameter]
+    public string Size { get; set; } = "";
 
     private string SearchText { get; set; } = "";
     private bool ShowDropdown { get; set; } = false;

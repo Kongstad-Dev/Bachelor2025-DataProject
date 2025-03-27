@@ -1,0 +1,196 @@
+@using System
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.JSInterop
+@implements IDisposable
+@rendermode InteractiveServer
+@inject IJSRuntime JS
+
+<div class="search-container" @onclick:stopPropagation="true">
+    <div class="search-input-wrapper">
+        <input type="text" class="search-input @AdditionalClasses" placeholder="@Placeholder" 
+               value="@FormattedDate"
+               @onfocus="HandleClick" 
+               @onblur="HandleBlur" 
+               @ref="dateInput" 
+               readonly />
+    </div>
+
+    @if (ShowDropdown)
+    {
+        <div id="@dropdownId" class="date-dropdown" @onmousedown="HandleDropdownMouseDown"
+             @onmousedown:preventDefault>
+            <div class="date-dropdown-header">
+                <button @onclick="PreviousMonth" @onclick:stopPropagation>&lt;</button>
+                <span>@(CurrentMonth.ToString("MMMM yyyy"))</span>
+                <button @onclick="NextMonth" @onclick:stopPropagation>&gt;</button>
+            </div>
+            <div class="date-dropdown-days">
+                <div class="date-dropdown-weekdays">
+                    @foreach (var day in new[] { "Su", "Mo", "Tu", "We", "Th", "Fr", "Sa" })
+                    {
+                        <div class="date-dropdown-weekday">@day</div>
+                    }
+                </div>
+                <div class="date-dropdown-dates">
+                    @foreach (var date in GetDaysInMonth())
+                    {
+                        var isCurrentMonth = date.Month == CurrentMonth.Month;
+                        var isSelected = SelectedStartDate.HasValue && date.Date == SelectedStartDate.Value.Date;
+                        var isToday = date.Date == DateTime.Today;
+                        
+                        <div class="date-dropdown-date @(!isCurrentMonth ? "other-month" : "") @(isSelected ? "selected" : "") @(isToday ? "today" : "")"
+                             @onclick="() => SelectDate(date)">
+                            @date.Day
+                        </div>
+                    }
+                </div>
+            </div>
+            <div class="date-dropdown-footer">
+                <button class="date-dropdown-today" @onclick="SelectToday">Today</button>
+                <button class="date-dropdown-clear" @onclick="ClearDate">Clear</button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string Placeholder { get; set; } = "Select date...";
+
+    [Parameter]
+    public string AdditionalClasses { get; set; } = "";
+    
+    [Parameter]
+    public string DateFormat { get; set; } = "dd/MM/yyyy";
+
+    [Parameter]
+    public DateTime? SelectedStartDate { get; set; }
+
+
+
+    [Parameter]
+    public EventCallback<DateTime?> SelectedStartDateChanged { get; set; }
+
+    private string FormattedDate => SelectedStartDate?.ToString(DateFormat) ?? "";
+    private bool ShowDropdown { get; set; } = false;
+    private DateTime CurrentMonth { get; set; } = DateTime.Today;
+    private ElementReference dateInput;
+
+    private string dropdownId = $"date-dropdown-{Guid.NewGuid():N}";
+    private IJSObjectReference? module;
+    private bool isMouseOverDropdown = false;
+    private bool ignoreBlur = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/searchBarInterop.js");
+                await module.InvokeVoidAsync("registerClickOutside", dateInput, DotNetObjectReference.Create(this));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error initializing JS interop: {ex.Message}");
+            }
+        }
+    }
+
+    private void HandleClick()
+    {
+        ShowDropdown = true;
+        StateHasChanged();
+    }
+
+    private async Task HandleBlur()
+    {
+        if (ignoreBlur)
+        {
+            ignoreBlur = false;
+            return;
+        }
+
+        await Task.Delay(200);
+
+        if (!isMouseOverDropdown)
+        {
+            ShowDropdown = false;
+            StateHasChanged();
+        }
+    }
+
+    private void HandleDropdownMouseDown(MouseEventArgs e)
+    {
+        isMouseOverDropdown = true;
+        ignoreBlur = true;
+    }
+
+    private void NextMonth()
+    {
+        CurrentMonth = CurrentMonth.AddMonths(1);
+        StateHasChanged();
+    }
+
+    private void PreviousMonth()
+    {
+        CurrentMonth = CurrentMonth.AddMonths(-1);
+        StateHasChanged();
+    }
+
+    private async Task SelectDate(DateTime date)
+    {
+        SelectedStartDate = date;
+        ShowDropdown = false;
+        await SelectedStartDateChanged.InvokeAsync(SelectedStartDate);
+        StateHasChanged();
+    }
+
+    private async Task SelectToday()
+    {
+        SelectedStartDate = DateTime.Today;
+        CurrentMonth = DateTime.Today;
+        ShowDropdown = false;
+        await SelectedStartDateChanged.InvokeAsync(SelectedStartDate);
+        StateHasChanged();
+    }
+
+    private async Task ClearDate()
+    {
+        SelectedStartDate = null;
+        ShowDropdown = false;
+        await SelectedStartDateChanged.InvokeAsync(SelectedStartDate);
+        StateHasChanged();
+    }
+
+    private List<DateTime> GetDaysInMonth()
+    {
+        var result = new List<DateTime>();
+        
+        // First day of current month
+        var firstDayOfMonth = new DateTime(CurrentMonth.Year, CurrentMonth.Month, 1);
+        
+        // Go back to previous Sunday
+        var startDate = firstDayOfMonth.AddDays(-(int)firstDayOfMonth.DayOfWeek);
+        
+        // Add 42 days (6 weeks) to make sure we have all visible dates
+        for (int i = 0; i < 42; i++)
+        {
+            result.Add(startDate.AddDays(i));
+        }
+        
+        return result;
+    }
+
+    [JSInvokable]
+    public void CloseDropdown()
+    {
+        ShowDropdown = false;
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        module?.DisposeAsync();
+    }
+}
