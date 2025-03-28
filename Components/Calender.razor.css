@@ -73,7 +73,6 @@
 .date-dropdown-dates {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 2px;
 }
 
 .date-dropdown-date {
@@ -81,7 +80,6 @@
     font-size: 1vw;
     text-align: center;
     cursor: pointer;
-    border-radius: 0.5vw;
     border: 0.1vw solid transparent;
 }
 

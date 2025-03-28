@@ -9,10 +9,35 @@
 
 <div class="main-container">
     <div class="main-content">
-        <SelectedLaudromats />
+        <div class="main-content-tabels">
+            <SelectedLaudromats />
+            <SelectedLaudromats />
+        </div>
+
+        <div class="main-content-graphs">
+
+        </div>
+    </div>
+
+    <div class="main-special-container">
+        <button @onclick='() => ChangeSelectedContent("SoapStatistics")'>Soap Statistics</button>
+        <button @onclick='() => ChangeSelectedContent("Temperature Statistics")'>Temperature Statistics</button>
+        <button @onclick='() => ChangeSelectedContent("Program Type Statistics")'>Program Type Statistics</button>
+        <button @onclick='() => ChangeSelectedContent("Rinse Statistics")'>Rinse Statistics</button>
+        <div class="main-special-content">
+            <div class="main-special-content-header">
+                <h2>@selectedSpecialContent</h2>
+            </div>
+        </div>
     </div>
 </div>
 
 
 @code {
+    private string selectedSpecialContent = "Soap Statistics";
+
+    private void ChangeSelectedContent(string content)
+    {
+        selectedSpecialContent = content;
+    }
 }

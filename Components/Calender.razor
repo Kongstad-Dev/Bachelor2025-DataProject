@@ -85,10 +85,10 @@
                         var isToday = date.Date == DateTime.Today;
 
                         <div class="date-dropdown-date @(!isCurrentMonth ? "other-month" : "") 
-                                            @(isStartDate ? "start-date" : "") 
-                                            @(isEndDate ? "end-date" : "") 
-                                            @(isInRange ? "in-range" : "")
-                                            @(isToday ? "today" : "")" @onclick="() => SelectDate(date)"
+                                                    @(isStartDate ? "start-date" : "") 
+                                                    @(isEndDate ? "end-date" : "") 
+                                                    @(isInRange ? "in-range" : "")
+                                                    @(isToday ? "today" : "")" @onclick="() => SelectDate(date)"
                             @onmouseover="() => HandleDateHover(date)">
                             @date.Day
                         </div>
@@ -173,12 +173,6 @@
     #region Lifecycle Methods
     protected override void OnInitialized()
     {
-        TemporaryStartDate = SelectedStartDate;
-        TemporaryEndDate = SelectedEndDate;
-    }
-
-    protected override void OnParametersSet()
-    {
         if (SelectedStartDate == null && SelectedEndDate == null)
         {
             Console.WriteLine("Setting initial values");
@@ -186,7 +180,13 @@
             SelectedEndDate = today.Date.AddDays(1).AddTicks(-1);
             SelectedStartDate = today.AddMonths(-1).Date;
         }
+        
+        TemporaryStartDate = SelectedStartDate;
+        TemporaryEndDate = SelectedEndDate;
+    }
 
+    protected override void OnParametersSet()
+    {
         TemporaryStartDate = SelectedStartDate;
         TemporaryEndDate = SelectedEndDate;
     }
