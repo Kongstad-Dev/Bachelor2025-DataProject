@@ -48,8 +48,6 @@ namespace BlazorTest.Services
             Console.WriteLine("Laundromats:");
             Console.WriteLine(JsonConvert.SerializeObject(laundromats, Formatting.Indented));
 
-            var results = new List<ChartDataPoint>();
-
             var laundromatIds = laundromats.Select(l => l.kId).ToList();
             
             var transactions = await dbContext.Transactions

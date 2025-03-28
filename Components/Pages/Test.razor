@@ -5,12 +5,13 @@
 
 
 <h3>Test Bank Revenue Chart</h3>
-
+<div>
 <ChartComponent CanvasId="bankRevenueChart"
                 Labels="@chartLabels"
                 Values="@chartValues"
-                Title="Revenue per Laundromat" />
-
+                Title="Revenue per Laundromat"
+                Type="bar"/>
+</div>
 @code {
     private string[] chartLabels = [];
     private decimal[] chartValues = [];
