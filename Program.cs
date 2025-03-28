@@ -19,9 +19,12 @@ builder.Services.AddScoped<DataAnalysisService>();
 
 // Configure MySQL
 var connectionString = $"Server={Env.GetString("DATABASE_HOST")};Database={Env.GetString("DATABASE_NAME")};User={Env.GetString("DATABASE_USERNAME")};Password={Env.GetString("DATABASE_PASSWORD")};";
+builder.Services.AddDbContextFactory<YourDbContext>(options =>
+    options.UseMySQL(connectionString));
+
 builder.Services.AddDbContext<YourDbContext>(options =>
     options.UseMySQL(connectionString));
-    
+
 // Register HttpClient and ExternalApiService
 builder.Services.AddHttpClient<ExternalApiService>();
 
