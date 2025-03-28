@@ -24,4 +24,15 @@
             });
         }
     }
+
+    protected override void OnParametersSet()
+    {
+            JS.InvokeVoidAsync("renderChart", new
+            {
+                canvasId = CanvasId,
+                labels = Labels,
+                values = Values,
+                title = Title
+            });
+    }
 }
