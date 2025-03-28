@@ -2,15 +2,15 @@
 
 
 
-<div style=" width: 30vw; display: flex;">><canvas id="@CanvasId"></canvas></div>
-;
+<div style=" width: 30vw; display: flex;"><canvas id="@CanvasId"></canvas></div>
+
 
 @code {
     [Parameter] public string CanvasId { get; set; } = "chartCanvas";
     [Parameter] public string[] Labels { get; set; }
     [Parameter] public decimal[] Values { get; set; }
     [Parameter] public string Title { get; set; } = "Chart";
-    
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -23,5 +23,16 @@
                 title = Title
             });
         }
+    }
+
+    protected override void OnParametersSet()
+    {
+        JS.InvokeVoidAsync("renderChart", new
+        {
+            canvasId = CanvasId,
+            labels = Labels,
+            values = Values,
+            title = Title
+        });
     }
 }
