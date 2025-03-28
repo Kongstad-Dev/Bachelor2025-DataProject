@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using BlazorTest.Database;
 
 namespace BlazorTest.Services
 {
@@ -10,6 +11,11 @@ namespace BlazorTest.Services
         public DataAnalysisService(IDbContextFactory<YourDbContext> dbContextFactory)
         {
             _dbContextFactory = dbContextFactory;
+        }
+
+        public decimal CalculateRevenueFromTransactions(List<TransactionEntity> transactions)
+        {
+            return transactions.Sum(t => Math.Abs(Convert.ToDecimal(t.amount))) / 100;
         }
 
         public decimal CalculateTotalRevenueForBank(int bankId)
@@ -30,9 +36,9 @@ namespace BlazorTest.Services
         public async Task<List<ChartDataPoint>> GetRevenueForAllLaundromatsInBank(int bankId)
         {
             using var dbContext = _dbContextFactory.CreateDbContext();
-            
+
             Console.WriteLine("GetRevenueForAllLaundromatsInBank called with bankId: " + bankId);
-            
+
             var laundromats = await dbContext.Laundromat
                 .AsNoTracking()
                 .Where(l => l.bId == bankId)
@@ -44,7 +50,12 @@ namespace BlazorTest.Services
 
             var results = new List<ChartDataPoint>();
 
-//Hej
+            var laundromatIds = laundromats.Select(l => l.kId).ToList();
+            
+            var transactions = await dbContext.Transactions
+                .Where(t => laundromatIds.Contains(t.LaundromatId))
+                .ToListAsync();
+            //Hej
             // Group and compute revenue per laundromat
             var result = laundromats
                 .GroupJoin(transactions,
