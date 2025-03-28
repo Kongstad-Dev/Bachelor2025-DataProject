@@ -38,7 +38,7 @@ namespace BlazorTest.Services
                 .Where(t => laundromatIds.Contains(t.LaundromatId))
                 .ToListAsync();
 
-
+//Hej
             // Group and compute revenue per laundromat
             var result = laundromats
                 .GroupJoin(transactions,
