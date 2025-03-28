@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using BlazorTest.Database;
+using BlazorTest.Services;
 using DotNetEnv;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,12 +16,16 @@ public class TransactionController : ControllerBase
     private readonly ExternalApiService _externalApiService;
     private readonly YourDbContext _dbContext;
     private readonly string _transactionsApiUrl;
+    private readonly DataAnalysisService _dataAnalysisService;
 
-    public TransactionController(ExternalApiService externalApiService, YourDbContext dbContext)
+
+    public TransactionController(ExternalApiService externalApiService, YourDbContext dbContext, DataAnalysisService dataAnalysisService)
     {
         _externalApiService = externalApiService;
         _dbContext = dbContext;
         _transactionsApiUrl = Env.GetString("API_TRANSACTIIONS");
+        _dataAnalysisService = dataAnalysisService;
+        
     }
 
     // Adds new transactions to the database for all laundromats
@@ -371,8 +376,9 @@ public class TransactionController : ControllerBase
         Console.WriteLine($"[API] Found {transactions.Count} transactions for bank {bId}");
     
         // Calculate total revenue
-        var totalRevenue = transactions.Sum(t => Math.Abs(Convert.ToDecimal(t.amount))) / 100;
-        Console.WriteLine($"[API] Total revenue for bank {bId}: {totalRevenue}");
+        var totalRevenue = _dataAnalysisService.CalculateRevenueFromTransactions(transactions);
+
+        Console.WriteLine($"[API] Total revenue for bank {bId}: {transactions}");
     
         return Ok(new { BankId = bId, Revenue = totalRevenue });
     }

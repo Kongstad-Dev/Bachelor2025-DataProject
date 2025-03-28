@@ -25,6 +25,7 @@ builder.Services.AddDbContext<YourDbContext>(options =>
 // Register HttpClient and ExternalApiService
 builder.Services.AddHttpClient<ExternalApiService>();
 
+builder.Services.AddScoped<DataAnalysisService>();
 // Add controllers
 builder.Services.AddControllers();
 
