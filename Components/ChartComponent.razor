@@ -1,6 +1,9 @@
 ﻿@inject IJSRuntime JS
 
-<canvas id="@CanvasId" width="400" height="200"></canvas>
+
+
+<div style=" width: 30vw; display: flex;">><canvas id="@CanvasId"></canvas></div>
+;
 
 @code {
     [Parameter] public string CanvasId { get; set; } = "chartCanvas";

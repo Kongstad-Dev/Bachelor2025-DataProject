@@ -1,14 +1,26 @@
 ﻿@page "/test"
+@using BlazorTest.Services
+@inject DataAnalysisService AnalysisService
 @rendermode InteractiveServer
-@using BlazorTest.Components
 
-<h3>Test Chart</h3>
+
+<h3>Test Bank Revenue Chart</h3>
+
 <ChartComponent CanvasId="bankRevenueChart"
-                Labels="@labels"
-                Values="@values"
-                Title="Test Revenue" />
+                Labels="@chartLabels"
+                Values="@chartValues"
+                Title="Revenue per Laundromat" />
 
 @code {
-    private string[] labels = new[] { "A", "B", "C", "D", "E", "F", "G" };
-    private decimal[] values = new decimal[] { 100, 200, 300, 400, 500, 600, 700 };
+    private string[] chartLabels = [];
+    private decimal[] chartValues = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await AnalysisService.GetRevenueForAllLaundromatsInBank(1); // Example
+        chartLabels = result.Select(r => r.Label).ToArray();
+        chartValues = result.Select(r => r.Value).ToArray();
+    }
 }
+
+
