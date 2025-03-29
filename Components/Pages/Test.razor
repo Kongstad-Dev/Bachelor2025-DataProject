@@ -1,152 +1,27 @@
-﻿@page "/Test"
+﻿@page "/test"
+@using BlazorTest.Services
+@inject DataAnalysisService AnalysisService
 @rendermode InteractiveServer
-@inject HttpClient Http
-@inject IJSRuntime JS
-@inject NavigationManager Navigation
-
-<PageTitle>Test</PageTitle>
 
 
-<h3>Bank Revenue Chart</h3>
-
-<canvas id="bankRevenueChart"></canvas>
-
-@if (isLoading)
-{
-    <p>Loading...</p>
-}
-else
-{
-    <p><strong>Bank ID:</strong> @bankId</p>
-    <p><strong>Total Revenue:</strong> @totalRevenue</p>
-}
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<script>
-    window.drawChart = function (chartData) {
-        console.log("JavaScript function drawChart called with data:", chartData);
-
-        const defaultColors = [
-            "#3366CC", "#DC3912", "#FF9900", "#109618", "#990099",
-            "#3B3EAC", "#0099C6", "#DD4477", "#66AA00", "#B82E2E"
-        ];
-
-        function getRandomColor() {
-            const letters = "0123456789ABCDEF";
-            let color = "#";
-            for (let i = 0; i < 6; i++) {
-                color += letters[Math.floor(Math.random() * 16)];
-            }
-            return color;
-        }
-
-        var ctx = document.getElementById("bankRevenueChart");
-        if (!ctx) {
-            console.error("Canvas element 'bankRevenueChart' not found!");
-            return;
-        }
-
-        if (window.myChart instanceof Chart) {
-            window.myChart.destroy();
-        }
-
-        // Build the full color list
-        const totalPoints = chartData.values.length;
-        const colors = [];
-
-        for (let i = 0; i < totalPoints; i++) {
-            if (i < defaultColors.length) {
-                colors.push(defaultColors[i]);
-            } else {
-                colors.push(getRandomColor());
-            }
-        }
-
-        window.myChart = new Chart(ctx.getContext("2d"), {
-            type: "bar",
-            data: {
-                //Bottom of the chars
-                labels: chartData.labels,
-                datasets: [{
-                    //Top of the chars
-                    label: chartData.labels,
-                    data: chartData.values,
-                    backgroundColor: colors,
-                    borderColor: colors,
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
-
-        console.log("Chart drawn successfully!");
-    };
-</script>
-
-
+<h3>Test Bank Revenue Chart</h3>
+<div>
+<ChartComponent CanvasId="bankRevenueChart"
+                Labels="@chartLabels"
+                Values="@chartValues"
+                Title="Revenue per Laundromat"
+                Type="bar"/>
+</div>
 @code {
-    private decimal totalRevenue;
-    private int bankId = 1; // Change this to the correct bank ID
-    private bool isLoading = true;
-    private bool isRendered = false;
+    private string[] chartLabels = [];
+    private decimal[] chartValues = [];
 
     protected override async Task OnInitializedAsync()
     {
-        await FetchRevenueData();
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (isRendered && totalRevenue != 0)
-        {
-            var chartPayload = new
-            {
-                labels = new[] { "Total RevenueA", "Total RevenueB", "Total RevenueC" },
-                values = new[] { totalRevenue, 100000, 120000 },
-                colors = new[] { "rgba(14, 28, 56, 1)", "rgba(54, 162, 235, 0.2)", "rgba(153, 102, 255, 0.2)" }
-            };
-            await JS.InvokeVoidAsync("drawChart", chartPayload);
-        }
-    }
-
-    private async Task FetchRevenueData()
-    {
-        try
-        {
-            var apiUrl = $"http://localhost:5171/api/Transaction/bank/{bankId}/revenue";
-            Console.WriteLine($"[Blazor] Fetching data from {apiUrl}");
-
-            var response = await Http.GetFromJsonAsync<RevenueResponse>(apiUrl);
-
-            if (response != null)
-            {
-                totalRevenue = response.Revenue;
-                Console.WriteLine($"[Blazor] Bank {bankId} Revenue: {totalRevenue}");
-                isRendered = true;
-                StateHasChanged();
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[Blazor] API Error: {ex.Message}");
-        }
-        finally
-        {
-            isLoading = false;
-        }
-    }
-
-    private class RevenueResponse
-    {
-        public int BankId { get; set; }
-        public decimal Revenue { get; set; }
+        var result = await AnalysisService.GetRevenueForAllLaundromatsInBank(1); // Example
+        chartLabels = result.Select(r => r.Label).ToArray();
+        chartValues = result.Select(r => r.Value).ToArray();
     }
 }
+
+
