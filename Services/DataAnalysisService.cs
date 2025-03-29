@@ -49,7 +49,7 @@ namespace BlazorTest.Services
         
         public decimal CalculateRevenueFromTransactions(List<TransactionEntity> transactions)
         {
-            return transactions.Sum(t => Math.Abs(Convert.ToDecimal(t.amount))) / 100;
+            return transactions.Sum(t => Math.Abs(t.amount)) / 100;
         }
         
             
