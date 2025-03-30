@@ -3,13 +3,46 @@
 @using BlazorTest.Services
 @using BlazorTest.Components
 @using BlazorTest.Database
+@inject DataAnalysisService AnalysisService
 @rendermode InteractiveServer
 
 <PageTitle>Home</PageTitle>
 
-<h1>Home</h1>
+<h1>Home2</h1>
+<div style="display: flex; gap: 2rem;">
+    <div style="flex: 1;">
 <SelectedLaudromats />
 
+<ChartComponent CanvasId="bankRevenueChartBar"
+                Labels="@chartLabels"
+                Values="@chartValues"
+                Title="Revenue per Laundromat"
+                Type="bar"/>
+
+<ChartComponent CanvasId="bankRevenueChartLine"
+                Labels="@chartLabels"
+                Values="@chartValues"
+                Title="Revenue per Laundromat"
+                Type="line"/>
+
+        <ChartComponent CanvasId="bankRevenueChartPie"
+                        Labels="@chartLabels"
+                        Values="@chartValues"
+                        Title="Revenue per Laundromat"
+                        Type="pie"/>
+
+    </div>
+</div>
 
 @code {
+    
+    private string[] chartLabels = [];
+    private decimal[] chartValues = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await AnalysisService.GetRevenueForAllLaundromatsInBank(1); // Example
+        chartLabels = result.Select(r => r.Label).ToArray();
+        chartValues = result.Select(r => r.Value).ToArray();
+    }
 }
