@@ -9,31 +9,30 @@
 <PageTitle>Home</PageTitle>
 
 <h1>Home2</h1>
-<div style="display: flex; gap: 2rem;">
-    <div style="flex: 1;">
+<div style="width: 100%; max-width: 800px; margin: 0 auto;">
+
 <SelectedLaudromats />
+<div style="margin-top: 2rem;">
+    <ChartComponent CanvasId="bankRevenueChartBar"
+                    Labels="@chartLabels"
+                    Values="@chartValues"
+                    Title="Revenue per Laundromat"
+                    Type="bar"/>
 
-<ChartComponent CanvasId="bankRevenueChartBar"
-                Labels="@chartLabels"
-                Values="@chartValues"
-                Title="Revenue per Laundromat"
-                Type="bar"/>
+    <ChartComponent CanvasId="bankRevenueChartLine"
+                    Labels="@chartLabels"
+                    Values="@chartValues"
+                    Title="Revenue per Laundromat"
+                    Type="line"/>
 
-<ChartComponent CanvasId="bankRevenueChartLine"
-                Labels="@chartLabels"
-                Values="@chartValues"
-                Title="Revenue per Laundromat"
-                Type="line"/>
+    <ChartComponent CanvasId="bankRevenueChartPie"
+                    Labels="@chartLabels"
+                    Values="@chartValues"
+                    Title="Revenue per Laundromat"
+                    Type="pie"/>
 
-        <ChartComponent CanvasId="bankRevenueChartPie"
-                        Labels="@chartLabels"
-                        Values="@chartValues"
-                        Title="Revenue per Laundromat"
-                        Type="pie"/>
-
-    </div>
 </div>
-
+</div>
 @code {
     
     private string[] chartLabels = [];
