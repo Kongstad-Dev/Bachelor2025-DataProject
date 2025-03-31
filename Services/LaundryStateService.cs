@@ -114,6 +114,16 @@ namespace BlazorTest.Services
             NotifyStateChanged();
         }
 
+        public DateTime? GetStartDate()
+        {
+            return StartDate;
+        }
+
+        public DateTime? GetEndDate()
+        {
+            return EndDate;
+        }
+
         public void UpdateEndDate(DateTime? endDate)
         {
             EndDate = endDate;
