@@ -18,9 +18,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var result = await AnalysisService.GetRevenueForAllLaundromatsInBank(1); // Example
-        chartLabels = result.Select(r => r.Label).ToArray();
-        chartValues = result.Select(r => r.Value).ToArray();
+
     }
 }
 

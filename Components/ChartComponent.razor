@@ -1,9 +1,8 @@
 ﻿@inject IJSRuntime JS
+@rendermode InteractiveServer
 
 
-<div>
-    <canvas id="@CanvasId"></canvas>
-</div>
+    <canvas id="@CanvasId" style="width: 100%;"></canvas>
 
 @code {
     [Parameter] public string CanvasId { get; set; } = "chartCanvas";

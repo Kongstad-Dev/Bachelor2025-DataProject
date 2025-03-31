@@ -363,8 +363,6 @@ public class TransactionController : ControllerBase
             return Ok(new { BankId = bId, Revenue = 0 });
         }
 
-        Console.WriteLine($"[API] Laundromats under bank {bId}: {string.Join(", ", laundromatIds)}");
-
         // Find transactions linked to these laundromats
         var transactions = await _dbContext.Transactions
             .Where(t => laundromatIds.Contains(t.LaundromatId))
@@ -376,12 +374,8 @@ public class TransactionController : ControllerBase
             return Ok(new { BankId = bId, Revenue = 0 });
         }
 
-        Console.WriteLine($"[API] Found {transactions.Count} transactions for bank {bId}");
-
         // Calculate total revenue
         var totalRevenue = _dataAnalysisService.CalculateRevenueFromTransactions(transactions);
-
-        Console.WriteLine($"[API] Total revenue for bank {bId}: {transactions}");
     
         return Ok(new { BankId = bId, Revenue = totalRevenue });
     }
@@ -418,9 +412,7 @@ public class TransactionController : ControllerBase
             Console.WriteLine($"[API] No laundromats found for bank {bId}");
             return Ok(new { BankId = bId, soap = 0 });
         }
-    
-        Console.WriteLine($"[API] Laundromats under bank {bId}: {string.Join(", ", laundromatIds)}");
-        
+            
         // Find transactions linked to these laundromats
         var transactions = await _dbContext.Transactions
             .Where(t => laundromatIds.Contains(t.LaundromatId))
@@ -431,13 +423,9 @@ public class TransactionController : ControllerBase
             Console.WriteLine($"[API] No transactions found for bank {bId}");
             return Ok(new { BankId = bId, soap = 0 });
         }
-    
-        Console.WriteLine($"[API] Found {transactions.Count} transactions for bank {bId}");
-        
+            
         // Calculate total revenue
         var totalAmountSoap = _dataAnalysisService.CalculateTotalSoapProgramFromTransactions(transactions);
-
-        Console.WriteLine($"[API] Total revenue for bank {bId}: {transactions}");
     
         return Ok(new { BankId = bId, soap = totalAmountSoap });
     }
@@ -468,9 +456,7 @@ public async Task<IActionResult> GetBank_seconds(int bId)
         Console.WriteLine($"[API] No laundromats found for bank {bId}");
         return Ok(new { BankId = bId,seconds = 0 });
     }
-    
-    Console.WriteLine($"[API] Laundromats under bank {bId}: {string.Join(", ", laundromatIds)}");
-        
+            
     // Find transactions linked to these laundromats
     var transactions = await _dbContext.Transactions
         .Where(t => laundromatIds.Contains(t.LaundromatId) && t.seconds > 0)
@@ -481,13 +467,9 @@ public async Task<IActionResult> GetBank_seconds(int bId)
         Console.WriteLine($"[API] No transactions found for bank {bId}");
         return Ok(new { BankId = bId, seconds = 0 });
     }
-    
-    Console.WriteLine($"[API] Found {transactions.Count} transactions for bank {bId}");
-        
+            
     // Calculate total revenue
     var averageseconds = _dataAnalysisService.CalculateAvgSecoundsFromTransactions(transactions);
-
-    Console.WriteLine($"[API] Total revenue for bank {bId}: {transactions}");
     
     return Ok(new { BankId = bId, seconds = averageseconds });
 }

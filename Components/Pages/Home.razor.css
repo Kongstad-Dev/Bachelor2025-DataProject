@@ -35,6 +35,14 @@
     gap: 1vw;
 }
 
+.main-graph-container {
+    display: flex;
+    position: relative;
+    flex-wrap: wrap;
+    width: calc(50% - 1vw);
+    height: 50vh;
+}
+
 .main-special-container {
     display: flex;
     flex-direction: row;

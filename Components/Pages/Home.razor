@@ -4,6 +4,7 @@
 @using BlazorTest.Components
 @using BlazorTest.Database
 @inject DataAnalysisService AnalysisService
+@inject LaundryStateService LaundryState
 @rendermode InteractiveServer
 
 <PageTitle>Home</PageTitle>
@@ -12,70 +13,72 @@
     <div class="main-content">
         <div class="main-content-tabels">
             <SelectedLaudromats />
-            <KeyValuesTable Title="Bank Revenue" KeyValuePairs="@(new List<KeyValuePair<string, string>> { new KeyValuePair<string, string>("Bank 1", "1000"), new KeyValuePair<string, string>("Bank 2", "2000") })" />
+            <KeyValuesTable Title="Bank Revenue"
+                KeyValuePairs="@(new List<KeyValuePair<string, string>> { new KeyValuePair<string, string>("Bank 1", "1000"), new KeyValuePair<string, string>("Bank 2", "2000") })" />
         </div>
 
         <div class="main-content-graphs">
-
+            <div class="main-graph-container" <ChartComponent CanvasId="bankRevenueChartBar" Labels="@chartLabels"
+                Values="@chartValues" Title="Revenue per Laundromat" Type="bar" />
         </div>
+        <div class="main-graph-container" <ChartComponent CanvasId="bankRevenueChartLine" Labels="@chartLabels"
+            Values="@chartValues" Title="Revenue per Laundromat" Type="line" />
     </div>
+    <div class="main-graph-container" <ChartComponent CanvasId="bankRevenueChartPie" Labels="@chartLabels"
+        Values="@chartValues" Title="Revenue per Laundromat" Type="pie" />
+</div>
+<div class="main-graph-container" <ChartComponent CanvasId="bankRevenueChartDoughnut" Labels="@chartLabels"
+    Values="@chartValues" Title="Revenue per Laundromat" Type="doughnut" />
+</div>
+</div>
+</div>
+</div>
 
-    <div class="main-special-container">
-        <button @onclick='() => ChangeSelectedContent("Soap Statistics")'>Soap Statistics</button>
-        <button @onclick='() => ChangeSelectedContent("Temperature Statistics")'>Temperature Statistics</button>
-        <button @onclick='() => ChangeSelectedContent("Program Type Statistics")'>Program Type Statistics</button>
-        <button @onclick='() => ChangeSelectedContent("Rinse Statistics")'>Rinse Statistics</button>
+<div class="main-special-container">
+    <button @onclick='() => ChangeSelectedContent("Soap Statistics")'>Soap Statistics</button>
+    <button @onclick='() => ChangeSelectedContent("Temperature Statistics")'>Temperature Statistics</button>
+    <button @onclick='() => ChangeSelectedContent("Program Type Statistics")'>Program Type Statistics</button>
+    <button @onclick='() => ChangeSelectedContent("Rinse Statistics")'>Rinse Statistics</button>
 
 
-            <div class="main-special-content">
-                        @if (!string.IsNullOrEmpty(selectedSpecialContent))
+    <div class="main-special-content">
+        @if (!string.IsNullOrEmpty(selectedSpecialContent))
         {
-                <div class="main-special-content-header">
-                    <h2>@selectedSpecialContent</h2>
-                </div>
-                }
+            <div class="main-special-content-header">
+                <h2>@selectedSpecialContent</h2>
             </div>
+        }
     </div>
 </div>
-<h1>Home2</h1>
-<div style="width: 100%; max-width: 800px; margin: 0 auto;">
 
-<SelectedLaudromats />
-<div style="margin-top: 2rem;">
-    <ChartComponent CanvasId="bankRevenueChartBar"
-                    Labels="@chartLabels"
-                    Values="@chartValues"
-                    Title="Revenue per Laundromat"
-                    Type="bar"/>
-
-    <ChartComponent CanvasId="bankRevenueChartLine"
-                    Labels="@chartLabels"
-                    Values="@chartValues"
-                    Title="Revenue per Laundromat"
-                    Type="line"/>
-
-    <ChartComponent CanvasId="bankRevenueChartPie"
-                    Labels="@chartLabels"
-                    Values="@chartValues"
-                    Title="Revenue per Laundromat"
-                    Type="pie"/>
-
-</div>
-</div>
 @code {
     private string selectedSpecialContent = "";
 
     private void ChangeSelectedContent(string content)
     {
         selectedSpecialContent = content;
-    
+    }
     private string[] chartLabels = [];
     private decimal[] chartValues = [];
 
     protected override async Task OnInitializedAsync()
     {
-        var result = await AnalysisService.GetRevenueForAllLaundromatsInBank(1); // Example
+        LaundryState.OnStateChanged += HandleStateChanged;
+
+        var result = await AnalysisService.GetRevenueForLaundromats(LaundryState.GetEffectiveSelectedLaundromatsIds());
         chartLabels = result.Select(r => r.Label).ToArray();
         chartValues = result.Select(r => r.Value).ToArray();
     }
+
+    private List<string> effectiveLaundromats = new List<string>();
+
+
+    private async void HandleStateChanged()
+    {
+        var result = await AnalysisService.GetRevenueForLaundromats(LaundryState.GetEffectiveSelectedLaundromatsIds());
+        chartLabels = result.Select(r => r.Label).ToArray();
+        chartValues = result.Select(r => r.Value).ToArray();
+        StateHasChanged();
+    }
+
 }
