@@ -18,10 +18,16 @@ window.renderChart = function (config) {
             datasets: [{
                 label: config.title,
                 data: config.values,
-                fill: config.type === "line" || config.type === "radar",
+                fill: config.type === "line" ? { target: 'origin', value: false } : config.type === "radar",
+
+
                 tension: 0.3,
-                backgroundColor: generateColors(config.values.length),
-                borderColor: generateBorderColors(config.values.length),
+                backgroundColor: config.type === "line"
+                    ? 'rgba(0, 0, 0, 0)' // single transparent color for whole dataset
+                    : generateColors(config.values.length, config.type),
+                borderColor:  config.type === "line"
+                    ? 'rgba(75, 192, 192, 1)'  // or any clear color
+                    : generateBorderColors(config.values.length, config.type),
                 borderWidth: 1
             }]
         },
@@ -45,7 +51,11 @@ window.renderChart = function (config) {
     });
 };
 
-function generateColors(count) {
+function generateColors(count, type) {
+    if (type === "line") {
+        return Array(count).fill('rgba(0, 0, 0, 0)');
+    }
+
     const baseColors = [
         'rgba(255, 105, 180, 0.7)',  // vibrant pastel pink
         'rgba(255, 160, 122, 0.7)',  // soft coral
@@ -58,6 +68,7 @@ function generateColors(count) {
         'rgba(255, 204, 153, 0.7)',  // peachy orange
         'rgba(186, 85, 211, 0.7)'    // punchy orchid
     ];
+
     return Array.from({ length: count }, (_, i) => baseColors[i % baseColors.length]);
 }
 

@@ -17,18 +17,26 @@
         </div>
 
         <div class="main-content-graphs">
-            <div class="main-graph-container" <ChartComponent CanvasId="bankRevenueChartBar" Labels="@chartLabels"
-                                                              Values="@chartValues" Title="Revenue per Laundromat" Type="bar" />
-        </div>
-        <div class="main-graph-container" <ChartComponent CanvasId="bankRevenueChartLine" Labels="@chartLabels"
-                                                          Values="@chartValues" Title="Revenue per Laundromat" Type="line" />
-    </div>
-    <div class="main-graph-container" <ChartComponent CanvasId="bankRevenueChartPie" Labels="@chartLabels"
-                                                      Values="@chartValues" Title="Revenue per Laundromat" Type="pie" />
-</div>
-<div class="main-graph-container" <ChartComponent CanvasId="bankRevenueChartDoughnut" Labels="@chartLabels"
-                                                  Values="@chartValues" Title="Revenue per Laundromat" Type="doughnut" />
-</div>
+            <div class="main-graph-container">
+                
+                <ChartComponent CanvasId="bankRevenueChartBar" Labels="@chartLabelsSum"
+                                Values="@chartValuesSum" Title="Revenue per Laundromat1" Type="bar"/>
+            </div>
+            <div class="main-graph-container">
+                
+                <ChartComponent CanvasId="bankRevenueChartLine" Labels="@chartLabelsTime"
+                                Values="@chartValuesTime" Title="Revenue per Laundromat2" Type="line"/>
+            </div>
+            <div class="main-graph-container">
+                
+                <ChartComponent CanvasId="bankRevenueChartPie" Labels="@chartLabelsTime"
+                                Values="@chartValuesTime" Title="Revenue per Laundromat" Type="pie"/>
+            </div>
+            <div class="main-graph-container">
+                
+                <ChartComponent CanvasId="bankRevenueChartDoughnut" Labels="@chartLabelsTime"
+                                Values="@chartValuesSum" Title="Revenue per Laundromat" Type="bar"/>
+            </div>
 </div>
 </div>
 </div>
@@ -58,20 +66,31 @@
     {
         selectedSpecialContent = content;
     }
-    private string[] chartLabels = [];
-    private decimal[] chartValues = [];
+    private string[] chartLabelsSum = [];
+    private decimal[] chartValuesSum = [];
+    
+    private string[] chartLabelsTime = [];
+    private decimal[] chartValuesTime = [];
 
     protected override async Task OnInitializedAsync()
     {
         LaundryState.OnStateChanged += async () => await HandleStateChanged();
 
+    
         effectiveLaundromats = LaundryState.GetEffectiveSelectedLaundromatsIds();
         startDate = LaundryState.GetStartDate();
         endDate = LaundryState.GetEndDate();
-        var result = await AnalysisService.GetRevenueForLaundromats(effectiveLaundromats, startDate ?? DateTime.MinValue,
-        endDate ?? DateTime.MaxValue);
-        chartLabels = result.Select(r => r.Label).ToArray();
-        chartValues = result.Select(r => r.Value).ToArray();
+        var resultSum = await AnalysisService.GetRevenueForLaundromats(LaundryState.GetEffectiveSelectedLaundromatsIds(), startDate ?? DateTime.MinValue,
+            endDate ?? DateTime.MaxValue);
+        chartLabelsSum = resultSum.Select(r => r.Label).ToArray();
+        chartValuesSum = resultSum.Select(r => r.Value).ToArray();
+        
+        
+        var resultTime = await AnalysisService.GetRevenueForLaundromatsOverTime(LaundryState.GetEffectiveSelectedLaundromatsIds(), startDate ?? DateTime.MinValue,
+            endDate ?? DateTime.MaxValue);
+        chartLabelsTime = resultTime.Select(r => r.Label).ToArray();
+        chartValuesTime = resultTime.Select(r => r.Value).ToArray();
+
         StateHasChanged();
     }
 
@@ -86,10 +105,16 @@
         effectiveLaundromats = LaundryState.GetEffectiveSelectedLaundromatsIds();
         startDate = LaundryState.GetStartDate();
         endDate = LaundryState.GetEndDate();
-        var result = await AnalysisService.GetRevenueForLaundromatsOverTime(LaundryState.GetEffectiveSelectedLaundromatsIds(), startDate ?? DateTime.MinValue,
+        var resultSum = await AnalysisService.GetRevenueForLaundromats(LaundryState.GetEffectiveSelectedLaundromatsIds(), startDate ?? DateTime.MinValue,
         endDate ?? DateTime.MaxValue);
-        chartLabels = result.Select(r => r.Label).ToArray();
-        chartValues = result.Select(r => r.Value).ToArray();
+        chartLabelsSum = resultSum.Select(r => r.Label).ToArray();
+        chartValuesSum = resultSum.Select(r => r.Value).ToArray();
+        
+        var resultTime = await AnalysisService.GetRevenueForLaundromatsOverTime(LaundryState.GetEffectiveSelectedLaundromatsIds(), startDate ?? DateTime.MinValue,
+            endDate ?? DateTime.MaxValue);
+        chartLabelsTime = resultTime.Select(r => r.Label).ToArray();
+        chartValuesTime = resultTime.Select(r => r.Value).ToArray();
+
 
         keyValuePairs = await AnalysisService.GetKeyValues(effectiveLaundromats, startDate ?? DateTime.MinValue, endDate ??
         DateTime.MaxValue);
