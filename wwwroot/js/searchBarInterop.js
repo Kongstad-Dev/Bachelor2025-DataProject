@@ -1,5 +1,4 @@
 export function registerClickOutside(element, dotnetHelper) {
-    console.log("Registering click outside handler");
     
     // Handler function for document click events
     const handleDocumentClick = (event) => {
@@ -8,7 +7,6 @@ export function registerClickOutside(element, dotnetHelper) {
         
         // Check if click is outside search container (which includes dropdown)
         if (searchContainer && !searchContainer.contains(event.target)) {
-            console.log("Click outside detected");
             dotnetHelper.invokeMethodAsync('CloseDropdown');
         }
     };
@@ -28,5 +26,11 @@ export function registerClickOutside(element, dotnetHelper) {
 export function focusElement(element) {
     if (element) {
         element.focus();
+    }
+}
+
+export function blurElement(element) {
+    if (element) {
+        element.blur();
     }
 }

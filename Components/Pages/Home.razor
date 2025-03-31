@@ -8,6 +8,35 @@
 
 <PageTitle>Home</PageTitle>
 
+<div class="main-container">
+    <div class="main-content">
+        <div class="main-content-tabels">
+            <SelectedLaudromats />
+            <KeyValuesTable Title="Bank Revenue" KeyValuePairs="@(new List<KeyValuePair<string, string>> { new KeyValuePair<string, string>("Bank 1", "1000"), new KeyValuePair<string, string>("Bank 2", "2000") })" />
+        </div>
+
+        <div class="main-content-graphs">
+
+        </div>
+    </div>
+
+    <div class="main-special-container">
+        <button @onclick='() => ChangeSelectedContent("Soap Statistics")'>Soap Statistics</button>
+        <button @onclick='() => ChangeSelectedContent("Temperature Statistics")'>Temperature Statistics</button>
+        <button @onclick='() => ChangeSelectedContent("Program Type Statistics")'>Program Type Statistics</button>
+        <button @onclick='() => ChangeSelectedContent("Rinse Statistics")'>Rinse Statistics</button>
+
+
+            <div class="main-special-content">
+                        @if (!string.IsNullOrEmpty(selectedSpecialContent))
+        {
+                <div class="main-special-content-header">
+                    <h2>@selectedSpecialContent</h2>
+                </div>
+                }
+            </div>
+    </div>
+</div>
 <h1>Home2</h1>
 <div style="width: 100%; max-width: 800px; margin: 0 auto;">
 
@@ -34,6 +63,11 @@
 </div>
 </div>
 @code {
+    private string selectedSpecialContent = "";
+
+    private void ChangeSelectedContent(string content)
+    {
+        selectedSpecialContent = content;
     
     private string[] chartLabels = [];
     private decimal[] chartValues = [];

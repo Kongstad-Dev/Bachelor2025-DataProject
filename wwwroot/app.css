@@ -1,11 +1,42 @@
 :root {
-    --main: #86dd5a;
-    --main-light: #a5e882;
-    --main-dark: #68b542;
+    --main: #66dd66;       /* Vibrant green base color */
+    --main-light: #82e782;   /* Lighter green for hover states */
+    --main-dark: #4bb54b;    /* Deeper green for active states */
+    --main-transparent: #66dd6657; /* Transparent version of the green */
 
-    --main-red: #dd5a5a;
-    --main-red-light: #e88282;
-    --main-red-dark: #b54242;
+    /* Complementary Red Palette (adjusted to pair with green) */
+    --main-red: #dd6666;     /* Complementary red to pair with green */
+    --main-red-light: #e78282; /* Lighter red for hover states */
+    --main-red-dark: #b54b4b;   /* Deeper red for active states */
+
+}
+
+button {
+    background: var(--main);
+    display: flex;
+    flex-wrap: nowrap;
+    flex-direction: row;
+    align-items: center;
+    padding: 0.5vh;
+    margin: 0.5vw;
+    border: 0.1vw solid #000;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 0.5vw;
+    margin: 0;
+    font-size: 1vw;
+}
+
+
+button:hover {
+    background-color: var(--main-light);
+    box-shadow: 0 0.2vw 0.5vw rgba(0, 0, 0, 0.3)
+}
+
+button:active {
+    background-color: var(--main-dark);
+    box-shadow: inset 0 0.2vw 0.5vw rgba(0, 0, 0, 0.3);
 }
 
 html,
@@ -33,7 +64,7 @@ a,
 }
 
 .content {
-    padding-top: 1.1rem;
+    padding: 1vw !important;
 }
 
 h1:focus {
@@ -67,8 +98,8 @@ h1:focus {
 }
 
 .trash-icon {
-    width: 3vh;
-    height: 3vh;
+    width: 1.5vw;
+    height: 1.5vw;
     background-color: var(--main-red);
     mask-image: url("/icons/trash-icon.svg");
     mask-size: contain;

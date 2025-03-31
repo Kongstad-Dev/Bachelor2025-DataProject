@@ -2,9 +2,13 @@
 .search-container {
     position: relative;
     height: 75%;
-    width: 30%;
+    width: 20vw;
     display: flex;
     margin-left: 1vw;
+}
+
+.search-container.small {
+    width: 15%;
 }
 
 .search-input-wrapper {
@@ -14,16 +18,21 @@
 
 .search-input {
     width: 100%;
-    padding: 0.75rem;
-    border-radius: 0.5rem;
-    border: 1px solid #ccc;
-    font-size: 1rem;
+    padding: 0.5vw;
+    border-radius: 0.5vw;
+    border: 0.1vw solid #ccc;
+    font-size: 1vw;
     outline: none;
+}
+
+.small .search-input {
+    padding: 0.35vw;
+    font-size: 1vw;
 }
 
 .search-input:focus {
     border-color: var(--main);
-    box-shadow: 0 0 0 2px rgba(var(--main-rgb), 0.25);
+    box-shadow: 0 0 0 0.2vw rgba(var(--main-rgb), 0.25);
 }
 
 .search-dropdown {
@@ -33,17 +42,21 @@
     right: 0;
     width: 100%;
     background: white;
-    border: 1px solid #ddd;
-    border-radius: 0.5rem;
-    margin-top: 0.25rem;
-    max-height: 300px;
+    border: 0.1vw solid #ddd;
+    border-radius: 0.5vw;
+    margin-top: 0.5vh;
+    max-height: 40vh;
     overflow-y: auto;
     z-index: 1000;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    box-shadow: 0 0.5vw 0.5vw rgba(0, 0, 0, 0.1);
+
+    /* Firefox scrollbar */
+    scrollbar-color: var(--main) #ffffff;
+    scrollbar-width: thin;
 }
 
 .search-item {
-    padding: 0.75rem;
+    padding: 0.5vw;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -60,13 +73,14 @@
 
 .search-checkbox {
     display: flex;
+    position: relative;
     align-items: center;
     justify-content: center;
-    width: 18px;
-    height: 18px;
-    border: 2px solid #ccc;
-    border-radius: 4px;
-    margin-right: 10px;
+    width: 1.5vw;
+    height: 1.5vw;
+    border: 0.1vw solid #ccc;
+    border-radius: 0.5vw;
+    margin-right: 0.5vw;
 }
 
 .search-item.selected .search-checkbox {
@@ -76,14 +90,25 @@
 }
 
 .search-item-text {
-    flex-grow: 1;
-    font-size: 14px;
+    display: flex;
+    position: relative;
+    flex-direction: column;
+    font-size: 1vw;
+    width: calc(100% - 1.5vw);
+}
+
+.small .search-item-text {
+    font-size: 1vw;
 }
 
 .search-more-items {
-    padding: 8px 12px;
-    font-size: 12px;
+    padding: 0.4vw 0.8vw;
+    font-size: 0.8vw;
     color: #666;
     text-align: center;
-    border-top: 1px solid #eee;
+    border-top: 0.1vw solid #eee;
+}
+
+.small .search-more-items {
+    font-size: 0.8vw;
 }
