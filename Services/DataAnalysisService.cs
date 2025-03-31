@@ -96,6 +96,7 @@ namespace BlazorTest.Services
 
         public decimal CalculateRevenueFromTransactions(List<TransactionEntity> transactions)
         {
+                
             return transactions.Sum(t => Math.Abs(t.amount)) / 100;
         }
 
@@ -136,7 +137,8 @@ namespace BlazorTest.Services
             var transactions = await dbContext.Transactions
                 .Where(t => laundromatIdList.Contains(t.LaundromatId) &&
                        t.date >= startDate &&
-                       t.date <= endDate)
+                       t.date <= endDate && 
+                       t.amount >= 1)
                 .ToListAsync();
 
             // Group and compute revenue per laundromat
@@ -153,7 +155,65 @@ namespace BlazorTest.Services
 
             return result;
         }
+        
+        public async Task<List<ChartDataPoint>> GetRevenueForLaundromatsOverTime(List<string> laundromatIds, DateTime? startDate, DateTime? endDate)
+        {
+            using var dbContext = _dbContextFactory.CreateDbContext();
 
+            var laundromats = await dbContext.Laundromat
+                .AsNoTracking()
+                .Where(l => laundromatIds.Contains(l.kId))
+                .Select(l => new { l.kId, l.name })
+                .ToListAsync();
+
+            var laundromatIdList = laundromats.Select(l => l.kId).ToList();
+
+            var transactions = await dbContext.Transactions
+                .Where(t => laundromatIdList.Contains(t.LaundromatId) &&
+                            t.date >= startDate &&
+                            t.date <= endDate &&
+                            t.amount >= 1)
+                .ToListAsync();
+
+            var interval = (endDate - startDate).Value.TotalDays > 30 ? "month" : "week";
+
+            List<ChartDataPoint> result;
+
+            if (interval == "month")
+            {
+                var grouped = transactions
+                    .GroupBy(t => new { t.date.Year, t.date.Month })
+                    .Select(g => new ChartDataPoint
+                    {
+                        Label = $"{g.Key.Year}-{g.Key.Month:D2}",
+                        Value = g.Sum(t => Math.Abs(Convert.ToDecimal(t.amount))) / 100
+                    })
+                    .ToList();
+
+                result = grouped;
+            }
+            else // interval == "week"
+            {
+                var calendar = System.Globalization.CultureInfo.InvariantCulture.Calendar;
+
+                var grouped = transactions
+                    .GroupBy(t => new
+                    {
+                        t.date.Year,
+                        Week = calendar.GetWeekOfYear(t.date, System.Globalization.CalendarWeekRule.FirstDay, DayOfWeek.Monday)
+                    })
+                    .Select(g => new ChartDataPoint
+                    {
+                        Label = $"{g.Key.Year}-W{g.Key.Week:D2}",
+                        Value = g.Sum(t => Math.Abs(Convert.ToDecimal(t.amount))) / 100
+                    })
+                    .ToList();
+
+                result = grouped;
+            }
+
+            return result;
+        }
 
 
 

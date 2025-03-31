@@ -18,20 +18,21 @@
 
         <div class="main-content-graphs">
             <div class="main-graph-container" <ChartComponent CanvasId="bankRevenueChartBar" Labels="@chartLabels"
-                Values="@chartValues" Title="Revenue per Laundromat" Type="bar" />
+                                                              Values="@chartValues" Title="Revenue per Laundromat" Type="bar" />
         </div>
         <div class="main-graph-container" <ChartComponent CanvasId="bankRevenueChartLine" Labels="@chartLabels"
-            Values="@chartValues" Title="Revenue per Laundromat" Type="line" />
+                                                          Values="@chartValues" Title="Revenue per Laundromat" Type="line" />
     </div>
     <div class="main-graph-container" <ChartComponent CanvasId="bankRevenueChartPie" Labels="@chartLabels"
-        Values="@chartValues" Title="Revenue per Laundromat" Type="pie" />
+                                                      Values="@chartValues" Title="Revenue per Laundromat" Type="pie" />
 </div>
 <div class="main-graph-container" <ChartComponent CanvasId="bankRevenueChartDoughnut" Labels="@chartLabels"
-    Values="@chartValues" Title="Revenue per Laundromat" Type="doughnut" />
+                                                  Values="@chartValues" Title="Revenue per Laundromat" Type="doughnut" />
 </div>
 </div>
 </div>
 </div>
+
 
 <div class="main-special-container">
     <button @onclick='() => ChangeSelectedContent("Soap Statistics")'>Soap Statistics</button>
@@ -85,7 +86,7 @@
         effectiveLaundromats = LaundryState.GetEffectiveSelectedLaundromatsIds();
         startDate = LaundryState.GetStartDate();
         endDate = LaundryState.GetEndDate();
-        var result = await AnalysisService.GetRevenueForLaundromats(LaundryState.GetEffectiveSelectedLaundromatsIds(), startDate ?? DateTime.MinValue,
+        var result = await AnalysisService.GetRevenueForLaundromatsOverTime(LaundryState.GetEffectiveSelectedLaundromatsIds(), startDate ?? DateTime.MinValue,
         endDate ?? DateTime.MaxValue);
         chartLabels = result.Select(r => r.Label).ToArray();
         chartValues = result.Select(r => r.Value).ToArray();
