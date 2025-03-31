@@ -64,14 +64,26 @@
     protected override async Task OnInitializedAsync()
     {
         LaundryState.OnStateChanged += HandleStateChanged;
+
+        effectiveLaundromats = LaundryState.GetEffectiveSelectedLaundromatsIds();
+        startDate = LaundryState.GetStartDate();
+        endDate = LaundryState.GetEndDate();
+        var result = await AnalysisService.GetRevenueForLaundromats(effectiveLaundromats, startDate ?? DateTime.MinValue, endDate ?? DateTime.MaxValue);
+        chartLabels = result.Select(r => r.Label).ToArray();
+        chartValues = result.Select(r => r.Value).ToArray();
+        StateHasChanged();
     }
 
     private List<string> effectiveLaundromats = new List<string>();
-
+    private DateTime? startDate;
+    private DateTime? endDate;
 
     private async void HandleStateChanged()
     {
-        var result = await AnalysisService.GetRevenueForLaundromats(LaundryState.GetEffectiveSelectedLaundromatsIds());
+        effectiveLaundromats = LaundryState.GetEffectiveSelectedLaundromatsIds();
+        startDate = LaundryState.GetStartDate();
+        endDate = LaundryState.GetEndDate();
+        var result = await AnalysisService.GetRevenueForLaundromats(effectiveLaundromats, startDate ?? DateTime.MinValue, endDate ?? DateTime.MaxValue);
         chartLabels = result.Select(r => r.Label).ToArray();
         chartValues = result.Select(r => r.Value).ToArray();
         StateHasChanged();

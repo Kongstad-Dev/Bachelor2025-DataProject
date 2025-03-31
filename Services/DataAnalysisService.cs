@@ -12,7 +12,7 @@ namespace BlazorTest.Services
         {
             _dbContextFactory = dbContextFactory;
         }
-        
+
         public class SoapResults
         {
             public decimal soap1 { get; set; }
@@ -41,18 +41,18 @@ namespace BlazorTest.Services
         }
 
 
-        
+
         public decimal CalculateTotalSoapProgramFromTransactions(List<TransactionEntity> transactions)
         {
-            return transactions.Sum(t =>(Convert.ToDecimal(t.soap)));
+            return transactions.Sum(t => (Convert.ToDecimal(t.soap)));
         }
-        
+
         public decimal CalculateRevenueFromTransactions(List<TransactionEntity> transactions)
         {
             return transactions.Sum(t => Math.Abs(t.amount)) / 100;
         }
-        
-            
+
+
         public decimal CalculateAvgSecoundsFromTransactions(List<TransactionEntity> transactions)
         {
             var filtered = transactions.Where(t => t.seconds > 0).ToList();
@@ -69,7 +69,7 @@ namespace BlazorTest.Services
             public decimal Value { get; set; }
         }
 
-        public async Task<List<ChartDataPoint>> GetRevenueForLaundromats(List<string> laundromatIds)
+        public async Task<List<ChartDataPoint>> GetRevenueForLaundromats(List<string> laundromatIds, DateTime? startDate, DateTime? endDate)
         {
             using var dbContext = _dbContextFactory.CreateDbContext();
 
@@ -80,11 +80,13 @@ namespace BlazorTest.Services
                 .ToListAsync();
 
             var laundromatIdList = laundromats.Select(l => l.kId).ToList();
-            
+
             var transactions = await dbContext.Transactions
-                .Where(t => laundromatIdList.Contains(t.LaundromatId))
+                .Where(t => laundromatIdList.Contains(t.LaundromatId) &&
+                       t.date >= startDate &&
+                       t.date <= endDate)
                 .ToListAsync();
-            
+
             // Group and compute revenue per laundromat
             var result = laundromats
                 .GroupJoin(transactions,
@@ -99,33 +101,33 @@ namespace BlazorTest.Services
 
             return result;
         }
-        
-        
-        
-        
-        
-        
-        
-        
-        
+
+
+
+
+
+
+
+
+
 
         public async Task<List<ChartDataPoint>> CalculateTotalSoapProgramFromTransactions(int bankId)
         {
             using var dbContext = _dbContextFactory.CreateDbContext();
-            
-            
+
+
             var laundromats = await dbContext.Laundromat
                 .AsNoTracking()
                 .Where(l => l.bId == bankId)
                 .Select(l => new { l.kId, l.name })
                 .ToListAsync();
-            
+
             var laundromatIds = laundromats.Select(l => l.kId).ToList();
-            
+
             var transactions = await dbContext.Transactions
                 .Where(t => laundromatIds.Contains(t.LaundromatId))
                 .ToListAsync();
-            
+
             var result = laundromats
                 .SelectMany(l =>
                 {
@@ -143,8 +145,8 @@ namespace BlazorTest.Services
 
             return result;
         }
-        
-        
+
+
         public async Task<List<ChartDataPoint>> CalculateAvgSecoundsFromTransactions(int bankId)
         {
             using var dbContext = _dbContextFactory.CreateDbContext();
@@ -158,7 +160,7 @@ namespace BlazorTest.Services
 
 
             var laundromatIds = laundromats.Select(l => l.kId).ToList();
-            
+
             var transactions = await dbContext.Transactions
                 .Where(t => laundromatIds.Contains(t.LaundromatId))
                 .ToListAsync();
