@@ -13,13 +13,13 @@ using Newtonsoft.Json;
 public class LaundromatController : ControllerBase
 {
     private readonly ExternalApiService _externalApiService;
-    private readonly YourDbContext _dbContext;
     private readonly string _locationsApiUrl;
+    private readonly IDbContextFactory<YourDbContext> _dbContextFactory;
 
-    public LaundromatController(ExternalApiService externalApiService, YourDbContext dbContext)
+    public LaundromatController(ExternalApiService externalApiService, IDbContextFactory<YourDbContext> dbContextFactory)
     {
         _externalApiService = externalApiService;
-        _dbContext = dbContext;
+        _dbContextFactory = dbContextFactory;
         _locationsApiUrl = Env.GetString("API_LOCATIONS");
     }
 
@@ -48,8 +48,9 @@ public class LaundromatController : ControllerBase
         [FromQuery] string? searchTerm = null
     )
     {
+        using var dbContext = _dbContextFactory.CreateDbContext();
         // Build query with filters
-        var query = _dbContext.Laundromat.AsQueryable();
+        var query = dbContext.Laundromat.AsQueryable();
 
         if (!string.IsNullOrEmpty(bankName))
         {
@@ -103,13 +104,15 @@ public class LaundromatController : ControllerBase
     [HttpGet("{kId}")]
     public async Task<IActionResult> GetLaundromat(string kId)
     {
+        using var dbContext = _dbContextFactory.CreateDbContext();
+
         if (string.IsNullOrEmpty(kId))
         {
             return BadRequest("Laundromat kId is required");
         }
 
         // Build query with includes based on parameters
-        IQueryable<Laundromat> query = _dbContext.Laundromat.AsQueryable();
+        IQueryable<Laundromat> query = dbContext.Laundromat.AsQueryable();
 
         // Get the laundromat
         var laundromat = await query.FirstOrDefaultAsync(l => l.kId == kId);
@@ -126,8 +129,10 @@ public class LaundromatController : ControllerBase
     [HttpGet("bank/{bId}")]
     public async Task<IActionResult> GetLaundromatsByBank(int bId)
     {
+        using var dbContext = _dbContextFactory.CreateDbContext();
+
         // Load the bank and include its laundromats in a single query
-        var bank = await _dbContext
+        var bank = await dbContext
             .Bank.Include(b => b.Laundromats)
             .FirstOrDefaultAsync(b => b.bId == bId);
 
@@ -221,11 +226,12 @@ public class LaundromatController : ControllerBase
 
     private async Task<int> ProcessLaundromats(List<Laundromat> laundromats)
     {
+        using var dbContext = _dbContextFactory.CreateDbContext();
         int newLaundromatCount = 0;
 
         foreach (var laundromat in laundromats)
         {
-            var existingLaundromat = _dbContext.Laundromat.SingleOrDefault(l =>
+            var existingLaundromat = dbContext.Laundromat.SingleOrDefault(l =>
                 l.kId == laundromat.kId
             );
             if (existingLaundromat == null)
@@ -248,23 +254,25 @@ public class LaundromatController : ControllerBase
                     latitude = laundromat.latitude,
                     bId = bank.bId,
                 };
-                _dbContext.Laundromat.Add(newLaundromat);
+                dbContext.Laundromat.Add(newLaundromat);
                 newLaundromatCount++;
             }
         }
 
-        await _dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync();
         return newLaundromatCount;
     }
 
     private async Task<BankEntity> GetOrCreateBank(string bankName)
     {
-        var bank = _dbContext.Bank.SingleOrDefault(b => b.name == bankName);
+        using var dbContext = _dbContextFactory.CreateDbContext();
+
+        var bank = dbContext.Bank.SingleOrDefault(b => b.name == bankName);
         if (bank == null)
         {
             bank = new BankEntity { name = bankName };
-            _dbContext.Bank.Add(bank);
-            await _dbContext.SaveChangesAsync();
+            dbContext.Bank.Add(bank);
+            await dbContext.SaveChangesAsync();
         }
         return bank;
     }

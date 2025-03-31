@@ -12,11 +12,12 @@ namespace BlazorTest.Controllers
     [Route("api/[controller]")]
     public class BankController : ControllerBase
     {
-        private readonly YourDbContext _dbContext;
+        private readonly IDbContextFactory<YourDbContext> _dbContextFactory;
 
-        public BankController(YourDbContext dbContext)
+        public BankController(IDbContextFactory<YourDbContext> dbContextFactory)
         {
-            _dbContext = dbContext;
+            _dbContextFactory = dbContextFactory;
+
         }
 
         // Get all banks with optional filtering and pagination
@@ -30,8 +31,9 @@ namespace BlazorTest.Controllers
             [FromQuery] bool includeLaundromats = false // New parameter to include full laundromat data
         )
         {
+            using var dbContext = _dbContextFactory.CreateDbContext();
             // Build query with filters
-            var query = _dbContext.Bank.AsQueryable();
+            var query = dbContext.Bank.AsQueryable();
 
             if (!string.IsNullOrEmpty(searchTerm))
             {
@@ -50,7 +52,7 @@ namespace BlazorTest.Controllers
                 {
                     Bank = b,
                     LaundromatCount = includeLaundromatCounts
-                        ? _dbContext.Laundromat.Count(l => l.bId == b.bId)
+                        ? dbContext.Laundromat.Count(l => l.bId == b.bId)
                         : 0,
                 };
 
@@ -72,7 +74,7 @@ namespace BlazorTest.Controllers
                     // Fix error 1: Use int? instead of mixing int and null
                     LaundromatCount = includeLaundromatCounts ? (int?)b.LaundromatCount : null,
                     Laundromats = includeLaundromats
-                        ? _dbContext
+                        ? dbContext
                             .Laundromat.Where(l => l.bId == b.Bank.bId)
                             .Select(l => new
                             {
@@ -106,7 +108,9 @@ namespace BlazorTest.Controllers
         [HttpGet("{bId}")]
         public async Task<IActionResult> GetBank(int bId)
         {
-            var bank = await _dbContext.Bank.FindAsync(bId);
+            using var dbContext = _dbContextFactory.CreateDbContext();
+
+            var bank = await dbContext.Bank.FindAsync(bId);
 
             if (bank == null)
             {
@@ -114,7 +118,7 @@ namespace BlazorTest.Controllers
             }
 
             // Count related laundromats
-            var laundromatCount = await _dbContext.Laundromat.CountAsync(l => l.bId == bId);
+            var laundromatCount = await dbContext.Laundromat.CountAsync(l => l.bId == bId);
 
             // Create a response that avoids circular references
             var response = new
@@ -131,12 +135,14 @@ namespace BlazorTest.Controllers
         [HttpGet("by-name/{name}")]
         public async Task<IActionResult> GetBankByName(string name)
         {
+            using var dbContext = _dbContextFactory.CreateDbContext();
+
             if (string.IsNullOrEmpty(name))
             {
                 return BadRequest("Bank name is required");
             }
 
-            var bank = await _dbContext.Bank.FirstOrDefaultAsync(b => b.name == name);
+            var bank = await dbContext.Bank.FirstOrDefaultAsync(b => b.name == name);
 
             if (bank == null)
             {
@@ -144,7 +150,7 @@ namespace BlazorTest.Controllers
             }
 
             // Count related laundromats
-            var laundromatCount = await _dbContext.Laundromat.CountAsync(l => l.bId == bank.bId);
+            var laundromatCount = await dbContext.Laundromat.CountAsync(l => l.bId == bank.bId);
 
             // Create a response that avoids circular references
             var response = new

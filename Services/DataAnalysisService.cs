@@ -69,25 +69,20 @@ namespace BlazorTest.Services
             public decimal Value { get; set; }
         }
 
-        public async Task<List<ChartDataPoint>> GetRevenueForAllLaundromatsInBank(int bankId)
+        public async Task<List<ChartDataPoint>> GetRevenueForLaundromats(List<string> laundromatIds)
         {
             using var dbContext = _dbContextFactory.CreateDbContext();
 
-            Console.WriteLine("GetRevenueForAllLaundromatsInBank called with bankId: " + bankId);
-
             var laundromats = await dbContext.Laundromat
                 .AsNoTracking()
-                .Where(l => l.bId == bankId)
+                .Where(l => laundromatIds.Contains(l.kId))
                 .Select(l => new { l.kId, l.name })
                 .ToListAsync();
 
-            Console.WriteLine("Laundromats:");
-            Console.WriteLine(JsonConvert.SerializeObject(laundromats, Formatting.Indented));
-
-            var laundromatIds = laundromats.Select(l => l.kId).ToList();
+            var laundromatIdList = laundromats.Select(l => l.kId).ToList();
             
             var transactions = await dbContext.Transactions
-                .Where(t => laundromatIds.Contains(t.LaundromatId))
+                .Where(t => laundromatIdList.Contains(t.LaundromatId))
                 .ToListAsync();
             
             // Group and compute revenue per laundromat
@@ -118,16 +113,12 @@ namespace BlazorTest.Services
         {
             using var dbContext = _dbContextFactory.CreateDbContext();
             
-            Console.WriteLine("GetRevenueForAllLaundromatsInBank called with bankId: " + bankId);
             
             var laundromats = await dbContext.Laundromat
                 .AsNoTracking()
                 .Where(l => l.bId == bankId)
                 .Select(l => new { l.kId, l.name })
                 .ToListAsync();
-
-            Console.WriteLine("Laundromats:");
-            Console.WriteLine(JsonConvert.SerializeObject(laundromats, Formatting.Indented));
             
             var laundromatIds = laundromats.Select(l => l.kId).ToList();
             
@@ -158,7 +149,6 @@ namespace BlazorTest.Services
         {
             using var dbContext = _dbContextFactory.CreateDbContext();
 
-            Console.WriteLine("GetRevenueForAllLaundromatsInBank called with bankId: " + bankId);
 
             var laundromats = await dbContext.Laundromat
                 .AsNoTracking()
@@ -166,8 +156,6 @@ namespace BlazorTest.Services
                 .Select(l => new { l.kId, l.name })
                 .ToListAsync();
 
-            Console.WriteLine("Laundromats:");
-            Console.WriteLine(JsonConvert.SerializeObject(laundromats, Formatting.Indented));
 
             var laundromatIds = laundromats.Select(l => l.kId).ToList();
             

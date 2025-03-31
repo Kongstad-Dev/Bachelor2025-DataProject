@@ -70,6 +70,21 @@ namespace BlazorTest.Services
             return LaundromatItems.Select(item => item.Data).OfType<Laundromat>().ToList();
         }
 
+        public List<string> GetEffectiveSelectedLaundromatsIds()
+        {
+            // If user has made explicit selections, use those
+            if (SelectedLaundromats.Any())
+            {
+                return SelectedLaundromats.Select(l => l.kId).ToList();
+            }
+
+            // Otherwise use ALL available laundromats as selected
+            return LaundromatItems
+                .Select(item => item.Data)
+                .OfType<Laundromat>()
+                .Select(l => l.kId)
+                .ToList();
+        }
         public void RemoveSelectedLaundromat(Laundromat laundromat)
         {
             if (SelectedLaundromats.Count == 0)
