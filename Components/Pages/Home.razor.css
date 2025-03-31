@@ -57,6 +57,7 @@
     flex-direction: row;
     flex-wrap: wrap;
     width: 100%;
+    min-height: 50vh;
     padding: 1vw;
     border-radius: 0.5vw;
     border: 0.1vw solid #000;

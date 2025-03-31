@@ -1,0 +1,37 @@
+@rendermode InteractiveServer
+
+<div class="key-values-table-container">
+    <h2>@Title</h2>
+
+    <div class="key-values-table-container-content">
+        <table class="key-values-table">
+            <tbody>
+                @foreach (var item in KeyValuePairs.Take(5))
+                {
+                    <tr>
+                        <td class="key-column">@item.Key</td>
+                        <td class="value-column">@item.Value</td>
+                    </tr>
+                }
+                @if (KeyValuePairs.Count() < 5)
+                {
+                    @for (int i = KeyValuePairs.Count(); i < 5; i++)
+                    {
+                        <tr>
+                            <td class="key-column empty-cell">-</td>
+                            <td class="value-column empty-cell">-</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Title { get; set; } = "Key Values";
+
+    [Parameter]
+    public IEnumerable<KeyValuePair<string, string>> KeyValuePairs { get; set; } = new List<KeyValuePair<string, string>>();
+}

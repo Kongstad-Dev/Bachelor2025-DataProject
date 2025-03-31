@@ -11,7 +11,7 @@
     <div class="main-content">
         <div class="main-content-tabels">
             <SelectedLaudromats />
-            <SelectedLaudromats />
+            <KeyValuesTable Title="Bank Revenue" KeyValuePairs="@(new List<KeyValuePair<string, string>> { new KeyValuePair<string, string>("Bank 1", "1000"), new KeyValuePair<string, string>("Bank 2", "2000") })" />
         </div>
 
         <div class="main-content-graphs">
@@ -20,21 +20,26 @@
     </div>
 
     <div class="main-special-container">
-        <button @onclick='() => ChangeSelectedContent("SoapStatistics")'>Soap Statistics</button>
+        <button @onclick='() => ChangeSelectedContent("Soap Statistics")'>Soap Statistics</button>
         <button @onclick='() => ChangeSelectedContent("Temperature Statistics")'>Temperature Statistics</button>
         <button @onclick='() => ChangeSelectedContent("Program Type Statistics")'>Program Type Statistics</button>
         <button @onclick='() => ChangeSelectedContent("Rinse Statistics")'>Rinse Statistics</button>
-        <div class="main-special-content">
-            <div class="main-special-content-header">
-                <h2>@selectedSpecialContent</h2>
+
+
+            <div class="main-special-content">
+                        @if (!string.IsNullOrEmpty(selectedSpecialContent))
+        {
+                <div class="main-special-content-header">
+                    <h2>@selectedSpecialContent</h2>
+                </div>
+                }
             </div>
-        </div>
     </div>
 </div>
 
 
 @code {
-    private string selectedSpecialContent = "Soap Statistics";
+    private string selectedSpecialContent = "";
 
     private void ChangeSelectedContent(string content)
     {
