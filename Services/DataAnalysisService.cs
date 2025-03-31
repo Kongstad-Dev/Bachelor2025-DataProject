@@ -40,7 +40,54 @@ namespace BlazorTest.Services
             return result;
         }
 
+        public async Task<List<KeyValuePair<string, decimal>>> GetKeyValues(List<string> laundromatIds, DateTime? startDate, DateTime? endDate)
+        {
+            using var dbContext = _dbContextFactory.CreateDbContext();
 
+            var laundromats = await dbContext.Laundromat
+                .AsNoTracking()
+                .Where(l => laundromatIds.Contains(l.kId))
+                .Select(l => new { l.kId, l.name })
+                .ToListAsync();
+
+            var laundromatIdList = laundromats.Select(l => l.kId).ToList();
+
+            var transactions = await dbContext.Transactions
+                .Where(t => laundromatIdList.Contains(t.LaundromatId) &&
+                       t.date >= startDate &&
+                       t.date <= endDate)
+                .ToListAsync();
+
+            var filtersedTransactions = transactions.Where(t => t.seconds != 0).ToList();
+
+            //Get Total revenue
+            var totalRevenue = CalculateLaundromatsRevenue(filtersedTransactions);
+            //Get average revenue
+            var avgRevenue = filtersedTransactions.Count > 0 ? totalRevenue / filtersedTransactions.Count : 0;
+            //get Total transactions
+            var totalTransactions = filtersedTransactions.Count;
+            //Get average transactions
+            var avgTransactions = filtersedTransactions.Count > 0 ? totalTransactions / laundromatIds.Count : 0;
+
+            //Get washing machine percentage
+            var dryerIDs = new int[] { 1, 18, 5, 10, 14, 19, 27, 29, 41 };
+            var dryerTransactions = filtersedTransactions.Where(t => dryerIDs.Contains(t.unitType)).ToList();
+            var dryerPercentage = totalTransactions > 0 ? (decimal)dryerTransactions.Count / totalTransactions * 100 : 0;
+            var washingPercentage = 100 - dryerPercentage;
+
+            //Return the result with names
+            var result = new List<KeyValuePair<string, decimal>>
+    {
+        new KeyValuePair<string, decimal>("Total Revenue", totalRevenue),
+        new KeyValuePair<string, decimal>("Average Revenue", avgRevenue),
+        new KeyValuePair<string, decimal>("Total Transactions", totalTransactions),
+        new KeyValuePair<string, decimal>("Average Transactions", avgTransactions),
+        new KeyValuePair<string, decimal>("Washing Machine %", washingPercentage),
+        new KeyValuePair<string, decimal>("Dryer %", dryerPercentage)
+    };
+
+            return result;
+        }
 
         public decimal CalculateTotalSoapProgramFromTransactions(List<TransactionEntity> transactions)
         {
@@ -61,6 +108,11 @@ namespace BlazorTest.Services
                 return 0;
 
             return filtered.Average(t => Convert.ToDecimal(t.seconds)) / 60; // return in minutes
+        }
+
+        public decimal CalculateLaundromatsRevenue(List<TransactionEntity> transactions)
+        {
+            return transactions.Sum(t => Math.Abs(t.amount)) / 100;
         }
 
         public class ChartDataPoint
@@ -181,5 +233,6 @@ namespace BlazorTest.Services
 
             return result;
         }
+
     }
 }

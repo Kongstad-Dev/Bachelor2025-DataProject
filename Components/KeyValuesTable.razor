@@ -6,16 +6,16 @@
     <div class="key-values-table-container-content">
         <table class="key-values-table">
             <tbody>
-                @foreach (var item in KeyValuePairs.Take(5))
+                @foreach (var item in Values.Take(6))
                 {
                     <tr>
                         <td class="key-column">@item.Key</td>
-                        <td class="value-column">@item.Value</td>
+                        <td class="value-column">@(item.Value.ToString("N2"))</td>
                     </tr>
                 }
-                @if (KeyValuePairs.Count() < 5)
+                @if (Values.Count() < 5)
                 {
-                    @for (int i = KeyValuePairs.Count(); i < 5; i++)
+                    @for (int i = Values.Count(); i < 6; i++)
                     {
                         <tr>
                             <td class="key-column empty-cell">-</td>
@@ -33,5 +33,5 @@
     public string Title { get; set; } = "Key Values";
 
     [Parameter]
-    public IEnumerable<KeyValuePair<string, string>> KeyValuePairs { get; set; } = new List<KeyValuePair<string, string>>();
+    public List<KeyValuePair<string, decimal>> Values { get; set; } = new List<KeyValuePair<string, decimal>>();
 }

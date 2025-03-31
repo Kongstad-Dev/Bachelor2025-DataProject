@@ -13,8 +13,7 @@
     <div class="main-content">
         <div class="main-content-tabels">
             <SelectedLaudromats />
-            <KeyValuesTable Title="Bank Revenue"
-                KeyValuePairs="@(new List<KeyValuePair<string, string>> { new KeyValuePair<string, string>("Bank 1", "1000"), new KeyValuePair<string, string>("Bank 2", "2000") })" />
+            <KeyValuesTable Title="Bank Revenue" Values="@keyValuePairs" />
         </div>
 
         <div class="main-content-graphs">
@@ -63,29 +62,38 @@
 
     protected override async Task OnInitializedAsync()
     {
-        LaundryState.OnStateChanged += HandleStateChanged;
+        LaundryState.OnStateChanged += async () => await HandleStateChanged();
 
         effectiveLaundromats = LaundryState.GetEffectiveSelectedLaundromatsIds();
         startDate = LaundryState.GetStartDate();
         endDate = LaundryState.GetEndDate();
-        var result = await AnalysisService.GetRevenueForLaundromats(effectiveLaundromats, startDate ?? DateTime.MinValue, endDate ?? DateTime.MaxValue);
+        var result = await AnalysisService.GetRevenueForLaundromats(effectiveLaundromats, startDate ?? DateTime.MinValue,
+        endDate ?? DateTime.MaxValue);
         chartLabels = result.Select(r => r.Label).ToArray();
         chartValues = result.Select(r => r.Value).ToArray();
         StateHasChanged();
     }
 
     private List<string> effectiveLaundromats = new List<string>();
+    private List<KeyValuePair<string, decimal>> keyValuePairs = new List<KeyValuePair<string, decimal>>();
+
     private DateTime? startDate;
     private DateTime? endDate;
 
-    private async void HandleStateChanged()
+    private async Task HandleStateChanged()
     {
         effectiveLaundromats = LaundryState.GetEffectiveSelectedLaundromatsIds();
         startDate = LaundryState.GetStartDate();
         endDate = LaundryState.GetEndDate();
-        var result = await AnalysisService.GetRevenueForLaundromats(effectiveLaundromats, startDate ?? DateTime.MinValue, endDate ?? DateTime.MaxValue);
+        var result = await AnalysisService.GetRevenueForLaundromats(LaundryState.GetEffectiveSelectedLaundromatsIds(), startDate ?? DateTime.MinValue,
+        endDate ?? DateTime.MaxValue);
         chartLabels = result.Select(r => r.Label).ToArray();
         chartValues = result.Select(r => r.Value).ToArray();
+
+        keyValuePairs = await AnalysisService.GetKeyValues(effectiveLaundromats, startDate ?? DateTime.MinValue, endDate ??
+        DateTime.MaxValue);
+        Console.WriteLine("Key Values: " + string.Join(", ", keyValuePairs));
+
         StateHasChanged();
     }
 
