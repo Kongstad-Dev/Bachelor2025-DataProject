@@ -3,27 +3,27 @@
 <div class="key-values-table-container">
     <h2>@Title</h2>
 
-        <table class="key-values-table">
-            <tbody>
-                @foreach (var item in Values.Take(6))
+    <table class="key-values-table">
+        <tbody>
+            @foreach (var item in Values.Take(6))
+            {
+                <tr>
+                    <td class="key-column"><span>@item.Key</span></td>
+                    <td class="value-column">@(item.Value.ToString("N2"))</td>
+                </tr>
+            }
+            @if (Values.Count < 6)
+            {
+                @for (int i = Values.Count; i < 6; i++)
                 {
                     <tr>
-                        <td class="key-column"><span>@item.Key</span></td>
-                        <td class="value-column">@(item.Value.ToString("N2"))</td>
+                        <td class="key-column empty-cell">-</td>
+                        <td class="value-column empty-cell">-</td>
                     </tr>
                 }
-                @if (Values.Count() < 5)
-                {
-                    @for (int i = Values.Count(); i < 6; i++)
-                    {
-                        <tr>
-                            <td class="key-column empty-cell">-</td>
-                            <td class="value-column empty-cell">-</td>
-                        </tr>
-                    }
-                }
-            </tbody>
-        </table>
+            }
+        </tbody>
+    </table>
 </div>
 
 @code {
@@ -32,4 +32,17 @@
 
     [Parameter]
     public List<KeyValuePair<string, decimal>> Values { get; set; } = new List<KeyValuePair<string, decimal>>();
+
+    protected override void OnParametersSet()
+    {
+        // Ensure component is properly re-rendered when parameters change
+        base.OnParametersSet();
+        Console.WriteLine($"KeyValuesTable parameters set: Title={Title}, Values.Count={Values.Count}");
+    }
+
+    protected override void OnInitialized()
+    {
+        // Log initial parameters
+        Console.WriteLine($"KeyValuesTable initialized: Title={Title}, Values.Count={Values.Count}");
+    }
 }
