@@ -238,7 +238,12 @@ public class LaundromatController : ControllerBase
             {
                 if (string.IsNullOrEmpty(laundromat.bank))
                 {
-                    throw new ArgumentException("Bank name cannot be null or empty.");
+                    continue; //throw new ArgumentException("Bank name cannot be null or empty.");
+                }
+
+                if (string.IsNullOrEmpty(laundromat.name))
+                {
+                    continue; //throw new ArgumentException("Laundromat kId cannot be null or empty.");
                 }
                 var bank = await GetOrCreateBank(laundromat.bank);
 

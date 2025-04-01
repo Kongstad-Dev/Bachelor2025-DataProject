@@ -39,6 +39,8 @@ builder.Services.AddScoped<LaundryStateService>();
 // Add antiforgery services
 builder.Services.AddAntiforgery();
 
+builder.Services.AddMemoryCache();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

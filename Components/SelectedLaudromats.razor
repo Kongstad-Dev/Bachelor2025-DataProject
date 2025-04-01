@@ -12,19 +12,25 @@
         @if (effectiveLaundromats.Any())
         {
             <div class="laundromat-grid">
+                @if (LaundryState.SelectedLaundromats.Any())
+                {
+                    <button @onclick="() => ClearSelectedLaundromatsAndBanks()">Clear all</button>
+                }
                 @foreach (var laundromat in effectiveLaundromats)
                 {
                     <div class="laundromat-card">
                         <div class="info">
-                        <h3>@(string.IsNullOrWhiteSpace(laundromat.name) ? "Unnamed Laundromat" : laundromat.name)</h3>
-                        <p><strong>Bank:</strong> @(string.IsNullOrWhiteSpace(GetBankName(laundromat.bId)) ? "None" : @GetBankName(laundromat.bId))</p>
-                        <p><strong>ERP ID:</strong> @(string.IsNullOrWhiteSpace(laundromat.externalId) ? "None" : laundromat.externalId)</p>
-                        </div>
-                        <div class="trash">
-                            <div class="trash-icon" @onclick="() => LaundryState.RemoveSelectedLaundromat(laundromat)"></div>
-                        </div>
-                    </div>
-                }
+                            <h3>@(string.IsNullOrWhiteSpace(laundromat.name) ? "Unnamed Laundromat" : laundromat.name)</h3>
+                            <p><strong>Bank:</strong> @(string.IsNullOrWhiteSpace(GetBankName(laundromat.bId)) ? "None" :
+                                                        @GetBankName(laundromat.bId))</p>
+                    <p><strong>ERP ID:</strong> @(string.IsNullOrWhiteSpace(laundromat.externalId) ? "None" :
+                                                laundromat.externalId)</p>
+                </div>
+                <div class="trash">
+                    <div class="trash-icon" @onclick="() => LaundryState.RemoveSelectedLaundromat(laundromat)"></div>
+                </div>
+            </div>
+                        }
             </div>
         }
         else
@@ -78,6 +84,12 @@
     private string GetBankName(int bankId)
     {
         return bankNames.TryGetValue(bankId, out var name) ? name : "Unknown Bank";
+    }
+
+    private async Task ClearSelectedLaundromatsAndBanks()
+    {
+        LaundryState.ClearSelectedLaundromatsAndBanks();
+        StateHasChanged();
     }
 
     public void Dispose()

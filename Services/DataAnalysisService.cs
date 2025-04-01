@@ -1,16 +1,21 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using BlazorTest.Database;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace BlazorTest.Services
 {
     public class DataAnalysisService
     {
         private readonly IDbContextFactory<YourDbContext> _dbContextFactory;
+        private readonly IMemoryCache _cache;
 
-        public DataAnalysisService(IDbContextFactory<YourDbContext> dbContextFactory)
+
+        public DataAnalysisService(IDbContextFactory<YourDbContext> dbContextFactory, IMemoryCache cache)
         {
             _dbContextFactory = dbContextFactory;
+            _cache = cache;
+
         }
 
         public class SoapResults
@@ -44,39 +49,32 @@ namespace BlazorTest.Services
         {
             using var dbContext = _dbContextFactory.CreateDbContext();
 
-            var laundromats = await dbContext.Laundromat
-                .AsNoTracking()
-                .Where(l => laundromatIds.Contains(l.kId))
-                .Select(l => new { l.kId, l.name })
-                .ToListAsync();
-
-            var laundromatIdList = laundromats.Select(l => l.kId).ToList();
-
-            var transactions = await dbContext.Transactions
-                .Where(t => laundromatIdList.Contains(t.LaundromatId) &&
+            // Get total transactions and revenue in a single query
+            var transactionStats = await dbContext.Transactions
+                .Where(t => laundromatIds.Contains(t.LaundromatId) &&
                        t.date >= startDate &&
-                       t.date <= endDate)
-                .ToListAsync();
+                       t.date <= endDate &&
+                       t.seconds != 0)
+                .GroupBy(t => 1) // Group all together
+                .Select(g => new
+                {
+                    TotalTransactions = g.Count(),
+                    TotalRevenue = g.Sum(t => Math.Abs(t.amount)) / 100m,
+                    DryerCount = g.Count(t => new[] { 1, 18, 5, 10, 14, 19, 27, 29, 41 }.Contains(t.unitType))
+                })
+                .FirstOrDefaultAsync() ?? new { TotalTransactions = 0, TotalRevenue = 0m, DryerCount = 0 };
 
-            var filtersedTransactions = transactions.Where(t => t.seconds != 0).ToList();
+            var totalTransactions = transactionStats.TotalTransactions;
+            var totalRevenue = transactionStats.TotalRevenue;
 
-            //Get Total revenue
-            var totalRevenue = CalculateLaundromatsRevenue(filtersedTransactions);
-            //Get average revenue
-            var avgRevenue = filtersedTransactions.Count > 0 ? totalRevenue / filtersedTransactions.Count : 0;
-            //get Total transactions
-            var totalTransactions = filtersedTransactions.Count;
-            //Get average transactions
-            var avgTransactions = filtersedTransactions.Count > 0 ? totalTransactions / laundromatIds.Count : 0;
-
-            //Get washing machine percentage
-            var dryerIDs = new int[] { 1, 18, 5, 10, 14, 19, 27, 29, 41 };
-            var dryerTransactions = filtersedTransactions.Where(t => dryerIDs.Contains(t.unitType)).ToList();
-            var dryerPercentage = totalTransactions > 0 ? (decimal)dryerTransactions.Count / totalTransactions * 100 : 0;
+            // Calculate derived metrics
+            var avgRevenue = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
+            var avgTransactions = totalTransactions > 0 ? totalTransactions / laundromatIds.Count : 0;
+            var dryerPercentage = totalTransactions > 0 ? (decimal)transactionStats.DryerCount / totalTransactions * 100 : 0;
             var washingPercentage = 100 - dryerPercentage;
 
-            //Return the result with names
-            var result = new List<KeyValuePair<string, decimal>>
+            // Return results
+            return new List<KeyValuePair<string, decimal>>
     {
         new KeyValuePair<string, decimal>("Total Revenue", totalRevenue),
         new KeyValuePair<string, decimal>("Average Revenue", avgRevenue),
@@ -85,8 +83,6 @@ namespace BlazorTest.Services
         new KeyValuePair<string, decimal>("Washing Machine %", washingPercentage),
         new KeyValuePair<string, decimal>("Dryer %", dryerPercentage)
     };
-
-            return result;
         }
 
         public decimal CalculateTotalSoapProgramFromTransactions(List<TransactionEntity> transactions)
@@ -122,36 +118,69 @@ namespace BlazorTest.Services
             public decimal Value { get; set; }
         }
 
-        public async Task<List<ChartDataPoint>> GetRevenueForLaundromats(List<string> laundromatIds, DateTime? startDate, DateTime? endDate)
+        public async Task<List<ChartDataPoint>> GetRevenueForLaundromats(
+            List<string> laundromatIds,
+            DateTime? startDate,
+            DateTime? endDate)
         {
+            string cacheKey = $"revenue_direct_{string.Join("_", laundromatIds.OrderBy(id => id))}_" +
+                             $"{startDate?.ToString("yyyyMMdd") ?? "null"}_" +
+                             $"{endDate?.ToString("yyyyMMdd") ?? "null"}";
+
+            // Try to get from cache first
+            if (_cache.TryGetValue(cacheKey, out List<ChartDataPoint> cachedResult))
+            {
+                return cachedResult;
+            }
+
             using var dbContext = _dbContextFactory.CreateDbContext();
 
-            var laundromats = await dbContext.Laundromat
-                .AsNoTracking()
-                .Where(l => laundromatIds.Contains(l.kId))
-                .Select(l => new { l.kId, l.name })
-                .ToListAsync();
+            // Create a comma-separated list of IDs for SQL query
+            string idList = string.Join("','", laundromatIds.Select(id => id.Replace("'", "''")));
+            string dateFilter = "";
 
-            var laundromatIdList = laundromats.Select(l => l.kId).ToList();
+            if (startDate.HasValue)
+                dateFilter += $" AND t.date >= '{startDate.Value:yyyy-MM-dd}'";
+            if (endDate.HasValue)
+                dateFilter += $" AND t.date <= '{endDate.Value:yyyy-MM-dd}'";
 
-            var transactions = await dbContext.Transactions
-                .Where(t => laundromatIdList.Contains(t.LaundromatId) &&
-                       t.date >= startDate &&
-                       t.date <= endDate && 
-                       t.amount >= 1)
-                .ToListAsync();
+            // Direct SQL query bypassing EF Core navigation issues
+            var sql = @$"
+        SELECT 
+            COALESCE(l.name, CONCAT('ID ', l.kId)) AS Label,
+            COALESCE(SUM(ABS(t.amount)), 0) / 100 AS Value
+        FROM 
+            laundromat l
+        LEFT JOIN 
+            transaction t ON l.kId = t.LaundromatId
+            {(dateFilter.Length > 0 ? "AND " + dateFilter.Substring(4) : "")}
+        WHERE 
+            l.kId IN ('{idList}')
+        GROUP BY 
+            l.kId, l.name";
 
-            // Group and compute revenue per laundromat
-            var result = laundromats
-                .GroupJoin(transactions,
-                    l => l.kId,
-                    t => t.LaundromatId,
-                    (l, ts) => new ChartDataPoint
+            var result = new List<ChartDataPoint>();
+
+            using (var command = dbContext.Database.GetDbConnection().CreateCommand())
+            {
+                command.CommandText = sql;
+
+                if (dbContext.Database.GetDbConnection().State != System.Data.ConnectionState.Open)
+                    await dbContext.Database.GetDbConnection().OpenAsync();
+
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    result.Add(new ChartDataPoint
                     {
-                        Label = l.name ?? $"ID {l.kId}",
-                        Value = ts.Sum(t => Math.Abs(Convert.ToDecimal(t.amount))) / 100
-                    })
-                .ToList();
+                        Label = reader.GetString(0),
+                        Value = reader.GetDecimal(1)
+                    });
+                }
+            }
+
+            // Cache the result
+            _cache.Set(cacheKey, result, TimeSpan.FromHours(1));
 
             return result;
         }

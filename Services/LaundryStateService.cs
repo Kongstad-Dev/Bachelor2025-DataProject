@@ -105,6 +105,19 @@ namespace BlazorTest.Services
             }
         }
 
+        public void ClearSelectedLaundromatsAndBanks()
+        {
+            // Clear bank selections
+            SelectedBanks.Clear();
+
+            // Clear laundromat selections
+            // This will cause GetEffectiveSelectedLaundromats() to return all laundromats
+            // but without marking them as explicitly selected
+            SelectedLaundromats.Clear();
+
+            NotifyStateChanged();
+        }
+
         public DateTime? StartDate { get; private set; }
         public DateTime? EndDate { get; private set; }
 

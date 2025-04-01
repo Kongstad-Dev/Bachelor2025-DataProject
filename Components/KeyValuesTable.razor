@@ -3,13 +3,12 @@
 <div class="key-values-table-container">
     <h2>@Title</h2>
 
-    <div class="key-values-table-container-content">
         <table class="key-values-table">
             <tbody>
                 @foreach (var item in Values.Take(6))
                 {
                     <tr>
-                        <td class="key-column">@item.Key</td>
+                        <td class="key-column"><span>@item.Key</span></td>
                         <td class="value-column">@(item.Value.ToString("N2"))</td>
                     </tr>
                 }
@@ -25,7 +24,6 @@
                 }
             </tbody>
         </table>
-    </div>
 </div>
 
 @code {

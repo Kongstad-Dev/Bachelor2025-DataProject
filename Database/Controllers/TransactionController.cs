@@ -25,7 +25,7 @@ public class TransactionController : ControllerBase
         _dbContext = dbContext;
         _transactionsApiUrl = Env.GetString("API_TRANSACTIIONS");
         _dataAnalysisService = dataAnalysisService;
-        
+
     }
 
     // Adds new transactions to the database for all laundromats
@@ -37,6 +37,7 @@ public class TransactionController : ControllerBase
         var laundromats = _dbContext.Laundromat.ToList();
 
         int totalTransactions = 0;
+        int failedLaundromats = 0;
 
         foreach (var laundromat in laundromats)
         {
@@ -45,12 +46,55 @@ public class TransactionController : ControllerBase
                 System.Console.WriteLine("Laundromat or kId is null");
                 continue;
             }
-            // Call method to update transactions for each laundromat
-            int transactionsAdded = await UpdateTransactionsForLaundromat(laundromat.kId);
-            totalTransactions += transactionsAdded;
+
+            // Add retry logic with exponential backoff
+            int retryCount = 0;
+            bool success = false;
+            int transactionsAdded = 0;
+
+            while (!success && retryCount < 3) // Maximum 3 retry attempts
+            {
+                try
+                {
+                    // Call method to update transactions for each laundromat
+                    transactionsAdded = await UpdateTransactionsForLaundromat(laundromat.kId);
+                    success = true;
+                    totalTransactions += transactionsAdded;
+
+                    // Log success
+                    System.Console.WriteLine($"Successfully updated transactions for laundromat {laundromat.kId}, added {transactionsAdded} transactions");
+                }
+                catch (Exception ex)
+                {
+                    retryCount++;
+
+                    // Log the error
+                    System.Console.WriteLine($"Error updating transactions for laundromat {laundromat.kId} (Attempt {retryCount}/3): {ex.Message}");
+
+                    if (retryCount < 3)
+                    {
+                        // Exponential backoff: 2, 4, 8 seconds between retries
+                        int delayMilliseconds = (int)Math.Pow(2, retryCount) * 1000;
+                        System.Console.WriteLine($"Retrying in {delayMilliseconds / 1000} seconds...");
+                        await Task.Delay(delayMilliseconds);
+                    }
+                    else
+                    {
+                        // Max retries reached, log failure
+                        System.Console.WriteLine($"Failed to update transactions for laundromat {laundromat.kId} after 3 attempts");
+                        failedLaundromats++;
+                    }
+                }
+            }
         }
 
-        return Ok($"Transaction update completed. Added {totalTransactions} new transactions.");
+        string message = $"Transaction update completed. Added {totalTransactions} new transactions.";
+        if (failedLaundromats > 0)
+        {
+            message += $" Failed to update {failedLaundromats} laundromats after multiple attempts.";
+        }
+
+        return Ok(message);
     }
 
     // Adds new transactions to the database for a specific laundromat
@@ -262,7 +306,7 @@ public class TransactionController : ControllerBase
             return 0;
         }
 
-        var lastFetchDate = laundromat.lastFetchDate?.ToString("yyyy-MM-dd") ?? "2024-07-01";
+        var lastFetchDate = laundromat.lastFetchDate?.ToString("yyyy-MM-dd") ?? "2025-01-01";
         var currentDate = DateTime.Now.AddDays(1).ToString("yyyy-MM-dd");
 
         string transactionEndpoint =
@@ -300,33 +344,34 @@ public class TransactionController : ControllerBase
         string laundromatId
     )
     {
+        // Skip transactions with unitName containing "Dør" (Door)
+        var filteredTransactions = transactions
+            .Where(t => string.IsNullOrEmpty(t.unitName) || !t.unitName.Contains("Dør", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        if (filteredTransactions.Count == 0)
+        {
+            return 0;
+        }
+
+        // Get all transaction IDs from the incoming batch
+        var incomingTransactionIds = filteredTransactions.Select(t => t.kId).ToHashSet();
+
+        // Query the database once to get all existing transaction IDs for this laundromat
+        var existingTransactionIds = await _dbContext.Transactions
+            .Where(t => incomingTransactionIds.Contains(t.kId))
+            .Select(t => t.kId)
+            .ToListAsync();
+
+        // Convert to HashSet for O(1) lookup performance
+        var existingIdSet = new HashSet<string>(existingTransactionIds);
+
         int newTransactionCount = 0;
 
-        foreach (var transaction in transactions)
+        // Only process transactions that don't already exist
+        foreach (var transaction in filteredTransactions)
         {
-            // Maybe dont add transactions with unitType or unitName caontaining Dør
-            // Maybe dont add transactions with unitType or unitName caontaining Dør
-            // Maybe dont add transactions with unitType or unitName caontaining Dør
-            // Maybe dont add transactions with unitType or unitName caontaining Dør
-            // Maybe dont add transactions with unitType or unitName caontaining Dør
-            // Maybe dont add transactions with unitType or unitName caontaining Dør
-            // Maybe dont add transactions with unitType or unitName caontaining Dør
-            // Maybe dont add transactions with unitType or unitName caontaining Dør
-            // Maybe dont add transactions with unitType or unitName caontaining Dør
-            // Maybe dont add transactions with unitType or unitName caontaining Dør
-            // Maybe dont add transactions with unitType or unitName caontaining Dør
-            // Maybe dont add transactions with unitType or unitName caontaining Dør
-            // Maybe dont add transactions with unitType or unitName caontaining Dør
-            // Maybe dont add transactions with unitType or unitName caontaining Dør
-            // Maybe dont add transactions with unitType or unitName caontaining Dør
-            // Maybe dont add transactions with unitType or unitName caontaining Dør
-
-            // Check if transaction already exists in database
-            var existingTransaction = _dbContext.Transactions.SingleOrDefault(t =>
-                t.kId == transaction.kId
-            );
-
-            if (existingTransaction == null)
+            if (!existingIdSet.Contains(transaction.kId))
             {
                 // Set the laundromat ID for the transaction
                 transaction.LaundromatId = laundromatId;
@@ -336,7 +381,11 @@ public class TransactionController : ControllerBase
             }
         }
 
-        await _dbContext.SaveChangesAsync();
+        if (newTransactionCount > 0)
+        {
+            await _dbContext.SaveChangesAsync();
+        }
+
         return newTransactionCount;
     }
 
@@ -376,20 +425,20 @@ public class TransactionController : ControllerBase
 
         // Calculate total revenue
         var totalRevenue = _dataAnalysisService.CalculateRevenueFromTransactions(transactions);
-    
+
         return Ok(new { BankId = bId, Revenue = totalRevenue });
     }
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
+
+
+
+
+
 
     [HttpGet("bank/{bId}/soap")]
 
@@ -400,78 +449,78 @@ public class TransactionController : ControllerBase
         {
             return NotFound($"Bank with ID {bId} not found");
         }
-    
+
         // Get laundromat IDs for this bank
         var laundromatIds = await _dbContext.Laundromat
             .Where(l => l.bId == bId)
             .Select(l => l.kId)
             .ToListAsync();
-    
+
         if (laundromatIds.Count == 0)
         {
             Console.WriteLine($"[API] No laundromats found for bank {bId}");
             return Ok(new { BankId = bId, soap = 0 });
         }
-            
+
         // Find transactions linked to these laundromats
         var transactions = await _dbContext.Transactions
             .Where(t => laundromatIds.Contains(t.LaundromatId))
             .ToListAsync();
-    
+
         if (transactions.Count == 0)
         {
             Console.WriteLine($"[API] No transactions found for bank {bId}");
             return Ok(new { BankId = bId, soap = 0 });
         }
-            
+
         // Calculate total revenue
         var totalAmountSoap = _dataAnalysisService.CalculateTotalSoapProgramFromTransactions(transactions);
-    
+
         return Ok(new { BankId = bId, soap = totalAmountSoap });
     }
-    
 
 
 
 
 
-[HttpGet("bank/{bId}/seconds")]
 
-public async Task<IActionResult> GetBank_seconds(int bId)
-{
-    var bankExists = await _dbContext.Bank.AnyAsync(b => b.bId == bId);
-    if (!bankExists)
+    [HttpGet("bank/{bId}/seconds")]
+
+    public async Task<IActionResult> GetBank_seconds(int bId)
     {
-        return NotFound($"Bank with ID {bId} not found");
+        var bankExists = await _dbContext.Bank.AnyAsync(b => b.bId == bId);
+        if (!bankExists)
+        {
+            return NotFound($"Bank with ID {bId} not found");
+        }
+
+        // Get laundromat IDs for this bank
+        var laundromatIds = await _dbContext.Laundromat
+            .Where(l => l.bId == bId)
+            .Select(l => l.kId)
+            .ToListAsync();
+
+        if (laundromatIds.Count == 0)
+        {
+            Console.WriteLine($"[API] No laundromats found for bank {bId}");
+            return Ok(new { BankId = bId, seconds = 0 });
+        }
+
+        // Find transactions linked to these laundromats
+        var transactions = await _dbContext.Transactions
+            .Where(t => laundromatIds.Contains(t.LaundromatId) && t.seconds > 0)
+            .ToListAsync();
+
+        if (transactions.Count == 0)
+        {
+            Console.WriteLine($"[API] No transactions found for bank {bId}");
+            return Ok(new { BankId = bId, seconds = 0 });
+        }
+
+        // Calculate total revenue
+        var averageseconds = _dataAnalysisService.CalculateAvgSecoundsFromTransactions(transactions);
+
+        return Ok(new { BankId = bId, seconds = averageseconds });
     }
-    
-    // Get laundromat IDs for this bank
-    var laundromatIds = await _dbContext.Laundromat
-        .Where(l => l.bId == bId)
-        .Select(l => l.kId)
-        .ToListAsync();
-    
-    if (laundromatIds.Count == 0)
-    {
-        Console.WriteLine($"[API] No laundromats found for bank {bId}");
-        return Ok(new { BankId = bId,seconds = 0 });
-    }
-            
-    // Find transactions linked to these laundromats
-    var transactions = await _dbContext.Transactions
-        .Where(t => laundromatIds.Contains(t.LaundromatId) && t.seconds > 0)
-        .ToListAsync();
-    
-    if (transactions.Count == 0)
-    {
-        Console.WriteLine($"[API] No transactions found for bank {bId}");
-        return Ok(new { BankId = bId, seconds = 0 });
-    }
-            
-    // Calculate total revenue
-    var averageseconds = _dataAnalysisService.CalculateAvgSecoundsFromTransactions(transactions);
-    
-    return Ok(new { BankId = bId, seconds = averageseconds });
-}
-    
+
 }
