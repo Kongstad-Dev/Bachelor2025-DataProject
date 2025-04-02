@@ -174,15 +174,17 @@ namespace BlazorTest.Services
                             t.date <= endDate &&
                             t.amount >= 1)
                 .ToListAsync();
+            var totalDays = (endDate - startDate).Value.TotalDays;
+            var interval = (endDate - startDate).Value.TotalDays >= 30 ? "month" : totalDays < 7 ? "day" : "week";
 
-            var interval = (endDate - startDate).Value.TotalDays > 30 ? "month" : "week";
-
-            List<ChartDataPoint> result;
+            List<ChartDataPoint> result = new List<ChartDataPoint>();
 
             if (interval == "month")
             {
                 var grouped = transactions
                     .GroupBy(t => new { t.date.Year, t.date.Month })
+                    .OrderBy(g => g.Key.Year)
+                    .ThenBy(g => g.Key.Month)
                     .Select(g => new ChartDataPoint
                     {
                         Label = $"{g.Key.Year}-{g.Key.Month:D2}",
@@ -192,7 +194,7 @@ namespace BlazorTest.Services
 
                 result = grouped;
             }
-            else // interval == "week"
+            else if (interval == "week")    // interval == "week"
             {
                 var calendar = System.Globalization.CultureInfo.InvariantCulture.Calendar;
 
@@ -202,6 +204,8 @@ namespace BlazorTest.Services
                         t.date.Year,
                         Week = calendar.GetWeekOfYear(t.date, System.Globalization.CalendarWeekRule.FirstDay, DayOfWeek.Monday)
                     })
+                    .OrderBy(g => g.Key.Year)
+                    .ThenBy(g => g.Key.Week)
                     .Select(g => new ChartDataPoint
                     {
                         Label = $"{g.Key.Year}-W{g.Key.Week:D2}",
@@ -211,8 +215,29 @@ namespace BlazorTest.Services
 
                 result = grouped;
             }
+            else if (interval == "day")
+            {
+                var grouped = transactions
+                    .GroupBy(t => new
+                    {
+                        t.date.Year,
+                        t.date.Month,
+                        t.date.Day
 
-            return result;
+                    })
+                    .OrderBy(g => g.Key.Year)
+                    .ThenBy(g => g.Key.Month)
+                    .ThenBy(g => g.Key.Day)
+                    .Select(g => new ChartDataPoint
+                    {
+                        Label = $"{g.Key.Year}-D{g.Key.Day:D2}",
+                        Value = g.Sum(t => Math.Abs(Convert.ToDecimal(t.amount))) / 100,
+
+                    })
+                    .ToList();
+                result = grouped;
+            }
+            return result; 
         }
 
 
