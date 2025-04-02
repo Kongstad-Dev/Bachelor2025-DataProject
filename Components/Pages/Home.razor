@@ -13,47 +13,74 @@
     <div class="main-content">
         <div class="main-content-tabels">
             <SelectedLaudromats />
-            <KeyValuesTable Title="Bank Revenue" Values="@keyValuePairs" />
+            @if (isLoading)
+            {
+                <div>Loading data...</div>
+            }
+            else
+            {
+                <KeyValuesTable Title="Key Values" Values="@keyValuePairs" />
+            }
         </div>
 
         <div class="main-content-graphs">
-            <div class="main-graph-container">
-                
-                <ChartComponent CanvasId="bankRevenueChartBar" Labels="@chartLabelsSum"
-                                Values="@chartValuesSum" Title="Revenue per Laundromat1" Type="bar"/>
-            </div>
-            <div class="main-graph-container">
-                
-                <ChartComponent CanvasId="bankRevenueChartLine" Labels="@chartLabelsTime"
-                                Values="@chartValuesTime" Title="Revenue per Laundromat2" Type="line"/>
-            </div>
-            <div class="main-graph-container">
-                
-                <ChartComponent CanvasId="bankRevenueChartPie" Labels="@chartLabelsTime"
-                                Values="@chartValuesTime" Title="Revenue per Laundromat" Type="pie"/>
-            </div>
-            <div class="main-graph-container">
-                
-                <ChartComponent CanvasId="bankRevenueChartDoughnut" Labels="@chartLabelsTime"
-                                Values="@chartValuesSum" Title="Revenue per Laundromat" Type="bar"/>
-            </div>
+            @if (!isLoading && chartLabelsSum.Length > 0)
+            {
+                <div class="main-graph-container">
+                    <ChartComponent CanvasId="revenueByLaundromat" Labels="@chartLabelsSum" Values="@chartValuesSum"
+                        Title="Revenue by Laundromat" Type="bar" />
+                </div>
+                <div class="main-graph-container">
+                    <ChartComponent CanvasId="revenueOverTime" Labels="@chartLabelsTime" Values="@chartValuesTime"
+                        Title="Revenue Over Time" Type="line" />
+                </div>
+                <div class="main-graph-container">
+                    <ChartComponent CanvasId="revenueDistribution" Labels="@chartLabelsSum" Values="@chartValuesSum"
+                        Title="Revenue Distribution" Type="pie" />
+                </div>
+                <div class="main-graph-container">
+                    <ChartComponent CanvasId="revenueComparison" Labels="@chartLabelsSum" Values="@chartValuesSum"
+                        Title="Revenue Comparison" Type="bar" />
+                </div>
+            }
+            else if (isLoading)
+            {
+                <div>Loading charts...</div>
+            }
+        </div>
+    </div>
 </div>
-</div>
-</div>
-
 
 <div class="main-special-container">
-    <button @onclick='() => ChangeSelectedContent("Soap Statistics")'>Soap Statistics</button>
-    <button @onclick='() => ChangeSelectedContent("Temperature Statistics")'>Temperature Statistics</button>
-    <button @onclick='() => ChangeSelectedContent("Program Type Statistics")'>Program Type Statistics</button>
-    <button @onclick='() => ChangeSelectedContent("Rinse Statistics")'>Rinse Statistics</button>
-
+    @foreach (var option in specialOptions)
+    {
+        <button class="@(selectedSpecialContent == option ? "active" : "")" @onclick='() => ChangeSelectedContent(option)'>
+            @option
+        </button>
+    }
 
     <div class="main-special-content">
         @if (!string.IsNullOrEmpty(selectedSpecialContent))
         {
             <div class="main-special-content-header">
                 <h2>@selectedSpecialContent</h2>
+
+                @if (selectedSpecialContent == "Soap Statistics")
+                {
+                    <p>Soap usage data would appear here.</p>
+                }
+                else if (selectedSpecialContent == "Temperature Statistics")
+                {
+                    <p>Temperature data would appear here.</p>
+                }
+                else if (selectedSpecialContent == "Program Type Statistics")
+                {
+                    <p>Program type distribution would appear here.</p>
+                }
+                else if (selectedSpecialContent == "Rinse Statistics")
+                {
+                    <p>Rinse cycle data would appear here.</p>
+                }
             </div>
         }
     </div>
@@ -61,66 +88,202 @@
 
 @code {
     private string selectedSpecialContent = "";
+    private readonly string[] specialOptions = {
+        "Soap Statistics",
+        "Temperature Statistics",
+        "Program Type Statistics",
+        "Rinse Statistics"
+    };
+
+    private string[] chartLabelsSum = Array.Empty<string>();
+    private decimal[] chartValuesSum = Array.Empty<decimal>();
+    private string[] chartLabelsTime = Array.Empty<string>();
+    private decimal[] chartValuesTime = Array.Empty<decimal>();
+    private bool isLoading = true;
+
+    private List<string> effectiveLaundromats = new();
+    private List<KeyValuePair<string, decimal>> keyValuePairs = new();
+    private DateTime? startDate;
+    private DateTime? endDate;
+
+    // Track if data is already loading
+    private bool isDataLoading = false;
+    
+    // Cancel data loading operations if component is disposed
+    private CancellationTokenSource cts = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Set up state changed handler
+            LaundryState.OnStateChanged += StateChangedHandler;
+
+            // Get initial filter values
+            effectiveLaundromats = LaundryState.GetEffectiveSelectedLaundromatsIds();
+            startDate = LaundryState.GetStartDate();
+            endDate = LaundryState.GetEndDate();
+
+            // Load data
+            await LoadDashboardData(cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            // Operation was canceled, do nothing
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading dashboard: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void StateChangedHandler()
+    {
+        // Use InvokeAsync to safely handle the event
+        InvokeAsync(async () =>
+        {
+            try
+            {
+                // Prevent multiple simultaneous data refreshes
+                if (!isDataLoading)
+                {
+                    await HandleStateChanged();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error handling state change: {ex.Message}");
+            }
+        });
+    }
+
+    private async Task LoadDashboardData(CancellationToken token)
+    {
+        if (isDataLoading) return;
+        
+        try
+        {
+            isDataLoading = true;
+            
+            // Create tasks for parallel execution
+            var keyValuesTask = AnalysisService.GetKeyValuesFromStats(
+                effectiveLaundromats,
+                startDate,
+                endDate);
+
+            var revenueSumTask = AnalysisService.GetRevenueForLaundromatsFromStats(
+                effectiveLaundromats,
+                startDate ?? DateTime.MinValue,
+                endDate ?? DateTime.MaxValue);
+
+            var revenueTimeTask = AnalysisService.GetRevenueForLaundromatsOverTime(
+                effectiveLaundromats,
+                startDate ?? DateTime.MinValue,
+                endDate ?? DateTime.MaxValue);
+
+            // Wait for all tasks to complete
+            await Task.WhenAll(keyValuesTask, revenueSumTask, revenueTimeTask);
+
+            // Process results (only if not canceled)
+            token.ThrowIfCancellationRequested();
+
+            keyValuePairs = await keyValuesTask;
+            Console.WriteLine($"Loaded key values: {keyValuePairs.Count}");
+
+            var resultSum = await revenueSumTask;
+            chartLabelsSum = resultSum.Select(r => r.Label).ToArray();
+            chartValuesSum = resultSum.Select(r => r.Value).ToArray();
+            Console.WriteLine($"Loaded sum chart data: {chartLabelsSum.Length} items");
+
+            var resultTime = await revenueTimeTask;
+            chartLabelsTime = resultTime.Select(r => r.Label).ToArray();
+            chartValuesTime = resultTime.Select(r => r.Value).ToArray();
+            Console.WriteLine($"Loaded time chart data: {chartLabelsTime.Length} items");
+        }
+        finally
+        {
+            isDataLoading = false;
+        }
+    }
+
+    private async Task HandleStateChanged()
+    {
+        try
+        {
+            isLoading = true;
+            StateHasChanged();
+
+            // Cancel any previous operations
+            cts.Cancel();
+            cts.Dispose();
+            cts = new CancellationTokenSource();
+
+            // Get updated filter values
+            var newLaundromats = LaundryState.GetEffectiveSelectedLaundromatsIds();
+            var newStartDate = LaundryState.GetStartDate();
+            var newEndDate = LaundryState.GetEndDate();
+            
+            // Check if anything actually changed to avoid unnecessary reloads
+            if (!HasSelectionChanged(newLaundromats, newStartDate, newEndDate))
+            {
+                isLoading = false;
+                StateHasChanged();
+                return;
+            }
+            
+            // Update field values
+            effectiveLaundromats = newLaundromats;
+            startDate = newStartDate;
+            endDate = newEndDate;
+
+            // Reload all data
+            await LoadDashboardData(cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            // Operation was canceled, do nothing
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error refreshing dashboard: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+    
+    // Helper to determine if selection actually changed
+    private bool HasSelectionChanged(List<string> newLaundromats, DateTime? newStartDate, DateTime? newEndDate)
+    {
+        if (newLaundromats.Count != effectiveLaundromats.Count) return true;
+        if (newStartDate != startDate || newEndDate != endDate) return true;
+        
+        // Check if any laundromat IDs changed
+        for (int i = 0; i < newLaundromats.Count; i++)
+        {
+            if (!effectiveLaundromats.Contains(newLaundromats[i])) return true;
+        }
+        
+        return false;
+    }
 
     private void ChangeSelectedContent(string content)
     {
         selectedSpecialContent = content;
     }
-    private string[] chartLabelsSum = [];
-    private decimal[] chartValuesSum = [];
-    
-    private string[] chartLabelsTime = [];
-    private decimal[] chartValuesTime = [];
 
-    protected override async Task OnInitializedAsync()
+    public void Dispose()
     {
-        LaundryState.OnStateChanged += async () => await HandleStateChanged();
-
-    
-        effectiveLaundromats = LaundryState.GetEffectiveSelectedLaundromatsIds();
-        startDate = LaundryState.GetStartDate();
-        endDate = LaundryState.GetEndDate();
-        var resultSum = await AnalysisService.GetRevenueForLaundromats(LaundryState.GetEffectiveSelectedLaundromatsIds(), startDate ?? DateTime.MinValue,
-            endDate ?? DateTime.MaxValue);
-        chartLabelsSum = resultSum.Select(r => r.Label).ToArray();
-        chartValuesSum = resultSum.Select(r => r.Value).ToArray();
-        
-        
-        var resultTime = await AnalysisService.GetRevenueForLaundromatsOverTime(LaundryState.GetEffectiveSelectedLaundromatsIds(), startDate ?? DateTime.MinValue,
-            endDate ?? DateTime.MaxValue);
-        chartLabelsTime = resultTime.Select(r => r.Label).ToArray();
-        chartValuesTime = resultTime.Select(r => r.Value).ToArray();
-
-        StateHasChanged();
+        // Clean up event handlers and cancel any pending operations
+        LaundryState.OnStateChanged -= StateChangedHandler;
+        cts.Cancel();
+        cts.Dispose();
     }
-
-    private List<string> effectiveLaundromats = new List<string>();
-    private List<KeyValuePair<string, decimal>> keyValuePairs = new List<KeyValuePair<string, decimal>>();
-
-    private DateTime? startDate;
-    private DateTime? endDate;
-
-    private async Task HandleStateChanged()
-    {
-        effectiveLaundromats = LaundryState.GetEffectiveSelectedLaundromatsIds();
-        startDate = LaundryState.GetStartDate();
-        endDate = LaundryState.GetEndDate();
-        var resultSum = await AnalysisService.GetRevenueForLaundromats(LaundryState.GetEffectiveSelectedLaundromatsIds(), startDate ?? DateTime.MinValue,
-        endDate ?? DateTime.MaxValue);
-        chartLabelsSum = resultSum.Select(r => r.Label).ToArray();
-        chartValuesSum = resultSum.Select(r => r.Value).ToArray();
-        
-        var resultTime = await AnalysisService.GetRevenueForLaundromatsOverTime(LaundryState.GetEffectiveSelectedLaundromatsIds(), startDate ?? DateTime.MinValue,
-            endDate ?? DateTime.MaxValue);
-        chartLabelsTime = resultTime.Select(r => r.Label).ToArray();
-        chartValuesTime = resultTime.Select(r => r.Value).ToArray();
-
-
-        keyValuePairs = await AnalysisService.GetKeyValues(effectiveLaundromats, startDate ?? DateTime.MinValue, endDate ??
-        DateTime.MaxValue);
-        Console.WriteLine("Key Values: " + string.Join(", ", keyValuePairs));
-
-        StateHasChanged();
-    }
-
 }

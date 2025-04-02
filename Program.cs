@@ -4,6 +4,7 @@ using MySql.EntityFrameworkCore.Extensions;
 using DotNetEnv;
 using System.Net.Http;
 using BlazorTest.Services;
+using BlazorTest.Database.Controllers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,9 +36,12 @@ builder.Services.AddHttpClient("API", client =>
 builder.Services.AddControllers();
 
 builder.Services.AddScoped<LaundryStateService>();
+builder.Services.AddScoped<LaundromatStatsController>();
 
 // Add antiforgery services
 builder.Services.AddAntiforgery();
+
+builder.Services.AddMemoryCache();
 
 var app = builder.Build();
 
