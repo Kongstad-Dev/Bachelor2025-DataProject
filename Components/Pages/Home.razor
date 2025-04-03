@@ -62,22 +62,24 @@
     <div class="main-special-content">
         @if (!string.IsNullOrEmpty(selectedSpecialContent))
         {
-            <div class="main-special-content-header">
+            
                 <h2>@selectedSpecialContent</h2>
-
+                <div class="main-special-content-header">
                 @if (selectedSpecialContent == "Soap Statistics")
-                {
-                    <p>Soap usage data would appear here.</p>
-                    <div style="height: max(300px);">
-                        <ChartComponent CanvasId="soapUsage" Labels="@chartLabelsSumSoap" Values="@chartValuesSumSoap"
-                                        Title="Soap Usage" Type="bar" />
-                        <ChartComponent CanvasId="soapUsage2" Labels="@chartLabelsSumSoap" Values="@chartValuesSumSoap"
-                                        Title="Soap Usage" Type="bar" />
-                        <ChartComponent CanvasId="soapUsage3" Labels="@chartLabelsSumSoap" Values="@chartValuesSumSoap"
-                                        Title="Soap Usage" Type="bar" />
-                        <ChartComponent CanvasId="soapUsage4" Labels="@chartLabelsSumSoap" Values="@chartValuesSumSoap"
-                                        Title="Soap Usage" Type="bar" />
-                    </div>
+                    {   //TODO fix this so that the elementn is not constrained here
+                       
+                            <p>Soap usage data would appear here.</p>
+                        <div class="main-graph-container">
+                            <ChartComponent CanvasId="soapUsage" Labels="@chartLabelsSumSoap" Values="@chartValuesSumSoap"
+                                            Title="Soap Usage" Type="bar" />
+                        </div>
+                        <div class="main-graph-container">
+                            <ChartComponent CanvasId="soapDataProcentage" Labels="@chartLabelsProcentageSoap" Values="@chartValuesProcentageSoap"
+                                            Title="Soap Usage Procent" Type="pie" />
+                        </div>
+                       
+                   
+               
                 }
                 else if (selectedSpecialContent == "Temperature Statistics")
                 {
@@ -111,6 +113,8 @@
     private decimal[] chartValuesTime = Array.Empty<decimal>();
     private string[] chartLabelsSumSoap = Array.Empty<string>();
     private decimal[] chartValuesSumSoap = Array.Empty<decimal>();
+    private string[] chartLabelsProcentageSoap = Array.Empty<string>();
+    private decimal[] chartValuesProcentageSoap = Array.Empty<decimal>();
     private bool isLoading = true;
 
     private List<string> effectiveLaundromats = new();
@@ -305,21 +309,12 @@
                     endDate ?? DateTime.MaxValue);
                 chartLabelsSumSoap = soapData.Select(d => d.Label).ToArray();
                 chartValuesSumSoap = soapData.Select(d => d.Value).ToArray();
-                var soapData2 = await AnalysisService.CalculateTotalSoapProgramFromTransactions( effectiveLaundromats,
+                var soapDataProcentage = await AnalysisService.CalculateTotalSoapProgramProcentageFromTransactions( effectiveLaundromats,
                     startDate ?? DateTime.MinValue,
                     endDate ?? DateTime.MaxValue);
-                chartLabelsSumSoap = soapData2.Select(d => d.Label).ToArray();
-                chartValuesSumSoap = soapData2.Select(d => d.Value).ToArray();
-                var soapData3 = await AnalysisService.CalculateTotalSoapProgramFromTransactions( effectiveLaundromats,
-                    startDate ?? DateTime.MinValue,
-                    endDate ?? DateTime.MaxValue);
-                chartLabelsSumSoap = soapData3.Select(d => d.Label).ToArray();
-                chartValuesSumSoap = soapData3.Select(d => d.Value).ToArray();
-                var soapData4 = await AnalysisService.CalculateTotalSoapProgramFromTransactions( effectiveLaundromats,
-                    startDate ?? DateTime.MinValue,
-                    endDate ?? DateTime.MaxValue);
-                chartLabelsSumSoap = soapData4.Select(d => d.Label).ToArray();
-                chartValuesSumSoap = soapData4.Select(d => d.Value).ToArray();
+                chartLabelsProcentageSoap = soapDataProcentage.Select(d => d.Label).ToArray();
+                chartValuesProcentageSoap = soapDataProcentage.Select(d => d.Value).ToArray();
+                
                 break;
             case "Temperature Statistics":
                 // Call the appropriate method from AnalysisService and update chart data

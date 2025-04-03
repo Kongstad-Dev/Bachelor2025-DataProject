@@ -163,7 +163,7 @@ namespace BlazorTest.Services
                 if (missingLaundromatIds.Any())
                 {
                     // Log detail about which laundromats are missing stats
-                    System.Console.WriteLine($"Missing stats for {missingLaundromatIds.Count} laundromats for period {periodType}: {string.Join(", ", missingLaundromatIds)}");
+                    //System.Console.WriteLine($"Missing stats for {missingLaundromatIds.Count} laundromats for period {periodType}: {string.Join(", ", missingLaundromatIds)}");
 
                     // Fall back to on-demand calculation for all laundromats to ensure consistent results
                     var calculatedStats = await GetKeyValues(laundromatIds, startDate, endDate);
@@ -409,7 +409,7 @@ namespace BlazorTest.Services
                 if (missingLaundromatIds.Any())
                 {
                     // Log detail about which laundromats are missing stats
-                    System.Console.WriteLine($"Missing stats for {missingLaundromatIds.Count} laundromats for period {periodType}: {string.Join(", ", missingLaundromatIds)}");
+                    //System.Console.WriteLine($"Missing stats for {missingLaundromatIds.Count} laundromats for period {periodType}: {string.Join(", ", missingLaundromatIds)}");
 
                     // Fall back to direct transaction calculation
                     var transactions = await dbContext.Transactions
@@ -705,40 +705,58 @@ namespace BlazorTest.Services
         public async Task<List<ChartDataPoint>> CalculateTotalSoapProgramFromTransactions(List<string> laundromatIds, DateTime? startDate, DateTime? endDate)
         {
             using var dbContext = _dbContextFactory.CreateDbContext();
-            
-            var laundromats = await dbContext.Laundromat
-                .AsNoTracking()
-                .Where(l => laundromatIds.Contains(l.kId))
-                .Select(l => new { l.kId, l.name })
-                .ToListAsync();
-
-            var laundromatIdsList = laundromats.Select(l => l.kId).ToList();
 
             var transactions = await dbContext.Transactions
-                .Where(t => laundromatIdsList.Contains(t.LaundromatId) &&
-                               t.date >= startDate &&
-                               t.date <= endDate )
+                .AsNoTracking()
+                .Where(t => laundromatIds.Contains(t.LaundromatId) &&
+                            t.date >= startDate &&
+                            t.date <= endDate)
                 .ToListAsync();
 
-            List<ChartDataPoint> results = new List<ChartDataPoint>();
-                var grouped = transactions
-                .SelectMany(l =>
-                {
-                    var ts = transactions.Where(t => t.LaundromatId == l.kId).ToList();
-                    var soaps = SoapCount(ts);
+            int soap1Count = transactions.Count(t => t.soap == 1);
+            int soap2Count = transactions.Count(t => t.soap == 2);
+            int soap3Count = transactions.Count(t => t.soap == 3);
 
-                    return new List<ChartDataPoint>
-                    {
-                        //new ChartDataPoint { Label = /*$"{l.name}*/ "- Soap 1", Value = ts.Sum(t => Convert.ToDecimal(soaps.soap1))},
-                        new ChartDataPoint { Label = /*$"{l.name} -*/ "Soap 2", Value = soaps.soap2 },
-                        //new ChartDataPoint { Label = $"{l.name} - Soap 3", Value = soaps.soap3 },
-                    };
-                })
-                .ToList();
-            Console.WriteLine("AAAAAAAAAAA: " + results);
-
-            return results;
+            return new List<ChartDataPoint>
+            {
+                new ChartDataPoint { Label = "Soap 1", Value = soap1Count },
+                new ChartDataPoint { Label = "Soap 2", Value = soap2Count },
+                new ChartDataPoint { Label = "Soap 3", Value = soap3Count }
+            };
         }
+
+        public async Task<List<ChartDataPoint>> CalculateTotalSoapProgramProcentageFromTransactions(
+            List<string> laundromatIds,
+            DateTime? startDate,
+            DateTime? endDate)
+        {
+            using var dbContext = _dbContextFactory.CreateDbContext();
+
+            var transactions = await dbContext.Transactions
+                .Where(t => laundromatIds.Contains(t.LaundromatId) &&
+                            t.date >= startDate &&
+                            t.date <= endDate &&
+                            t.soap > 0) // only valid soap usages
+                .ToListAsync();
+
+            int total = transactions.Count;
+
+            int soap1Count = transactions.Count(t => t.soap == 1);
+            int soap2Count = transactions.Count(t => t.soap == 2);
+            int soap3Count = transactions.Count(t => t.soap == 3);
+
+            decimal soap1Percent = total == 0 ? 0 : Math.Round((decimal)soap1Count / total * 100, 2);
+            decimal soap2Percent = total == 0 ? 0 : Math.Round((decimal)soap2Count / total * 100, 2);
+            decimal soap3Percent = total == 0 ? 0 : Math.Round(100 - soap1Percent - soap2Percent, 2); // adjust last one
+
+            return new List<ChartDataPoint>
+            {
+                new ChartDataPoint { Label = "Soap 1", Value = soap1Percent },
+                new ChartDataPoint { Label = "Soap 2", Value = soap2Percent },
+                new ChartDataPoint { Label = "Soap 3", Value = soap3Percent }
+            };
+        }
+
 
 
         public async Task<List<ChartDataPoint>> CalculateAvgSecoundsFromTransactions(int bankId)
