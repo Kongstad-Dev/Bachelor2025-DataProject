@@ -29,10 +29,8 @@ namespace BlazorTest.Services
         {
             var result = new SoapResults();
 
-            foreach (var t in transactions)
+            foreach (var soap in transactions.Select(t => Convert.ToInt32(t.soap)))
             {
-                var soap = Convert.ToInt32(t.soap); // safer cast
-
                 switch (soap)
                 {
                     case 1: result.soap1++; break;
@@ -704,32 +702,26 @@ namespace BlazorTest.Services
             return result; 
         }
 
-
-
-
-
-
-
-
-
-        public async Task<List<ChartDataPoint>> CalculateTotalSoapProgramFromTransactions(int bankId)
+        public async Task<List<ChartDataPoint>> CalculateTotalSoapProgramFromTransactions(List<string> laundromatIds, DateTime? startDate, DateTime? endDate)
         {
             using var dbContext = _dbContextFactory.CreateDbContext();
-
-
+            
             var laundromats = await dbContext.Laundromat
                 .AsNoTracking()
-                .Where(l => l.bId == bankId)
+                .Where(l => laundromatIds.Contains(l.kId))
                 .Select(l => new { l.kId, l.name })
                 .ToListAsync();
 
-            var laundromatIds = laundromats.Select(l => l.kId).ToList();
+            var laundromatIdsList = laundromats.Select(l => l.kId).ToList();
 
             var transactions = await dbContext.Transactions
-                .Where(t => laundromatIds.Contains(t.LaundromatId))
+                .Where(t => laundromatIdsList.Contains(t.LaundromatId) &&
+                               t.date >= startDate &&
+                               t.date <= endDate )
                 .ToListAsync();
 
-            var result = laundromats
+            List<ChartDataPoint> results = new List<ChartDataPoint>();
+                var grouped = transactions
                 .SelectMany(l =>
                 {
                     var ts = transactions.Where(t => t.LaundromatId == l.kId).ToList();
@@ -737,14 +729,15 @@ namespace BlazorTest.Services
 
                     return new List<ChartDataPoint>
                     {
-                        new ChartDataPoint { Label = $"{l.name} - Soap 1", Value = soaps.soap1 },
-                        new ChartDataPoint { Label = $"{l.name} - Soap 2", Value = soaps.soap2 },
-                        new ChartDataPoint { Label = $"{l.name} - Soap 3", Value = soaps.soap3 },
+                        //new ChartDataPoint { Label = /*$"{l.name}*/ "- Soap 1", Value = ts.Sum(t => Convert.ToDecimal(soaps.soap1))},
+                        new ChartDataPoint { Label = /*$"{l.name} -*/ "Soap 2", Value = soaps.soap2 },
+                        //new ChartDataPoint { Label = $"{l.name} - Soap 3", Value = soaps.soap3 },
                     };
                 })
                 .ToList();
+            Console.WriteLine("AAAAAAAAAAA: " + results);
 
-            return result;
+            return results;
         }
 
 

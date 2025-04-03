@@ -68,6 +68,16 @@
                 @if (selectedSpecialContent == "Soap Statistics")
                 {
                     <p>Soap usage data would appear here.</p>
+                    <div style="height: max(300px);">
+                        <ChartComponent CanvasId="soapUsage" Labels="@chartLabelsSumSoap" Values="@chartValuesSumSoap"
+                                        Title="Soap Usage" Type="bar" />
+                        <ChartComponent CanvasId="soapUsage2" Labels="@chartLabelsSumSoap" Values="@chartValuesSumSoap"
+                                        Title="Soap Usage" Type="bar" />
+                        <ChartComponent CanvasId="soapUsage3" Labels="@chartLabelsSumSoap" Values="@chartValuesSumSoap"
+                                        Title="Soap Usage" Type="bar" />
+                        <ChartComponent CanvasId="soapUsage4" Labels="@chartLabelsSumSoap" Values="@chartValuesSumSoap"
+                                        Title="Soap Usage" Type="bar" />
+                    </div>
                 }
                 else if (selectedSpecialContent == "Temperature Statistics")
                 {
@@ -99,6 +109,8 @@
     private decimal[] chartValuesSum = Array.Empty<decimal>();
     private string[] chartLabelsTime = Array.Empty<string>();
     private decimal[] chartValuesTime = Array.Empty<decimal>();
+    private string[] chartLabelsSumSoap = Array.Empty<string>();
+    private decimal[] chartValuesSumSoap = Array.Empty<decimal>();
     private bool isLoading = true;
 
     private List<string> effectiveLaundromats = new();
@@ -161,6 +173,7 @@
             }
         });
     }
+    
 
     private async Task LoadDashboardData(CancellationToken token)
     {
@@ -273,10 +286,52 @@
         
         return false;
     }
+    
 
-    private void ChangeSelectedContent(string content)
+
+    private async void ChangeSelectedContent(string content)
     {
         selectedSpecialContent = content;
+        await UpdateChartData(content);
+    }
+    
+    private async Task UpdateChartData(string content)
+    {
+        switch (content)
+        {
+            case "Soap Statistics":
+                var soapData = await AnalysisService.CalculateTotalSoapProgramFromTransactions( effectiveLaundromats,
+                    startDate ?? DateTime.MinValue,
+                    endDate ?? DateTime.MaxValue);
+                chartLabelsSumSoap = soapData.Select(d => d.Label).ToArray();
+                chartValuesSumSoap = soapData.Select(d => d.Value).ToArray();
+                var soapData2 = await AnalysisService.CalculateTotalSoapProgramFromTransactions( effectiveLaundromats,
+                    startDate ?? DateTime.MinValue,
+                    endDate ?? DateTime.MaxValue);
+                chartLabelsSumSoap = soapData2.Select(d => d.Label).ToArray();
+                chartValuesSumSoap = soapData2.Select(d => d.Value).ToArray();
+                var soapData3 = await AnalysisService.CalculateTotalSoapProgramFromTransactions( effectiveLaundromats,
+                    startDate ?? DateTime.MinValue,
+                    endDate ?? DateTime.MaxValue);
+                chartLabelsSumSoap = soapData3.Select(d => d.Label).ToArray();
+                chartValuesSumSoap = soapData3.Select(d => d.Value).ToArray();
+                var soapData4 = await AnalysisService.CalculateTotalSoapProgramFromTransactions( effectiveLaundromats,
+                    startDate ?? DateTime.MinValue,
+                    endDate ?? DateTime.MaxValue);
+                chartLabelsSumSoap = soapData4.Select(d => d.Label).ToArray();
+                chartValuesSumSoap = soapData4.Select(d => d.Value).ToArray();
+                break;
+            case "Temperature Statistics":
+                // Call the appropriate method from AnalysisService and update chart data
+                break;
+            case "Program Type Statistics":
+                // Call the appropriate method from AnalysisService and update chart data
+                break;
+            case "Rinse Statistics":
+                // Call the appropriate method from AnalysisService and update chart data
+                break;
+        }
+        StateHasChanged();
     }
 
     public void Dispose()
