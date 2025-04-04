@@ -15,6 +15,8 @@
         <div class="nav-home-icon" @onclick='() => NavigationManager.NavigateTo("/")'></div>
         <SearchBar Placeholder="Search Banks..." Items="@bankItems" OnSelectionChanged="@HandleBankSelection"
             SelectedItemsFromParent="@GetSelectedBankItems()" />
+        <SearchBar Placeholder="Search Bank ID..." Items="@bankIdItems" OnSelectionChanged="@HandleBankSelection"
+            SelectedItemsFromParent="@GetSelectedBankIdItems()" Size="small" />
         <SearchBar Placeholder="Search laundromats..." Items="@laundromatItems"
             OnSelectionChanged="@HandleLaundromatSelection" SelectedItemsFromParent="@GetSelectedLaundromatItems()" />
         <SearchBar Placeholder="Search ERP ID..." Items="@erpIdItems" OnSelectionChanged="@HandleLaundromatSelection"
@@ -42,6 +44,7 @@
     private List<SearchItem> laundromatItems = new();
     private List<Laundromat> selectedLaundromats = new();
     private List<SearchItem> laundromatItemsOriginal = new();
+    private List<SearchItem> bankIdItems = new();
 
     private List<SearchItem> erpIdItems = new();
 
@@ -91,7 +94,10 @@
     erpIdItems.Where(item => selectedLaundromats.Any(l => l.kId == item.Id)).ToList();
 
     private List<SearchItem> GetSelectedBankItems() =>
-    bankItems.Where(item => selectedBanks.Any(b => b.bId.ToString() == item.Id)).ToList();
+    bankItems.Where(item => selectedBanks.Any(b => b.bankId.ToString() == item.Id)).ToList();
+
+    private List<SearchItem> GetSelectedBankIdItems() =>
+    bankIdItems.Where(item => selectedBanks.Any(b => b.bankId.ToString() == item.Id)).ToList();
 
     private void HandleStateChanged()
     {
@@ -125,12 +131,20 @@
             {
                 bankItems = response.Banks.Select(b => new SearchItem
                 {
-                    Id = b.bId.ToString(),
+                    Id = b.bankId.ToString(),
                     DisplayText = b.name ?? "Unnamed Bank",
                     Data = b
                 }).OrderBy(b => b.DisplayText).ToList();
 
+                bankIdItems = response.Banks.Select(b => new SearchItem
+                {
+                    Id = b.bankId.ToString(),
+                    DisplayText = b.bankId.ToString(),
+                    Data = b
+                }).OrderBy(b => b.DisplayText).ToList();
+
                 LaundryState.UpdateBankItems(bankItems);
+                LaundryState.UpdateBankIdItems(bankIdItems);
                 LaundryState.UpdateSelectedBanks(selectedBanks);
             }
         }
@@ -186,7 +200,7 @@
 
     private void HandleBankSelection(List<SearchItem> items)
     {
-        var previouslySelectedBankIds = selectedBanks.Select(b => b.bId).ToHashSet();
+        var previouslySelectedBankIds = selectedBanks.Select(b => b.bankId).ToHashSet();
         var previousSelectedLaundromats = selectedLaundromats.ToList();
 
         selectedBanks.Clear();
@@ -198,7 +212,7 @@
             }
         }
 
-        var selectedBankIds = selectedBanks.Select(b => b.bId).ToHashSet();
+        var selectedBankIds = selectedBanks.Select(b => b.bankId).ToHashSet();
         bool bankSelectionChanged = !previouslySelectedBankIds.SetEquals(selectedBankIds);
 
         if (!laundromatItemsOriginal.Any())
@@ -213,32 +227,38 @@
             .ThenBy(item => item.DisplayText)
             .ToList();
 
+            bankIdItems = bankIdItems.OrderByDescending(item =>
+            !string.IsNullOrEmpty(item.Id) && selectedBankIds.Contains(int.Parse(item.Id)))
+            .ThenBy(item => item.DisplayText)
+            .ToList();
+
             if (bankSelectionChanged)
             {
-                selectedLaundromats = previousSelectedLaundromats.Where(l => selectedBankIds.Contains(l.bId)).ToList();
+                selectedLaundromats = previousSelectedLaundromats.Where(l => selectedBankIds.Contains(l.bankId)).ToList();
                 Console.WriteLine($"Bank selection changed - kept {selectedLaundromats.Count} valid laundromat selections");
             }
 
             var selectedLaundromatIds = selectedLaundromats.Select(l => l.kId).ToHashSet();
             laundromatItems = laundromatItemsOriginal.Where(item => item.Data is Laundromat laundromat &&
-            selectedBankIds.Contains(laundromat.bId))
+            selectedBankIds.Contains(laundromat.bankId))
             .OrderByDescending(item => selectedLaundromatIds.Contains(item.Id)).ThenBy(item => item.DisplayText).ToList();
 
             var visibleLaundromatIds = laundromatItems.Select(item => item.Id).ToHashSet();
             erpIdItems = erpIdItems.Where(item => visibleLaundromatIds.Contains(item.Id))
             .OrderByDescending(item => selectedLaundromatIds.Contains(item.Id)).ThenBy(item => item.DisplayText).ToList();
 
-            selectedLaundromats = selectedLaundromats.Where(l => selectedBankIds.Contains(l.bId)).ToList();
+            selectedLaundromats = selectedLaundromats.Where(l => selectedBankIds.Contains(l.bankId)).ToList();
         }
         else
         {
             bankItems = bankItems.OrderBy(item => item.DisplayText).ToList();
+            bankIdItems = bankIdItems.OrderBy(item => item.DisplayText).ToList();
 
             if (laundromatItemsOriginal.Any())
             {
                 var selectedLaundromatIds = selectedLaundromats.Select(l => l.kId).ToHashSet();
-                laundromatItems = laundromatItemsOriginal.OrderByDescending(item => selectedLaundromatIds.Contains(item.Id)).ThenBy(item
-                => item.DisplayText).ToList();
+                laundromatItems = laundromatItemsOriginal.OrderByDescending(item => selectedLaundromatIds.Contains(item.Id))
+                .ThenBy(item => item.DisplayText).ToList();
 
                 erpIdItems = laundromatItemsOriginal.Select(item =>
                 {
@@ -255,6 +275,7 @@
 
         LaundryState.UpdateSelectedLaundromats(selectedLaundromats);
         LaundryState.UpdateBankItems(bankItems);
+        LaundryState.UpdateBankIdItems(bankIdItems);
         LaundryState.UpdateSelectedBanks(selectedBanks);
         LaundryState.UpdateLaundromatItems(laundromatItems);
         LaundryState.UpdateErpIdItems(erpIdItems);
@@ -266,11 +287,11 @@
     private void HandleLaundromatSelection(List<SearchItem> items)
     {
         selectedLaundromats.Clear();
-        var selectedBankIds = selectedBanks.Select(b => b.bId).ToHashSet();
+        var selectedBankIds = selectedBanks.Select(b => b.bankId).ToHashSet();
 
         foreach (var item in items)
         {
-            if (item.Data is Laundromat laundromat && (!selectedBankIds.Any() || selectedBankIds.Contains(laundromat.bId)))
+            if (item.Data is Laundromat laundromat && (!selectedBankIds.Any() || selectedBankIds.Contains(laundromat.bankId)))
             {
                 selectedLaundromats.Add(laundromat);
             }

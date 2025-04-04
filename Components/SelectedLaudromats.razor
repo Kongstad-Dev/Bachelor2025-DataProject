@@ -21,8 +21,8 @@
                     <div class="laundromat-card">
                         <div class="info">
                             <h3>@(string.IsNullOrWhiteSpace(laundromat.name) ? "Unnamed Laundromat" : laundromat.name)</h3>
-                            <p><strong>Bank:</strong> @(string.IsNullOrWhiteSpace(GetBankName(laundromat.bId)) ? "None" :
-                                                        @GetBankName(laundromat.bId))</p>
+                            <p><strong>Bank:</strong> @(string.IsNullOrWhiteSpace(GetBankName(laundromat.bankId)) ? "None" :
+                                                        @GetBankName(laundromat.bankId))</p>
                     <p><strong>ERP ID:</strong> @(string.IsNullOrWhiteSpace(laundromat.externalId) ? "None" :
                                                 laundromat.externalId)</p>
                 </div>
@@ -78,7 +78,7 @@
     private async Task LoadBankNames()
     {
         var banks = await DbContext.Bank.ToListAsync();
-        bankNames = banks.ToDictionary(b => b.bId, b => b.name ?? "Unnamed Bank");
+        bankNames = banks.ToDictionary(b => b.bankId, b => b.name ?? "Unnamed Bank");
     }
 
     private string GetBankName(int bankId)
@@ -89,6 +89,7 @@
     private async Task ClearSelectedLaundromatsAndBanks()
     {
         LaundryState.ClearSelectedLaundromatsAndBanks();
+        await LaundryState.ResetLaundromatFilters();
         StateHasChanged();
     }
 

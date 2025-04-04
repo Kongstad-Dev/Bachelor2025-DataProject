@@ -527,26 +527,26 @@ namespace BlazorTest.Database.Controllers
         }
 
 
-        [HttpGet("bank/{bId}/revenue")]
-        public async Task<IActionResult> GetBankRevenue(int bId)
+        [HttpGet("bank/{bankId}/revenue")]
+        public async Task<IActionResult> GetBankRevenue(int bankId)
         {
             // Ensure the bank exists
-            var bankExists = await _dbContext.Bank.AnyAsync(b => b.bId == bId);
+            var bankExists = await _dbContext.Bank.AnyAsync(b => b.bankId == bankId);
             if (!bankExists)
             {
-                return NotFound($"Bank with ID {bId} not found");
+                return NotFound($"Bank with ID {bankId} not found");
             }
 
             // Get laundromat IDs for this bank
             var laundromatIds = await _dbContext.Laundromat
-                .Where(l => l.bId == bId)
+                .Where(l => l.bankId == bankId)
                 .Select(l => l.kId)
                 .ToListAsync();
 
             if (laundromatIds.Count == 0)
             {
-                Console.WriteLine($"[API] No laundromats found for bank {bId}");
-                return Ok(new { BankId = bId, Revenue = 0 });
+                Console.WriteLine($"[API] No laundromats found for bank {bankId}");
+                return Ok(new { BankId = bankId, Revenue = 0 });
             }
 
             // Find transactions linked to these laundromats
@@ -556,14 +556,14 @@ namespace BlazorTest.Database.Controllers
 
             if (transactions.Count == 0)
             {
-                Console.WriteLine($"[API] No transactions found for bank {bId}");
-                return Ok(new { BankId = bId, Revenue = 0 });
+                Console.WriteLine($"[API] No transactions found for bank {bankId}");
+                return Ok(new { BankId = bankId, Revenue = 0 });
             }
 
             // Calculate total revenue
             var totalRevenue = _dataAnalysisService.CalculateRevenueFromTransactions(transactions);
 
-            return Ok(new { BankId = bId, Revenue = totalRevenue });
+            return Ok(new { BankId = bankId, Revenue = totalRevenue });
         }
 
 
@@ -577,26 +577,26 @@ namespace BlazorTest.Database.Controllers
 
 
 
-        [HttpGet("bank/{bId}/soap")]
+        [HttpGet("bank/{bankId}/soap")]
 
-        public async Task<IActionResult> GetBankSoap(int bId)
+        public async Task<IActionResult> GetBankSoap(int bankId)
         {
-            var bankExists = await _dbContext.Bank.AnyAsync(b => b.bId == bId);
+            var bankExists = await _dbContext.Bank.AnyAsync(b => b.bankId == bankId);
             if (!bankExists)
             {
-                return NotFound($"Bank with ID {bId} not found");
+                return NotFound($"Bank with ID {bankId} not found");
             }
 
             // Get laundromat IDs for this bank
             var laundromatIds = await _dbContext.Laundromat
-                .Where(l => l.bId == bId)
+                .Where(l => l.bankId == bankId)
                 .Select(l => l.kId)
                 .ToListAsync();
 
             if (laundromatIds.Count == 0)
             {
-                Console.WriteLine($"[API] No laundromats found for bank {bId}");
-                return Ok(new { BankId = bId, soap = 0 });
+                Console.WriteLine($"[API] No laundromats found for bank {bankId}");
+                return Ok(new { BankId = bankId, soap = 0 });
             }
 
             // Find transactions linked to these laundromats
@@ -606,14 +606,14 @@ namespace BlazorTest.Database.Controllers
 
             if (transactions.Count == 0)
             {
-                Console.WriteLine($"[API] No transactions found for bank {bId}");
-                return Ok(new { BankId = bId, soap = 0 });
+                Console.WriteLine($"[API] No transactions found for bank {bankId}");
+                return Ok(new { BankId = bankId, soap = 0 });
             }
 
             // Calculate total revenue
             var totalAmountSoap = _dataAnalysisService.CalculateTotalSoapProgramFromTransactions(transactions);
 
-            return Ok(new { BankId = bId, soap = totalAmountSoap });
+            return Ok(new { BankId = bankId, soap = totalAmountSoap });
         }
 
 
@@ -621,26 +621,26 @@ namespace BlazorTest.Database.Controllers
 
 
 
-        [HttpGet("bank/{bId}/seconds")]
+        [HttpGet("bank/{bankId}/seconds")]
 
-        public async Task<IActionResult> GetBank_seconds(int bId)
+        public async Task<IActionResult> GetBank_seconds(int bankId)
         {
-            var bankExists = await _dbContext.Bank.AnyAsync(b => b.bId == bId);
+            var bankExists = await _dbContext.Bank.AnyAsync(b => b.bankId == bankId);
             if (!bankExists)
             {
-                return NotFound($"Bank with ID {bId} not found");
+                return NotFound($"Bank with ID {bankId} not found");
             }
 
             // Get laundromat IDs for this bank
             var laundromatIds = await _dbContext.Laundromat
-                .Where(l => l.bId == bId)
+                .Where(l => l.bankId == bankId)
                 .Select(l => l.kId)
                 .ToListAsync();
 
             if (laundromatIds.Count == 0)
             {
-                Console.WriteLine($"[API] No laundromats found for bank {bId}");
-                return Ok(new { BankId = bId, seconds = 0 });
+                Console.WriteLine($"[API] No laundromats found for bank {bankId}");
+                return Ok(new { BankId = bankId, seconds = 0 });
             }
 
             // Find transactions linked to these laundromats
@@ -650,14 +650,14 @@ namespace BlazorTest.Database.Controllers
 
             if (transactions.Count == 0)
             {
-                Console.WriteLine($"[API] No transactions found for bank {bId}");
-                return Ok(new { BankId = bId, seconds = 0 });
+                Console.WriteLine($"[API] No transactions found for bank {bankId}");
+                return Ok(new { BankId = bankId, seconds = 0 });
             }
 
             // Calculate total revenue
             var averageseconds = _dataAnalysisService.CalculateAvgSecoundsFromTransactions(transactions);
 
-            return Ok(new { BankId = bId, seconds = averageseconds });
+            return Ok(new { BankId = bankId, seconds = averageseconds });
         }
 
     }

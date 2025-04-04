@@ -23,14 +23,14 @@ namespace BlazorTest.Migrations
 
             modelBuilder.Entity("BlazorTest.Database.BankEntity", b =>
                 {
-                    b.Property<int>("bId")
+                    b.Property<int>("bankId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
                     b.Property<string>("name")
                         .HasColumnType("longtext");
 
-                    b.HasKey("bId");
+                    b.HasKey("bankId");
 
                     b.ToTable("bank", (string)null);
                 });
@@ -40,7 +40,7 @@ namespace BlazorTest.Migrations
                     b.Property<string>("kId")
                         .HasColumnType("varchar(255)");
 
-                    b.Property<int>("bId")
+                    b.Property<int>("bankId")
                         .HasColumnType("int");
 
                     b.Property<string>("bank")
@@ -67,7 +67,7 @@ namespace BlazorTest.Migrations
 
                     b.HasKey("kId");
 
-                    b.HasIndex("bId");
+                    b.HasIndex("bankId");
 
                     b.ToTable("laundromat", (string)null);
                 });
@@ -148,7 +148,7 @@ namespace BlazorTest.Migrations
                 {
                     b.HasOne("BlazorTest.Database.BankEntity", "Bank")
                         .WithMany("Laundromats")
-                        .HasForeignKey("bId")
+                        .HasForeignKey("bankId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

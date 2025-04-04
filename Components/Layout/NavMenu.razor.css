@@ -59,7 +59,7 @@
     flex-direction: row;
     align-items: center;
     padding: 0.5vh;
-    margin: 0.5vw;
+    margin-left: 1vw;
     border: 0.1vw solid #000;
     min-width: 8vw;
     align-items: center;
@@ -67,6 +67,10 @@
     cursor: pointer;
     border-radius: 0.5vw;
     height: 75%;
+}
+
+.nav-item:last-of-type {
+    margin-right: 1vw;
 }
 
 .nav-item p {

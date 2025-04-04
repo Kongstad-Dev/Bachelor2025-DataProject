@@ -10,8 +10,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BlazorTest.Migrations
 {
     [DbContext(typeof(YourDbContext))]
-    [Migration("20250401170528_AddedNameInLaundromatStats")]
-    partial class AddedNameInLaundromatStats
+    [Migration("20250404130259_addedBankId")]
+    partial class addedBankId
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -40,12 +40,12 @@ namespace BlazorTest.Migrations
                     b.Property<string>("kId")
                         .HasColumnType("varchar(255)");
 
-                    b.Property<int>("bankId")
-                        .HasColumnType("int");
-
                     b.Property<string>("bank")
                         .HasColumnType("longtext")
                         .HasAnnotation("Relational:JsonPropertyName", "bankName");
+
+                    b.Property<int>("bankId")
+                        .HasColumnType("int");
 
                     b.Property<string>("externalId")
                         .HasColumnType("longtext");
@@ -55,6 +55,9 @@ namespace BlazorTest.Migrations
 
                     b.Property<float>("latitude")
                         .HasColumnType("float");
+
+                    b.Property<int>("locationId")
+                        .HasColumnType("int");
 
                     b.Property<float>("longitude")
                         .HasColumnType("float");

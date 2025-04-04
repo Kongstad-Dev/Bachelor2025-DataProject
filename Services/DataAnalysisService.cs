@@ -694,7 +694,7 @@ namespace BlazorTest.Services
 
             var laundromats = await dbContext.Laundromat
                 .AsNoTracking()
-                .Where(l => l.bId == bankId)
+                .Where(l => l.bankId == bankId)
                 .Select(l => new { l.kId, l.name })
                 .ToListAsync();
 
@@ -730,7 +730,7 @@ namespace BlazorTest.Services
 
             var laundromats = await dbContext.Laundromat
                 .AsNoTracking()
-                .Where(l => l.bId == bankId)
+                .Where(l => l.bankId == bankId)
                 .Select(l => new { l.kId, l.name })
                 .ToListAsync();
 
