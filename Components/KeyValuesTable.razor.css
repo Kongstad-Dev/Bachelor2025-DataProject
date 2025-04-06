@@ -42,7 +42,7 @@
 
 .key-values-table tr {
     display: flex;
-    min-height: calc(100% / 6);
+    min-height: calc(100% / 8);
     width: 100%;
     border-bottom: 0.1vw solid #ddd;
 }

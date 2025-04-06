@@ -24,7 +24,7 @@ namespace BlazorTest.Services
             public decimal soap2 { get; set; }
             public decimal soap3 { get; set; }
         }
-        
+
 
         private bool DateEquals(DateTime date1, DateTime date2)
         {
@@ -183,10 +183,37 @@ namespace BlazorTest.Services
 
                     var avgRevenue = laundromatIds.Count > 0 ? totalRevenue / laundromatIds.Count : 0;
                     var avgTransactions = laundromatIds.Count > 0 ? totalTransactions / (decimal)laundromatIds.Count : 0;
-                    var washingPercentage = totalTransactions > 0 ?
-                        (decimal)washingMachineTransactions / totalTransactions * 100 : 0;
-                    var dryerPercentage = totalTransactions > 0 ?
-                        (decimal)dryerTransactions / totalTransactions * 100 : 0;
+                    
+                    //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
+                    //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
+                    //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
+                    //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
+                    //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
+                    //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
+                    //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
+                    //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
+                    //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
+                    //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
+                    //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
+                    //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
+                    //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
+                    //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
+                    //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
+                    //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
+                    //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
+                    //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
+                    //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
+                    //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
+                    //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
+                    //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
+                    //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
+                    //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
+                    //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
+                    //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
+                    //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
+                    //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
+                    //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
+                    //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
 
                     // Format results with proper rounding
                     var result = new List<KeyValuePair<string, decimal>>
@@ -229,8 +256,9 @@ namespace BlazorTest.Services
                     TotalTransactions = g.Count(),
                     TotalRevenue = g.Sum(t => Math.Abs(t.amount)) / 100m,
                     DryerCount = g.Count(t => dryerUnitTypes.Contains(t.unitType)),
+                    DryerRevenue = g.Sum(t => dryerUnitTypes.Contains(t.unitType) ? Math.Abs(t.amount) / 100m : 0m)
                 })
-                .FirstOrDefaultAsync() ?? new { TotalTransactions = 0, TotalRevenue = 0m, DryerCount = 0 };
+                .FirstOrDefaultAsync() ?? new { TotalTransactions = 0, TotalRevenue = 0m, DryerCount = 0, DryerRevenue = 0m };
 
             var totalTransactions = transactionStats.TotalTransactions;
             var totalRevenue = transactionStats.TotalRevenue;
@@ -239,6 +267,8 @@ namespace BlazorTest.Services
             var avgRevenue = totalTransactions > 0 ? totalRevenue / laundromatIds.Count : 0;
             var avgTransactions = totalTransactions > 0 ? totalTransactions / laundromatIds.Count : 0;
             var washingMachineTransactions = totalTransactions - transactionStats.DryerCount;
+            var dryerStartPrice = transactionStats.DryerRevenue / transactionStats.DryerCount;
+            var washerStartPrice = (transactionStats.TotalRevenue - transactionStats.DryerRevenue) / washingMachineTransactions;
 
             // Return results
             return new List<KeyValuePair<string, decimal>>
@@ -248,7 +278,9 @@ namespace BlazorTest.Services
         new KeyValuePair<string, decimal>("Total Transactions", totalTransactions),
         new KeyValuePair<string, decimal>("Average Transactions", avgTransactions),
         new KeyValuePair<string, decimal>("Washer Start", washingMachineTransactions),
-        new KeyValuePair<string, decimal>("Dryer Start", transactionStats.DryerCount)
+        new KeyValuePair<string, decimal>("Washer Start Price", washerStartPrice),
+        new KeyValuePair<string, decimal>("Dryer Start", transactionStats.DryerCount),
+        new KeyValuePair<string, decimal>("Dryer Start Price", dryerStartPrice),
     };
         }
 
@@ -707,90 +739,90 @@ namespace BlazorTest.Services
             };
         }
 
-public async Task<List<ChartDataPoint>> CalculateTransactionOverTime(List<string> laundromatIds,
-    DateTime? startDate, DateTime? endDate)
-{
-    using var dbContext = _dbContextFactory.CreateDbContext();
+        public async Task<List<ChartDataPoint>> CalculateTransactionOverTime(List<string> laundromatIds,
+            DateTime? startDate, DateTime? endDate)
+        {
+            using var dbContext = _dbContextFactory.CreateDbContext();
 
-    var laundromats = await dbContext.Laundromat
-        .AsNoTracking()
-        .Where(l => laundromatIds.Contains(l.kId))
-        .Select(l => new { l.kId, l.name })
-        .ToListAsync();
+            var laundromats = await dbContext.Laundromat
+                .AsNoTracking()
+                .Where(l => laundromatIds.Contains(l.kId))
+                .Select(l => new { l.kId, l.name })
+                .ToListAsync();
 
-    var laundromatIdList = laundromats.Select(l => l.kId).ToList();
+            var laundromatIdList = laundromats.Select(l => l.kId).ToList();
 
-    var transactions = await dbContext.Transactions
-        .Where(t => laundromatIdList.Contains(t.LaundromatId) &&
-                    t.date >= startDate &&
-                    t.date <= endDate &&
-                    t.amount != 0)
-        .ToListAsync();
+            var transactions = await dbContext.Transactions
+                .Where(t => laundromatIdList.Contains(t.LaundromatId) &&
+                            t.date >= startDate &&
+                            t.date <= endDate &&
+                            t.amount != 0)
+                .ToListAsync();
 
-    var totalDays = (endDate - startDate).Value.TotalDays;
-    var interval = totalDays >= 60 ? "month" : totalDays <= 7 ? "day" : "week";
+            var totalDays = (endDate - startDate).Value.TotalDays;
+            var interval = totalDays >= 60 ? "month" : totalDays <= 7 ? "day" : "week";
 
-    List<ChartDataPoint> result = new List<ChartDataPoint>();
+            List<ChartDataPoint> result = new List<ChartDataPoint>();
 
-    if (interval == "month")
-    {
-        var grouped = transactions
-            .GroupBy(t => new { t.date.Year, t.date.Month })
-            .OrderBy(g => g.Key.Year)
-            .ThenBy(g => g.Key.Month)
-            .Select(g => new ChartDataPoint
+            if (interval == "month")
             {
-                Label = $"{g.Key.Year}-{g.Key.Month:D2}",
-                Value = g.Count()
-            })
-            .ToList();
+                var grouped = transactions
+                    .GroupBy(t => new { t.date.Year, t.date.Month })
+                    .OrderBy(g => g.Key.Year)
+                    .ThenBy(g => g.Key.Month)
+                    .Select(g => new ChartDataPoint
+                    {
+                        Label = $"{g.Key.Year}-{g.Key.Month:D2}",
+                        Value = g.Count()
+                    })
+                    .ToList();
 
-        result = grouped;
-    }
-    else if (interval == "week")
-    {
-        var calendar = System.Globalization.CultureInfo.InvariantCulture.Calendar;
-
-        var grouped = transactions
-            .GroupBy(t => new
+                result = grouped;
+            }
+            else if (interval == "week")
             {
-                t.date.Year,
-                Week = calendar.GetWeekOfYear(t.date, System.Globalization.CalendarWeekRule.FirstDay, DayOfWeek.Monday)
-            })
-            .OrderBy(g => g.Key.Year)
-            .ThenBy(g => g.Key.Week)
-            .Select(g => new ChartDataPoint
-            {
-                Label = $"{g.Key.Year}-W{g.Key.Week:D2}",
-                Value = g.Count()
-            })
-            .ToList();
+                var calendar = System.Globalization.CultureInfo.InvariantCulture.Calendar;
 
-        result = grouped;
-    }
-    else if (interval == "day")
-    {
-        var grouped = transactions
-            .GroupBy(t => new
-            {
-                t.date.Year,
-                t.date.Month,
-                t.date.Day
-            })
-            .OrderBy(g => g.Key.Year)
-            .ThenBy(g => g.Key.Day)
-            .Select(g => new ChartDataPoint
-            {
-                Label = $"{g.Key.Year}-{g.Key.Day:D2}",
-                Value = g.Count()
-            })
-            .ToList();
+                var grouped = transactions
+                    .GroupBy(t => new
+                    {
+                        t.date.Year,
+                        Week = calendar.GetWeekOfYear(t.date, System.Globalization.CalendarWeekRule.FirstDay, DayOfWeek.Monday)
+                    })
+                    .OrderBy(g => g.Key.Year)
+                    .ThenBy(g => g.Key.Week)
+                    .Select(g => new ChartDataPoint
+                    {
+                        Label = $"{g.Key.Year}-W{g.Key.Week:D2}",
+                        Value = g.Count()
+                    })
+                    .ToList();
 
-        result = grouped;
-    }
+                result = grouped;
+            }
+            else if (interval == "day")
+            {
+                var grouped = transactions
+                    .GroupBy(t => new
+                    {
+                        t.date.Year,
+                        t.date.Month,
+                        t.date.Day
+                    })
+                    .OrderBy(g => g.Key.Year)
+                    .ThenBy(g => g.Key.Day)
+                    .Select(g => new ChartDataPoint
+                    {
+                        Label = $"{g.Key.Year}-{g.Key.Day:D2}",
+                        Value = g.Count()
+                    })
+                    .ToList();
 
-    return result;
-}
+                result = grouped;
+            }
+
+            return result;
+        }
 
         public async Task<List<ChartDataPoint>> CalculateTotalSoapProgramProcentageFromTransactions(
             List<string> laundromatIds,
