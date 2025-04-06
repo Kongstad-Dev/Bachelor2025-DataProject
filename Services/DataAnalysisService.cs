@@ -24,24 +24,7 @@ namespace BlazorTest.Services
             public decimal soap2 { get; set; }
             public decimal soap3 { get; set; }
         }
-
-        public SoapResults SoapCount(List<TransactionEntity> transactions)
-        {
-            var result = new SoapResults();
-
-            foreach (var soap in transactions.Select(t => Convert.ToInt32(t.soap)))
-            {
-                switch (soap)
-                {
-                    case 1: result.soap1++; break;
-                    case 2: result.soap2++; break;
-                    case 3: result.soap3++; break;
-                    default: break; // optionally throw/log unknown values
-                }
-            }
-
-            return result;
-        }
+        
 
         private bool DateEquals(DateTime date1, DateTime date2)
         {
@@ -238,7 +221,8 @@ namespace BlazorTest.Services
             var transactionStats = await dbContext.Transactions
                 .Where(t => laundromatIds.Contains(t.LaundromatId) &&
                        t.date >= startDate &&
-                       t.date <= endDate)
+                       t.date <= endDate &&
+                       t.amount != 0)
                 .GroupBy(t => 1) // Group all together
                 .Select(g => new
                 {
@@ -634,10 +618,10 @@ namespace BlazorTest.Services
                 .Where(t => laundromatIdList.Contains(t.LaundromatId) &&
                             t.date >= startDate &&
                             t.date <= endDate &&
-                            t.amount >= 1)
+                            t.amount != 0)
                 .ToListAsync();
             var totalDays = (endDate - startDate).Value.TotalDays;
-            var interval = (endDate - startDate).Value.TotalDays >= 30 ? "month" : totalDays < 7 ? "day" : "week";
+            var interval = (endDate - startDate).Value.TotalDays >= 60 ? "month" : totalDays <= 7 ? "day" : "week";
 
             List<ChartDataPoint> result = new List<ChartDataPoint>();
 
@@ -688,12 +672,11 @@ namespace BlazorTest.Services
 
                     })
                     .OrderBy(g => g.Key.Year)
-                    .ThenBy(g => g.Key.Month)
                     .ThenBy(g => g.Key.Day)
                     .Select(g => new ChartDataPoint
                     {
                         Label = $"{g.Key.Year}-D{g.Key.Day:D2}",
-                        Value = g.Sum(t => Math.Abs(Convert.ToDecimal(t.amount))) / 100,
+                        Value = g.Sum(t => Math.Abs(Convert.ToDecimal(t.amount))) / 100m
 
                     })
                     .ToList();
@@ -724,6 +707,91 @@ namespace BlazorTest.Services
                 new ChartDataPoint { Label = "Soap 3", Value = soap3Count }
             };
         }
+
+public async Task<List<ChartDataPoint>> CalculateTransactionOverTime(List<string> laundromatIds,
+    DateTime? startDate, DateTime? endDate)
+{
+    using var dbContext = _dbContextFactory.CreateDbContext();
+
+    var laundromats = await dbContext.Laundromat
+        .AsNoTracking()
+        .Where(l => laundromatIds.Contains(l.kId))
+        .Select(l => new { l.kId, l.name })
+        .ToListAsync();
+
+    var laundromatIdList = laundromats.Select(l => l.kId).ToList();
+
+    var transactions = await dbContext.Transactions
+        .Where(t => laundromatIdList.Contains(t.LaundromatId) &&
+                    t.date >= startDate &&
+                    t.date <= endDate &&
+                    t.amount != 0)
+        .ToListAsync();
+
+    var totalDays = (endDate - startDate).Value.TotalDays;
+    var interval = totalDays >= 60 ? "month" : totalDays <= 7 ? "day" : "week";
+
+    List<ChartDataPoint> result = new List<ChartDataPoint>();
+
+    if (interval == "month")
+    {
+        var grouped = transactions
+            .GroupBy(t => new { t.date.Year, t.date.Month })
+            .OrderBy(g => g.Key.Year)
+            .ThenBy(g => g.Key.Month)
+            .Select(g => new ChartDataPoint
+            {
+                Label = $"{g.Key.Year}-{g.Key.Month:D2}",
+                Value = g.Count()
+            })
+            .ToList();
+
+        result = grouped;
+    }
+    else if (interval == "week")
+    {
+        var calendar = System.Globalization.CultureInfo.InvariantCulture.Calendar;
+
+        var grouped = transactions
+            .GroupBy(t => new
+            {
+                t.date.Year,
+                Week = calendar.GetWeekOfYear(t.date, System.Globalization.CalendarWeekRule.FirstDay, DayOfWeek.Monday)
+            })
+            .OrderBy(g => g.Key.Year)
+            .ThenBy(g => g.Key.Week)
+            .Select(g => new ChartDataPoint
+            {
+                Label = $"{g.Key.Year}-W{g.Key.Week:D2}",
+                Value = g.Count()
+            })
+            .ToList();
+
+        result = grouped;
+    }
+    else if (interval == "day")
+    {
+        var grouped = transactions
+            .GroupBy(t => new
+            {
+                t.date.Year,
+                t.date.Month,
+                t.date.Day
+            })
+            .OrderBy(g => g.Key.Year)
+            .ThenBy(g => g.Key.Day)
+            .Select(g => new ChartDataPoint
+            {
+                Label = $"{g.Key.Year}-{g.Key.Day:D2}",
+                Value = g.Count()
+            })
+            .ToList();
+
+        result = grouped;
+    }
+
+    return result;
+}
 
         public async Task<List<ChartDataPoint>> CalculateTotalSoapProgramProcentageFromTransactions(
             List<string> laundromatIds,

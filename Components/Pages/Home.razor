@@ -27,12 +27,12 @@
             @if (!isLoading && chartLabelsSum.Length > 0)
             {
                 <div class="main-graph-container">
-                    <ChartComponent CanvasId="revenueByLaundromat" Labels="@chartLabelsSum" Values="@chartValuesSum"
-                        Title="Revenue by Laundromat" Type="bar" />
-                </div>
-                <div class="main-graph-container">
                     <ChartComponent CanvasId="revenueOverTime" Labels="@chartLabelsTime" Values="@chartValuesTime"
                         Title="Revenue Over Time" Type="line" />
+                </div>
+                <div class="main-graph-container">
+                    <ChartComponent CanvasId="TransactionsOverTime" Labels="@chartLabelsTimeTrans" Values="@chartValuesTimeTrans"
+                        Title="Transactions Over Time" Type="line" />
                 </div>
                 <div class="main-graph-container">
                     <ChartComponent CanvasId="revenueDistribution" Labels="@chartLabelsSum" Values="@chartValuesSum"
@@ -115,6 +115,8 @@
     private decimal[] chartValuesSumSoap = Array.Empty<decimal>();
     private string[] chartLabelsProcentageSoap = Array.Empty<string>();
     private decimal[] chartValuesProcentageSoap = Array.Empty<decimal>();
+    private string[] chartLabelsTimeTrans = Array.Empty<string>();
+    private decimal[] chartValuesTimeTrans = Array.Empty<decimal>();
     private bool isLoading = true;
 
     private List<string> effectiveLaundromats = new();
@@ -202,6 +204,12 @@
                 effectiveLaundromats,
                 startDate ?? DateTime.MinValue,
                 endDate ?? DateTime.MaxValue);
+                
+            var transactionTimeTask = AnalysisService.CalculateTransactionOverTime(
+                effectiveLaundromats,
+                startDate ?? DateTime.MinValue,
+                endDate ?? DateTime.MaxValue);
+
 
             // Wait for all tasks to complete
             await Task.WhenAll(keyValuesTask, revenueSumTask, revenueTimeTask);
@@ -221,6 +229,13 @@
             chartLabelsTime = resultTime.Select(r => r.Label).ToArray();
             chartValuesTime = resultTime.Select(r => r.Value).ToArray();
             Console.WriteLine($"Loaded time chart data: {chartLabelsTime.Length} items");
+            
+            var resultTimeTrans = await transactionTimeTask;
+            chartLabelsTimeTrans = resultTimeTrans.Select(r => r.Label).ToArray();
+            chartValuesTimeTrans = resultTimeTrans.Select(r => r.Value).ToArray();
+            Console.WriteLine($"Loaded time chart data: {chartLabelsTime.Length} items");
+            
+            await UpdateChartData(selectedSpecialContent);
         }
         finally
         {
