@@ -62,24 +62,22 @@
     <div class="main-special-content">
         @if (!string.IsNullOrEmpty(selectedSpecialContent))
         {
-            
-                <h2>@selectedSpecialContent</h2>
-                <div class="main-special-content-header">
+
+            <h2>@selectedSpecialContent</h2>
+            <div class="main-special-content-graphs">
                 @if (selectedSpecialContent == "Soap Statistics")
-                    {   //TODO fix this so that the elementn is not constrained here
-                       
-                            <p>Soap usage data would appear here.</p>
-                        <div class="main-graph-container">
-                            <ChartComponent CanvasId="soapUsage" Labels="@chartLabelsSumSoap" Values="@chartValuesSumSoap"
-                                            Title="Soap Usage" Type="bar" />
-                        </div>
-                        <div class="main-graph-container">
-                            <ChartComponent CanvasId="soapDataProcentage" Labels="@chartLabelsProcentageSoap" Values="@chartValuesProcentageSoap"
-                                            Title="Soap Usage Procent" Type="pie" />
-                        </div>
-                       
-                   
-               
+                {
+                    <div class="main-graph-container small">
+                        <ChartComponent CanvasId="soapUsage" Labels="@chartLabelsSumSoap" Values="@chartValuesSumSoap"
+                            Title="Soap Usage" Type="bar" />
+                    </div>
+                    <div class="main-graph-container small">
+                        <ChartComponent CanvasId="soapDataProcentage" Labels="@chartLabelsProcentageSoap"
+                            Values="@chartValuesProcentageSoap" Title="Soap Usage Procent" Type="pie" />
+                    </div>
+
+
+
                 }
                 else if (selectedSpecialContent == "Temperature Statistics")
                 {
@@ -101,11 +99,11 @@
 @code {
     private string selectedSpecialContent = "";
     private readonly string[] specialOptions = {
-        "Soap Statistics",
-        "Temperature Statistics",
-        "Program Type Statistics",
-        "Rinse Statistics"
-    };
+"Soap Statistics",
+"Temperature Statistics",
+"Program Type Statistics",
+"Rinse Statistics"
+};
 
     private string[] chartLabelsSum = Array.Empty<string>();
     private decimal[] chartValuesSum = Array.Empty<decimal>();
@@ -124,7 +122,7 @@
 
     // Track if data is already loading
     private bool isDataLoading = false;
-    
+
     // Cancel data loading operations if component is disposed
     private CancellationTokenSource cts = new();
 
@@ -177,31 +175,31 @@
             }
         });
     }
-    
+
 
     private async Task LoadDashboardData(CancellationToken token)
     {
         if (isDataLoading) return;
-        
+
         try
         {
             isDataLoading = true;
-            
+
             // Create tasks for parallel execution
             var keyValuesTask = AnalysisService.GetKeyValuesFromStats(
-                effectiveLaundromats,
-                startDate,
-                endDate);
+            effectiveLaundromats,
+            startDate,
+            endDate);
 
             var revenueSumTask = AnalysisService.GetRevenueForLaundromatsFromStats(
-                effectiveLaundromats,
-                startDate ?? DateTime.MinValue,
-                endDate ?? DateTime.MaxValue);
+            effectiveLaundromats,
+            startDate ?? DateTime.MinValue,
+            endDate ?? DateTime.MaxValue);
 
             var revenueTimeTask = AnalysisService.GetRevenueForLaundromatsOverTime(
-                effectiveLaundromats,
-                startDate ?? DateTime.MinValue,
-                endDate ?? DateTime.MaxValue);
+            effectiveLaundromats,
+            startDate ?? DateTime.MinValue,
+            endDate ?? DateTime.MaxValue);
 
             // Wait for all tasks to complete
             await Task.WhenAll(keyValuesTask, revenueSumTask, revenueTimeTask);
@@ -221,6 +219,8 @@
             chartLabelsTime = resultTime.Select(r => r.Label).ToArray();
             chartValuesTime = resultTime.Select(r => r.Value).ToArray();
             Console.WriteLine($"Loaded time chart data: {chartLabelsTime.Length} items");
+
+            await UpdateChartData(selectedSpecialContent);
         }
         finally
         {
@@ -244,7 +244,7 @@
             var newLaundromats = LaundryState.GetEffectiveSelectedLaundromatsIds();
             var newStartDate = LaundryState.GetStartDate();
             var newEndDate = LaundryState.GetEndDate();
-            
+
             // Check if anything actually changed to avoid unnecessary reloads
             if (!HasSelectionChanged(newLaundromats, newStartDate, newEndDate))
             {
@@ -252,7 +252,7 @@
                 StateHasChanged();
                 return;
             }
-            
+
             // Update field values
             effectiveLaundromats = newLaundromats;
             startDate = newStartDate;
@@ -260,6 +260,7 @@
 
             // Reload all data
             await LoadDashboardData(cts.Token);
+
         }
         catch (OperationCanceledException)
         {
@@ -275,22 +276,22 @@
             StateHasChanged();
         }
     }
-    
+
     // Helper to determine if selection actually changed
     private bool HasSelectionChanged(List<string> newLaundromats, DateTime? newStartDate, DateTime? newEndDate)
     {
         if (newLaundromats.Count != effectiveLaundromats.Count) return true;
         if (newStartDate != startDate || newEndDate != endDate) return true;
-        
+
         // Check if any laundromat IDs changed
         for (int i = 0; i < newLaundromats.Count; i++)
         {
             if (!effectiveLaundromats.Contains(newLaundromats[i])) return true;
         }
-        
+
         return false;
     }
-    
+
 
 
     private async void ChangeSelectedContent(string content)
@@ -298,23 +299,24 @@
         selectedSpecialContent = content;
         await UpdateChartData(content);
     }
-    
+
     private async Task UpdateChartData(string content)
     {
         switch (content)
         {
             case "Soap Statistics":
-                var soapData = await AnalysisService.CalculateTotalSoapProgramFromTransactions( effectiveLaundromats,
-                    startDate ?? DateTime.MinValue,
-                    endDate ?? DateTime.MaxValue);
+                var soapData = await AnalysisService.CalculateTotalSoapProgramFromTransactions(effectiveLaundromats,
+                startDate ?? DateTime.MinValue,
+                endDate ?? DateTime.MaxValue);
                 chartLabelsSumSoap = soapData.Select(d => d.Label).ToArray();
                 chartValuesSumSoap = soapData.Select(d => d.Value).ToArray();
-                var soapDataProcentage = await AnalysisService.CalculateTotalSoapProgramProcentageFromTransactions( effectiveLaundromats,
-                    startDate ?? DateTime.MinValue,
-                    endDate ?? DateTime.MaxValue);
+                var soapDataProcentage = await AnalysisService.CalculateTotalSoapProgramProcentageFromTransactions(
+                effectiveLaundromats,
+                startDate ?? DateTime.MinValue,
+                endDate ?? DateTime.MaxValue);
                 chartLabelsProcentageSoap = soapDataProcentage.Select(d => d.Label).ToArray();
                 chartValuesProcentageSoap = soapDataProcentage.Select(d => d.Value).ToArray();
-                
+
                 break;
             case "Temperature Statistics":
                 // Call the appropriate method from AnalysisService and update chart data
