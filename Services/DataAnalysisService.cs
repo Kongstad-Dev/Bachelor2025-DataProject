@@ -195,8 +195,8 @@ namespace BlazorTest.Services
                 new KeyValuePair<string, decimal>("Average Revenue", Math.Round(avgRevenue, 2)),
                 new KeyValuePair<string, decimal>("Total Transactions", totalTransactions),
                 new KeyValuePair<string, decimal>("Average Transactions", Math.Round(avgTransactions, 2)),
-                new KeyValuePair<string, decimal>("Washing Machine %", Math.Round(washingPercentage, 1)),
-                new KeyValuePair<string, decimal>("Dryer %", Math.Round(dryerPercentage, 1))
+                new KeyValuePair<string, decimal>("Washer Start", washingMachineTransactions),
+                new KeyValuePair<string, decimal>("Dryer Start", dryerTransactions)
             };
 
                     // Cache the result for 1 hour
@@ -238,8 +238,7 @@ namespace BlazorTest.Services
             // Calculate derived metrics
             var avgRevenue = totalTransactions > 0 ? totalRevenue / laundromatIds.Count : 0;
             var avgTransactions = totalTransactions > 0 ? totalTransactions / laundromatIds.Count : 0;
-            var dryerPercentage = totalTransactions > 0 ? (decimal)transactionStats.DryerCount / totalTransactions * 100 : 0;
-            var washingPercentage = 100 - dryerPercentage;
+            var washingMachineTransactions = totalTransactions - transactionStats.DryerCount;
 
             // Return results
             return new List<KeyValuePair<string, decimal>>
@@ -248,8 +247,8 @@ namespace BlazorTest.Services
         new KeyValuePair<string, decimal>("Average Revenue", avgRevenue),
         new KeyValuePair<string, decimal>("Total Transactions", totalTransactions),
         new KeyValuePair<string, decimal>("Average Transactions", avgTransactions),
-        new KeyValuePair<string, decimal>("Washing Machine %", washingPercentage),
-        new KeyValuePair<string, decimal>("Dryer %", dryerPercentage)
+        new KeyValuePair<string, decimal>("Washer Start", washingMachineTransactions),
+        new KeyValuePair<string, decimal>("Dryer Start", transactionStats.DryerCount)
     };
         }
 
@@ -682,7 +681,7 @@ namespace BlazorTest.Services
                     .ToList();
                 result = grouped;
             }
-            return result; 
+            return result;
         }
 
         public async Task<List<ChartDataPoint>> CalculateTotalSoapProgramFromTransactions(List<string> laundromatIds, DateTime? startDate, DateTime? endDate)
