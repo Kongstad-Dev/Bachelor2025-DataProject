@@ -126,24 +126,24 @@ public class LaundromatController : ControllerBase
     }
 
     //Get all laundromats from a specific bank
-    [HttpGet("bank/{bId}")]
-    public async Task<IActionResult> GetLaundromatsByBank(int bId)
+    [HttpGet("bank/{bankId}")]
+    public async Task<IActionResult> GetLaundromatsByBank(int bankId)
     {
         using var dbContext = _dbContextFactory.CreateDbContext();
 
         // Load the bank and include its laundromats in a single query
         var bank = await dbContext
             .Bank.Include(b => b.Laundromats)
-            .FirstOrDefaultAsync(b => b.bId == bId);
+            .FirstOrDefaultAsync(b => b.bankId == bankId);
 
         if (bank == null)
         {
-            return NotFound($"Bank with bId {bId} not found");
+            return NotFound($"Bank with bankId {bankId} not found");
         }
 
         var response = new
         {
-            Bank = new { bank.bId, bank.name },
+            Bank = new { bank.bankId, bank.name },
             Laundromats = bank
                 .Laundromats.OrderBy(l => l.name)
                 .Select(l => new
@@ -151,7 +151,8 @@ public class LaundromatController : ControllerBase
                     l.kId,
                     l.externalId,
                     bankName = l.bank,
-                    l.bId,
+                    l.bankId,
+                    l.locationId,
                     l.name,
                     l.zip,
                     l.longitude,
@@ -236,7 +237,7 @@ public class LaundromatController : ControllerBase
             );
             if (existingLaundromat == null)
             {
-                if (string.IsNullOrEmpty(laundromat.bank))
+                if (laundromat.bankId == 0)
                 {
                     continue; //throw new ArgumentException("Bank name cannot be null or empty.");
                 }
@@ -245,7 +246,7 @@ public class LaundromatController : ControllerBase
                 {
                     continue; //throw new ArgumentException("Laundromat kId cannot be null or empty.");
                 }
-                var bank = await GetOrCreateBank(laundromat.bank);
+                var bank = await GetOrCreateBank(laundromat.bankId, laundromat.bank);
 
                 // Create new laundromat with the bank reference
                 var newLaundromat = new Laundromat
@@ -257,7 +258,8 @@ public class LaundromatController : ControllerBase
                     zip = laundromat.zip,
                     longitude = laundromat.longitude,
                     latitude = laundromat.latitude,
-                    bId = bank.bId,
+                    bankId = bank.bankId,
+                    locationId = laundromat.locationId,
                 };
                 dbContext.Laundromat.Add(newLaundromat);
                 newLaundromatCount++;
@@ -268,14 +270,14 @@ public class LaundromatController : ControllerBase
         return newLaundromatCount;
     }
 
-    private async Task<BankEntity> GetOrCreateBank(string bankName)
+    private async Task<BankEntity> GetOrCreateBank(int bankId, string bankName)
     {
         using var dbContext = _dbContextFactory.CreateDbContext();
 
-        var bank = dbContext.Bank.SingleOrDefault(b => b.name == bankName);
+        var bank = dbContext.Bank.SingleOrDefault(b => b.bankId == bankId);
         if (bank == null)
         {
-            bank = new BankEntity { name = bankName };
+            bank = new BankEntity { bankId = bankId, name = bankName };
             dbContext.Bank.Add(bank);
             await dbContext.SaveChangesAsync();
         }

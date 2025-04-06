@@ -16,7 +16,7 @@ namespace BlazorTest.Migrations
                 newName: "IX_Transaction_LaundromatId");
 
             migrationBuilder.RenameIndex(
-                name: "IX_laundromat_bId",
+                name: "IX_laundromat_bankId",
                 table: "laundromat",
                 newName: "IX_Laundromat_BankId");
 
@@ -104,7 +104,7 @@ namespace BlazorTest.Migrations
             migrationBuilder.RenameIndex(
                 name: "IX_Laundromat_BankId",
                 table: "laundromat",
-                newName: "IX_laundromat_bId");
+                newName: "IX_laundromat_bankId");
         }
     }
 }

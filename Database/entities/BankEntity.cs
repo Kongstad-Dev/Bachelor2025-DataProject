@@ -7,7 +7,7 @@ namespace BlazorTest.Database;
 public class BankEntity
 {
     [Key]
-    public int bId { get; set; }
+    public int bankId { get; set; }
     public string? name { get; set; }
 
     // Navigation property for laundromats belonging to this bank

@@ -17,6 +17,8 @@ namespace BlazorTest.Services
         public List<SearchItem> LaundromatItemsOriginal { get; private set; } =
             new List<SearchItem>();
         public List<SearchItem> ErpIdItems { get; private set; } = new List<SearchItem>();
+        public List<SearchItem> BankIdItems { get; private set; } = new();
+
 
         // State change event
         public event Action? OnStateChanged;
@@ -25,6 +27,12 @@ namespace BlazorTest.Services
         public void UpdateBankItems(List<SearchItem> items)
         {
             BankItems = items;
+            NotifyStateChanged();
+        }
+
+        public void UpdateBankIdItems(List<SearchItem> items)
+        {
+            BankIdItems = items;
             NotifyStateChanged();
         }
 
@@ -111,9 +119,25 @@ namespace BlazorTest.Services
             SelectedBanks.Clear();
 
             // Clear laundromat selections
-            // This will cause GetEffectiveSelectedLaundromats() to return all laundromats
-            // but without marking them as explicitly selected
             SelectedLaundromats.Clear();
+
+            // Reset the laundromatItems to show all laundromats again
+            if (LaundromatItemsOriginal.Any())
+            {
+                LaundromatItems = new List<SearchItem>(LaundromatItemsOriginal);
+
+                // Also reset the ERP ID items to include all
+                ErpIdItems = LaundromatItemsOriginal.Select(item =>
+                {
+                    var laundromat = item.Data as Laundromat;
+                    return new SearchItem
+                    {
+                        Id = item.Id,
+                        DisplayText = laundromat?.externalId ?? "No ERP ID",
+                        Data = laundromat
+                    };
+                }).OrderBy(item => item.DisplayText).ToList();
+            }
 
             NotifyStateChanged();
         }
@@ -143,6 +167,37 @@ namespace BlazorTest.Services
             NotifyStateChanged();
         }
 
+        public async Task ResetLaundromatFilters()
+        {
+            // Clear bank selections
+            SelectedBanks.Clear();
+
+            // Clear laundromat selections
+            SelectedLaundromats.Clear();
+
+            // Reset the laundromatItems to show all laundromats again
+            if (LaundromatItemsOriginal.Any())
+            {
+                LaundromatItems = new List<SearchItem>(LaundromatItemsOriginal);
+
+                // Also reset the ERP ID items to include all
+                ErpIdItems = LaundromatItemsOriginal.Select(item =>
+                {
+                    var laundromat = item.Data as Laundromat;
+                    return new SearchItem
+                    {
+                        Id = item.Id,
+                        DisplayText = laundromat?.externalId ?? "No ERP ID",
+                        Data = laundromat
+                    };
+                }).OrderBy(item => item.DisplayText).ToList();
+            }
+
+            NotifyStateChanged();
+        }
+
         private void NotifyStateChanged() => OnStateChanged?.Invoke();
     }
+
+
 }

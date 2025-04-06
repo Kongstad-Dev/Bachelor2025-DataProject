@@ -52,7 +52,7 @@ namespace BlazorTest.Controllers
                 {
                     Bank = b,
                     LaundromatCount = includeLaundromatCounts
-                        ? dbContext.Laundromat.Count(l => l.bId == b.bId)
+                        ? dbContext.Laundromat.Count(l => l.bankId == b.bankId)
                         : 0,
                 };
 
@@ -69,18 +69,18 @@ namespace BlazorTest.Controllers
             var banksResponse = banksWithCount
                 .Select(b => new
                 {
-                    b.Bank.bId,
+                    b.Bank.bankId,
                     b.Bank.name,
                     // Fix error 1: Use int? instead of mixing int and null
                     LaundromatCount = includeLaundromatCounts ? (int?)b.LaundromatCount : null,
                     Laundromats = includeLaundromats
                         ? dbContext
-                            .Laundromat.Where(l => l.bId == b.Bank.bId)
+                            .Laundromat.Where(l => l.bankId == b.Bank.bankId)
                             .Select(l => new
                             {
                                 l.kId,
                                 l.name,
-                                l.bId,
+                                l.bankId,
                             })
                             .ToList()
                         : null,
@@ -105,25 +105,25 @@ namespace BlazorTest.Controllers
         }
 
         // Get a specific bank by ID
-        [HttpGet("{bId}")]
-        public async Task<IActionResult> GetBank(int bId)
+        [HttpGet("{bankId}")]
+        public async Task<IActionResult> GetBank(int bankId)
         {
             using var dbContext = _dbContextFactory.CreateDbContext();
 
-            var bank = await dbContext.Bank.FindAsync(bId);
+            var bank = await dbContext.Bank.FindAsync(bankId);
 
             if (bank == null)
             {
-                return NotFound($"Bank with ID {bId} not found");
+                return NotFound($"Bank with ID {bankId} not found");
             }
 
             // Count related laundromats
-            var laundromatCount = await dbContext.Laundromat.CountAsync(l => l.bId == bId);
+            var laundromatCount = await dbContext.Laundromat.CountAsync(l => l.bankId == bankId);
 
             // Create a response that avoids circular references
             var response = new
             {
-                bId = bank.bId,
+                bankId = bank.bankId,
                 name = bank.name,
                 LaundromatCount = laundromatCount,
             };
@@ -150,12 +150,12 @@ namespace BlazorTest.Controllers
             }
 
             // Count related laundromats
-            var laundromatCount = await dbContext.Laundromat.CountAsync(l => l.bId == bank.bId);
+            var laundromatCount = await dbContext.Laundromat.CountAsync(l => l.bankId == bank.bankId);
 
             // Create a response that avoids circular references
             var response = new
             {
-                bId = bank.bId,
+                bankId = bank.bankId,
                 name = bank.name,
                 LaundromatCount = laundromatCount,
             };

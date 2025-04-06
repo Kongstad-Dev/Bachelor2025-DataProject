@@ -834,7 +834,7 @@ public async Task<List<ChartDataPoint>> CalculateTransactionOverTime(List<string
 
             var laundromats = await dbContext.Laundromat
                 .AsNoTracking()
-                .Where(l => l.bId == bankId)
+                .Where(l => l.bankId == bankId)
                 .Select(l => new { l.kId, l.name })
                 .ToListAsync();
 

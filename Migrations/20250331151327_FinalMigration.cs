@@ -19,13 +19,13 @@ namespace BlazorTest.Migrations
                 name: "bank",
                 columns: table => new
                 {
-                    bId = table.Column<int>(type: "int", nullable: false)
+                    bankId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySQL:ValueGenerationStrategy", MySQLValueGenerationStrategy.IdentityColumn),
                     name = table.Column<string>(type: "longtext", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_bank", x => x.bId);
+                    table.PrimaryKey("PK_bank", x => x.bankId);
                 })
                 .Annotation("MySQL:Charset", "utf8mb4");
 
@@ -36,7 +36,7 @@ namespace BlazorTest.Migrations
                     kId = table.Column<string>(type: "varchar(255)", nullable: false),
                     externalId = table.Column<string>(type: "longtext", nullable: true),
                     bank = table.Column<string>(type: "longtext", nullable: true),
-                    bId = table.Column<int>(type: "int", nullable: false),
+                    bankId = table.Column<int>(type: "int", nullable: false),
                     name = table.Column<string>(type: "longtext", nullable: true),
                     zip = table.Column<string>(type: "longtext", nullable: true),
                     longitude = table.Column<float>(type: "float", nullable: false),
@@ -47,10 +47,10 @@ namespace BlazorTest.Migrations
                 {
                     table.PrimaryKey("PK_laundromat", x => x.kId);
                     table.ForeignKey(
-                        name: "FK_laundromat_bank_bId",
-                        column: x => x.bId,
+                        name: "FK_laundromat_bank_bankId",
+                        column: x => x.bankId,
                         principalTable: "bank",
-                        principalColumn: "bId",
+                        principalColumn: "bankId",
                         onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySQL:Charset", "utf8mb4");
@@ -93,9 +93,9 @@ namespace BlazorTest.Migrations
                 .Annotation("MySQL:Charset", "utf8mb4");
 
             migrationBuilder.CreateIndex(
-                name: "IX_laundromat_bId",
+                name: "IX_laundromat_bankId",
                 table: "laundromat",
-                column: "bId");
+                column: "bankId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_transaction_LaundromatId",

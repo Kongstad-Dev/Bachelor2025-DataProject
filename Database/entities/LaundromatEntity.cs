@@ -14,14 +14,15 @@ public class Laundromat
 
     [JsonPropertyName("bankName")]
     public string? bank { get; set; }
-    public int bId { get; set; }
+    public int bankId { get; set; }
+    public int locationId { get; set; }
     public string? name { get; set; }
     public string? zip { get; set; }
     public float longitude { get; set; }
     public float latitude { get; set; }
     public DateTime? lastFetchDate { get; set; }
 
-    [ForeignKey("bId")]
+    [ForeignKey("bankId")]
     public BankEntity? Bank { get; set; }
 
     // Navigation property for transactions

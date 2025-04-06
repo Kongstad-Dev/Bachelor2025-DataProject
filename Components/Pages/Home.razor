@@ -27,12 +27,12 @@
             @if (!isLoading && chartLabelsSum.Length > 0)
             {
                 <div class="main-graph-container">
-                    <ChartComponent CanvasId="revenueOverTime" Labels="@chartLabelsTime" Values="@chartValuesTime"
-                        Title="Revenue Over Time" Type="line" />
+                    <ChartComponent CanvasId="revenueByLaundromat" Labels="@chartLabelsSum" Values="@chartValuesSum"
+                        Title="Revenue by Laundromat" Type="bar" />
                 </div>
                 <div class="main-graph-container">
-                    <ChartComponent CanvasId="TransactionsOverTime" Labels="@chartLabelsTimeTrans" Values="@chartValuesTimeTrans"
-                        Title="Transactions Over Time" Type="line" />
+                    <ChartComponent CanvasId="revenueOverTime" Labels="@chartLabelsTime" Values="@chartValuesTime"
+                        Title="Revenue Over Time" Type="line" />
                 </div>
                 <div class="main-graph-container">
                     <ChartComponent CanvasId="revenueDistribution" Labels="@chartLabelsSum" Values="@chartValuesSum"
@@ -62,24 +62,22 @@
     <div class="main-special-content">
         @if (!string.IsNullOrEmpty(selectedSpecialContent))
         {
-            
-                <h2>@selectedSpecialContent</h2>
-                <div class="main-special-content-header">
+
+            <h2>@selectedSpecialContent</h2>
+            <div class="main-special-content-graphs">
                 @if (selectedSpecialContent == "Soap Statistics")
-                    {   //TODO fix this so that the elementn is not constrained here
-                       
-                            <p>Soap usage data would appear here.</p>
-                        <div class="main-graph-container">
-                            <ChartComponent CanvasId="soapUsage" Labels="@chartLabelsSumSoap" Values="@chartValuesSumSoap"
-                                            Title="Soap Usage" Type="bar" />
-                        </div>
-                        <div class="main-graph-container">
-                            <ChartComponent CanvasId="soapDataProcentage" Labels="@chartLabelsProcentageSoap" Values="@chartValuesProcentageSoap"
-                                            Title="Soap Usage Procent" Type="pie" />
-                        </div>
-                       
-                   
-               
+                {
+                    <div class="main-graph-container small">
+                        <ChartComponent CanvasId="soapUsage" Labels="@chartLabelsSumSoap" Values="@chartValuesSumSoap"
+                            Title="Soap Usage" Type="bar" />
+                    </div>
+                    <div class="main-graph-container small">
+                        <ChartComponent CanvasId="soapDataProcentage" Labels="@chartLabelsProcentageSoap"
+                            Values="@chartValuesProcentageSoap" Title="Soap Usage Procent" Type="pie" />
+                    </div>
+
+
+
                 }
                 else if (selectedSpecialContent == "Temperature Statistics")
                 {
@@ -101,11 +99,11 @@
 @code {
     private string selectedSpecialContent = "";
     private readonly string[] specialOptions = {
-        "Soap Statistics",
-        "Temperature Statistics",
-        "Program Type Statistics",
-        "Rinse Statistics"
-    };
+"Soap Statistics",
+"Temperature Statistics",
+"Program Type Statistics",
+"Rinse Statistics"
+};
 
     private string[] chartLabelsSum = Array.Empty<string>();
     private decimal[] chartValuesSum = Array.Empty<decimal>();

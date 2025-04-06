@@ -22,7 +22,7 @@ public class YourDbContext : DbContext
         modelBuilder.Entity<Laundromat>()
             .HasOne(l => l.Bank)
             .WithMany(b => b.Laundromats)
-            .HasForeignKey(l => l.bId);
+            .HasForeignKey(l => l.bankId);
 
         // Configure the relationship between Laundromat and TransactionEntity
         modelBuilder.Entity<TransactionEntity>()
@@ -46,7 +46,7 @@ public class YourDbContext : DbContext
 
         // Index for bank ID lookups (finding all laundromats for a bank)
         modelBuilder.Entity<Laundromat>()
-            .HasIndex(l => l.bId)
+            .HasIndex(l => l.bankId)
             .HasDatabaseName("IX_Laundromat_BankId");
 
         // Index for lastFetchDate to quickly find laundromats needing updates
