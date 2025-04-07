@@ -27,20 +27,24 @@
             @if (!isLoading && chartLabelsSum.Length > 0)
             {
                 <div class="main-graph-container">
-                    <ChartComponent CanvasId="revenueOverTime" Labels="@chartLabelsTime" Values="@chartValuesTime"
-                        Title="Revenue Over Time" Type="line" />
+                    <ChartComponent CanvasId="revenueOverTime" Labels="@chartLabelsTime" SingleValues="@chartValuesTime"
+                        Title="Revenue Over Time" Type="line" Stacked=false />
                 </div>
                 <div class="main-graph-container">
                     <ChartComponent CanvasId="TransactionsOverTime" Labels="@chartLabelsTimeTrans"
-                        Values="@chartValuesTimeTrans" Title="Transactions Over Time" Type="line" />
+                        SingleValues="@chartValuesTimeTrans" Title="Transactions Over Time" Type="line" />
                 </div>
+                /*
                 <div class="main-graph-container">
-                    <ChartComponent CanvasId="revenueDistribution" Labels="@chartLabelsSum" Values="@chartValuesSum"
-                        Title="Revenue Distribution" Type="pie" />
+                <ChartComponent CanvasId="revenueDistribution" Labels="@chartLabelsSum" SingleValues="@chartValuesSum"
+                Title="Revenue Distribution" Type="pie" />
                 </div>
+                */
                 <div class="main-graph-container">
-                    <ChartComponent CanvasId="revenueComparison" Labels="@chartLabelsSum" Values="@chartValuesSum"
-                        Title="Revenue Comparison" Type="bar" />
+                    <ChartComponent CanvasId="stackedBarChart" Labels='@chartLabelsSumMachine'
+                        MultiValues="@chartValuesSumMachine" Title='Stacked Bar Chart' Type="bar" Stacked="true"
+                        BackgroundColors='new[] { "rgba(255, 99, 132, 0.7)", "rgba(54, 162, 235, 0.7)", "rgba(75, 192, 192, 0.7)" }'
+                        DatasetLabels="@chartLabelsMachine" />
                 </div>
             }
             else if (isLoading)
@@ -68,12 +72,12 @@
                 @if (selectedSpecialContent == "Soap Statistics")
                 {
                     <div class="main-graph-container small">
-                        <ChartComponent CanvasId="soapUsage" Labels="@chartLabelsSumSoap" Values="@chartValuesSumSoap"
+                        <ChartComponent CanvasId="soapUsage" Labels="@chartLabelsSumSoap" SingleValues="@chartValuesSumSoap"
                             Title="Soap Usage" Type="bar" />
                     </div>
                     <div class="main-graph-container small">
                         <ChartComponent CanvasId="soapDataProcentage" Labels="@chartLabelsProcentageSoap"
-                            Values="@chartValuesProcentageSoap" Title="Soap Usage Procent" Type="pie" />
+                            SingleValues="@chartValuesProcentageSoap" Title="Soap Usage Procent" Type="pie" />
                     </div>
 
 
@@ -115,6 +119,9 @@
     private decimal[] chartValuesProcentageSoap = Array.Empty<decimal>();
     private string[] chartLabelsTimeTrans = Array.Empty<string>();
     private decimal[] chartValuesTimeTrans = Array.Empty<decimal>();
+    private string[] chartLabelsSumMachine = Array.Empty<string>();
+    private decimal[][] chartValuesSumMachine = Array.Empty<decimal[]>();
+    private string[] chartLabelsMachine = Array.Empty<string>();
     private bool isLoading = true;
 
     private List<string> effectiveLaundromats = new();
@@ -208,6 +215,11 @@
             startDate ?? DateTime.MinValue,
             endDate ?? DateTime.MaxValue);
 
+            var stackedMachineTask = AnalysisService.getStackedMachineStarts(
+            effectiveLaundromats,
+            startDate ?? DateTime.MinValue,
+            endDate ?? DateTime.MaxValue);
+
 
             // Wait for all tasks to complete
             await Task.WhenAll(keyValuesTask, revenueSumTask, revenueTimeTask);
@@ -233,6 +245,12 @@
             chartValuesTimeTrans = resultTimeTrans.Select(r => r.Value).ToArray();
             Console.WriteLine($"Loaded time chart data: {chartLabelsTime.Length} items");
 
+            var resultStackedMachine = await stackedMachineTask;
+            chartLabelsSumMachine = resultStackedMachine.Labels.ToArray();
+            chartValuesSumMachine = resultStackedMachine.Values.Select(r => r).ToArray();
+            chartLabelsMachine = resultStackedMachine.unitNames.ToArray();
+            Console.WriteLine($"Loaded stacked machine chart data: {chartLabelsSumMachine.Length} items");
+
             await UpdateChartData(selectedSpecialContent);
         }
         finally
@@ -254,7 +272,7 @@
             cts = new CancellationTokenSource();
 
             await Task.Delay(100); // Wait for 100ms to allow state to update
-            // Get updated filter values
+                                   // Get updated filter values
             var newLaundromats = LaundryState.GetEffectiveSelectedLaundromatsIds();
             var newStartDate = LaundryState.GetStartDate();
             var newEndDate = LaundryState.GetEndDate();
