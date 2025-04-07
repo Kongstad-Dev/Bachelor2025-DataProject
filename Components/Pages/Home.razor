@@ -31,8 +31,8 @@
                         Title="Revenue Over Time" Type="line" />
                 </div>
                 <div class="main-graph-container">
-                    <ChartComponent CanvasId="TransactionsOverTime" Labels="@chartLabelsTimeTrans" Values="@chartValuesTimeTrans"
-                        Title="Transactions Over Time" Type="line" />
+                    <ChartComponent CanvasId="TransactionsOverTime" Labels="@chartLabelsTimeTrans"
+                        Values="@chartValuesTimeTrans" Title="Transactions Over Time" Type="line" />
                 </div>
                 <div class="main-graph-container">
                     <ChartComponent CanvasId="revenueDistribution" Labels="@chartLabelsSum" Values="@chartValuesSum"
@@ -253,6 +253,7 @@
             cts.Dispose();
             cts = new CancellationTokenSource();
 
+            await Task.Delay(100); // Wait for 100ms to allow state to update
             // Get updated filter values
             var newLaundromats = LaundryState.GetEffectiveSelectedLaundromatsIds();
             var newStartDate = LaundryState.GetStartDate();

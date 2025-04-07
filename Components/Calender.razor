@@ -1,9 +1,11 @@
 @using System
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.JSInterop
+@using BlazorTest.Services
 @implements IDisposable
 @rendermode InteractiveServer
 @inject IJSRuntime JS
+@inject LaundryStateService LaundryState
 
 <div class="search-container" @onclick:stopPropagation="true">
     <div class="search-input-wrapper">
@@ -13,115 +15,115 @@
 
     @if (ShowDropdown)
     {
-            <div id="@dropdownId" class="date-dropdown" @onmousedown="HandleDropdownMouseDown" @onmousedown:preventDefault>
-                <div class="date-dropdown-header">
-                    <button @onclick="PreviousMonth" @onclick:stopPropagation>&lt;</button>
-                    <span>@(CurrentMonth.ToString("MMMM yyyy"))</span>
-                    <button @onclick="NextMonth" @onclick:stopPropagation>&gt;</button>
-                </div>
-                <div class="date-dropdown-days">
-                    <div class="date-dropdown-weekdays">
-                        @foreach (var day in new[] { "Su", "Mo", "Tu", "We", "Th", "Fr", "Sa" })
-                        {
-                                <div class="date-dropdown-weekday">@day</div>
-                        }
+                <div id="@dropdownId" class="date-dropdown" @onmousedown="HandleDropdownMouseDown" @onmousedown:preventDefault>
+                    <div class="date-dropdown-header">
+                        <button @onclick="PreviousMonth" @onclick:stopPropagation>&lt;</button>
+                        <span>@(CurrentMonth.ToString("MMMM yyyy"))</span>
+                        <button @onclick="NextMonth" @onclick:stopPropagation>&gt;</button>
                     </div>
-                    <div class="date-dropdown-dates">
-                        @foreach (var date in GetDaysInMonth())
-                        {
-                                var isCurrentMonth = date.Month == CurrentMonth.Month;
-
-                                bool isStartDate = false;
-                                bool isEndDate = false;
-
-                                if (IsSelectingEndDate && TemporaryStartDate.HasValue) // Add .HasValue check
-                                {
-                                        // Only show the temporary start date
-                                        isStartDate = date.Date == TemporaryStartDate.Value.Date;
-
-                                        // Show hover effect for potential end date
-                                        if (HoveredDate.HasValue && date.Date == HoveredDate.Value.Date &&
-                                        date.Date != TemporaryStartDate.Value.Date)
-                                        {
-                                                isEndDate = true;
-                                        }
-
-                                        // When hovering before the start date, flip roles
-                                        if (HoveredDate.HasValue && HoveredDate.Value.Date < TemporaryStartDate.Value.Date)
-                                        {
-                                                // Current start becomes the end
-                                                if (date.Date == TemporaryStartDate.Value.Date)
-                                                {
-                                                        isStartDate = false;
-                                                        isEndDate = true;
-                                                }
-
-                                                // Hovered date becomes the start
-                                                if (date.Date == HoveredDate.Value.Date)
-                                                {
-                                                        isStartDate = true;
-                                                        isEndDate = false;
-                                                }
-                                        }
-                                }
-                                // Not in selection mode - show the confirmed range
-                                else
-                                {
-                                        // Use temporary dates if available (for quick selection via shortcuts)
-                                        if (TemporaryStartDate.HasValue || TemporaryEndDate.HasValue)
-                                        {
-                                                isStartDate = TemporaryStartDate.HasValue && date.Date == TemporaryStartDate.Value.Date;
-                                                isEndDate = TemporaryEndDate.HasValue && date.Date == TemporaryEndDate.Value.Date;
-                                        }
-                                        // Otherwise use the selected dates
-                                        else
-                                        {
-                                                isStartDate = SelectedStartDate.HasValue && date.Date == SelectedStartDate.Value.Date;
-                                                isEndDate = SelectedEndDate.HasValue && date.Date == SelectedEndDate.Value.Date;
-                                        }
-                                }
-
-                                var isInRange = IsDateInRange(date);
-                                var isToday = date.Date == DateTime.Today;
-
-                                <div class="date-dropdown-date @(!isCurrentMonth ? "other-month" : "") 
-                                                            @(isStartDate ? "start-date" : "") 
-                                                            @(isEndDate ? "end-date" : "") 
-                                                            @(isInRange ? "in-range" : "")
-                                                            @(isToday ? "today" : "")" @onclick="() => SelectDate(date)"
-                                    @onmouseover="() => HandleDateHover(date)">
-                                    @date.Day
-                                </div>
-                        }
-                    </div>
-                </div>
-                <div class="date-dropdown-footer">
-                    <div class="date-range-shortcuts">
-                        <div class="quarters-container">
-                            @foreach (var quarter in GetPastFourQuarters())
+                    <div class="date-dropdown-days">
+                        <div class="date-dropdown-weekdays">
+                            @foreach (var day in new[] { "Su", "Mo", "Tu", "We", "Th", "Fr", "Sa" })
                             {
-                                    <button class="date-dropdown-quarter"
-                                        @onclick="() => SelectQuarter(quarter.startDate, quarter.endDate)">
-                                        Q@(quarter.quarterNumber)-@(quarter.year)
-                                    </button>
+                                        <div class="date-dropdown-weekday">@day</div>
                             }
                         </div>
-                            <button class="" @onclick="SelectPastFourQuarters">Past 4 Quarters</button>
-                        <div class="period-container">
-                            <button class="date-dropdown-period" @onclick="() => SelectPastPeriod(1)">Month</button>
-                            <button class="date-dropdown-period" @onclick="() => SelectPastPeriod(6)">6 Months</button>
-                            <button class="date-dropdown-period" @onclick="() => SelectPastPeriod(12)">Year</button>
+                        <div class="date-dropdown-dates">
+                            @foreach (var date in GetDaysInMonth())
+                            {
+                                        var isCurrentMonth = date.Month == CurrentMonth.Month;
+
+                                        bool isStartDate = false;
+                                        bool isEndDate = false;
+
+                                        if (IsSelectingEndDate && TemporaryStartDate.HasValue) // Add .HasValue check
+                                        {
+                                                    // Only show the temporary start date
+                                                    isStartDate = date.Date == TemporaryStartDate.Value.Date;
+
+                                                    // Show hover effect for potential end date
+                                                    if (HoveredDate.HasValue && date.Date == HoveredDate.Value.Date &&
+                                                    date.Date != TemporaryStartDate.Value.Date)
+                                                    {
+                                                                isEndDate = true;
+                                                    }
+
+                                                    // When hovering before the start date, flip roles
+                                                    if (HoveredDate.HasValue && HoveredDate.Value.Date < TemporaryStartDate.Value.Date)
+                                                    {
+                                                                // Current start becomes the end
+                                                                if (date.Date == TemporaryStartDate.Value.Date)
+                                                                {
+                                                                            isStartDate = false;
+                                                                            isEndDate = true;
+                                                                }
+
+                                                                // Hovered date becomes the start
+                                                                if (date.Date == HoveredDate.Value.Date)
+                                                                {
+                                                                            isStartDate = true;
+                                                                            isEndDate = false;
+                                                                }
+                                                    }
+                                        }
+                                        // Not in selection mode - show the confirmed range
+                                        else
+                                        {
+                                                    // Use temporary dates if available (for quick selection via shortcuts)
+                                                    if (TemporaryStartDate.HasValue || TemporaryEndDate.HasValue)
+                                                    {
+                                                                isStartDate = TemporaryStartDate.HasValue && date.Date == TemporaryStartDate.Value.Date;
+                                                                isEndDate = TemporaryEndDate.HasValue && date.Date == TemporaryEndDate.Value.Date;
+                                                    }
+                                                    // Otherwise use the selected dates
+                                                    else
+                                                    {
+                                                                isStartDate = SelectedStartDate.HasValue && date.Date == SelectedStartDate.Value.Date;
+                                                                isEndDate = SelectedEndDate.HasValue && date.Date == SelectedEndDate.Value.Date;
+                                                    }
+                                        }
+
+                                        var isInRange = IsDateInRange(date);
+                                        var isToday = date.Date == DateTime.Today;
+
+                                        <div class="date-dropdown-date @(!isCurrentMonth ? "other-month" : "") 
+                                                                    @(isStartDate ? "start-date" : "") 
+                                                                    @(isEndDate ? "end-date" : "") 
+                                                                    @(isInRange ? "in-range" : "")
+                                                                    @(isToday ? "today" : "")" @onclick="() => SelectDate(date)"
+                                            @onmouseover="() => HandleDateHover(date)">
+                                            @date.Day
+                                        </div>
+                            }
                         </div>
                     </div>
-                    <div class="date-dropdown-actions-container">
-                        <div class="date-dropdown-actions">
-                            <button class="date-dropdown-today" @onclick="GoToToday" @onclick:stopPropagation
-                                title="Go to today">Today</button>
-                            <button class="date-dropdown-clear" @onclick="ClearDate">Clear</button>
+                    <div class="date-dropdown-footer">
+                        <div class="date-range-shortcuts">
+                            <div class="quarters-container">
+                                @foreach (var quarter in GetPastFourQuarters())
+                                {
+                                            <button class="date-dropdown-quarter"
+                                                @onclick="() => SelectQuarter(quarter.startDate, quarter.endDate)">
+                                                Q@(quarter.quarterNumber)-@(quarter.year)
+                                            </button>
+                                }
+                            </div>
+                                <button class="" @onclick="SelectPastFourQuarters">Past 4 Quarters</button>
+                            <div class="period-container">
+                                <button class="date-dropdown-period" @onclick="() => SelectPastPeriod(1)">Month</button>
+                                <button class="date-dropdown-period" @onclick="() => SelectPastPeriod(6)">6 Months</button>
+                                <button class="date-dropdown-period" @onclick="() => SelectPastPeriod(12)">Year</button>
+                            </div>
+                        </div>
+                        <div class="date-dropdown-actions-container">
+                            <div class="date-dropdown-actions">
+                                <button class="date-dropdown-today" @onclick="GoToToday" @onclick:stopPropagation
+                                    title="Go to today">Today</button>
+                                <button class="date-dropdown-clear" @onclick="ClearDate">Clear</button>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
     }
 </div>
 
@@ -383,6 +385,10 @@
     {
         SelectedStartDate = TemporaryStartDate;
         SelectedEndDate = TemporaryEndDate?.Date.AddDays(1).AddTicks(-1);
+
+        // Update LaundryStateService with the new dates
+        LaundryState.UpdateStartDate(SelectedStartDate);
+        LaundryState.UpdateEndDate(SelectedEndDate);
 
         await SelectedStartDateChanged.InvokeAsync(SelectedStartDate);
         await SelectedEndDateChanged.InvokeAsync(SelectedEndDate);

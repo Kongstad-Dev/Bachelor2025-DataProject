@@ -1,7 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
-using BlazorTest.Database;
+﻿using BlazorTest.Database;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Newtonsoft.Json;
 
 namespace BlazorTest.Services
 {
@@ -10,12 +10,13 @@ namespace BlazorTest.Services
         private readonly IDbContextFactory<YourDbContext> _dbContextFactory;
         private readonly IMemoryCache _cache;
 
-
-        public DataAnalysisService(IDbContextFactory<YourDbContext> dbContextFactory, IMemoryCache cache)
+        public DataAnalysisService(
+            IDbContextFactory<YourDbContext> dbContextFactory,
+            IMemoryCache cache
+        )
         {
             _dbContextFactory = dbContextFactory;
             _cache = cache;
-
         }
 
         public class SoapResults
@@ -25,7 +26,6 @@ namespace BlazorTest.Services
             public decimal soap3 { get; set; }
         }
 
-
         private bool DateEquals(DateTime date1, DateTime date2)
         {
             return date1.Date == date2.Date;
@@ -34,18 +34,25 @@ namespace BlazorTest.Services
         public async Task<List<KeyValuePair<string, decimal>>> GetKeyValuesFromStats(
             List<string> laundromatIds,
             DateTime? startDate,
-            DateTime? endDate)
+            DateTime? endDate
+        )
         {
-            if (laundromatIds == null || !laundromatIds.Any() || startDate == null || endDate == null)
+            if (
+                laundromatIds == null
+                || !laundromatIds.Any()
+                || startDate == null
+                || endDate == null
+            )
             {
                 // Fall back to regular calculation if any required parameters are missing
                 return await GetKeyValues(laundromatIds, startDate, endDate);
             }
 
             // Create cache key for the request
-            string cacheKey = $"keystats_{string.Join("_", laundromatIds.OrderBy(id => id))}_" +
-                             $"{startDate?.ToString("yyyyMMdd")}_" +
-                             $"{endDate?.ToString("yyyyMMdd")}";
+            string cacheKey =
+                $"keystats_{string.Join("_", laundromatIds.OrderBy(id => id))}_"
+                + $"{startDate?.ToString("yyyyMMdd")}_"
+                + $"{endDate?.ToString("yyyyMMdd")}";
 
             // Try to get from cache
             if (_cache.TryGetValue(cacheKey, out List<KeyValuePair<string, decimal>> cachedResult))
@@ -73,7 +80,9 @@ namespace BlazorTest.Services
                 periodName = "Last Month";
             }
             // CASE 2: Check for HalfYear period match
-            else if (DateEquals(endDate.Value, endOfToday) && DateEquals(startDate.Value, sixMonthsAgo))
+            else if (
+                DateEquals(endDate.Value, endOfToday) && DateEquals(startDate.Value, sixMonthsAgo)
+            )
             {
                 periodType = StatsPeriodType.HalfYear;
                 periodName = "Last 6 Months";
@@ -109,10 +118,17 @@ namespace BlazorTest.Services
                     // Calculate quarter start and end dates
                     int startMonth = (quarter - 1) * 3 + 1;
                     var quarterStartDate = new DateTime(year, startMonth, 1);
-                    var quarterEndDate = quarterStartDate.AddMonths(3).AddDays(-1).Date.AddDays(1).AddMilliseconds(-1);
+                    var quarterEndDate = quarterStartDate
+                        .AddMonths(3)
+                        .AddDays(-1)
+                        .Date.AddDays(1)
+                        .AddMilliseconds(-1);
 
                     // Check if exact match (date only)
-                    if (DateEquals(startDate.Value, quarterStartDate) && DateEquals(endDate.Value, quarterEndDate))
+                    if (
+                        DateEquals(startDate.Value, quarterStartDate)
+                        && DateEquals(endDate.Value, quarterEndDate)
+                    )
                     {
                         periodType = StatsPeriodType.Quarter;
                         periodKey = $"{year}-Q{quarter}";
@@ -126,9 +142,11 @@ namespace BlazorTest.Services
             if (periodType.HasValue)
             {
                 // Optimization: Get stats for all laundromats in a single query using compiled query
-                var statsQuery = dbContext.LaundromatStats
-                    .AsNoTracking()
-                    .Where(s => laundromatIds.Contains(s.LaundromatId) && s.PeriodType == periodType.Value);
+                var statsQuery = dbContext
+                    .LaundromatStats.AsNoTracking()
+                    .Where(s =>
+                        laundromatIds.Contains(s.LaundromatId) && s.PeriodType == periodType.Value
+                    );
 
                 // For quarters, we need to filter by the period key
                 if (periodType == StatsPeriodType.Quarter && !string.IsNullOrEmpty(periodKey))
@@ -158,21 +176,25 @@ namespace BlazorTest.Services
                 if (stats.Any())
                 {
                     // Aggregate the stats - optimized with LINQ
-                    var aggregation = stats
-                        .GroupBy(s => 1) // Group all together
-                        .Select(g => new
-                        {
-                            TotalTransactions = g.Sum(s => s.TotalTransactions),
-                            TotalRevenue = g.Sum(s => s.TotalRevenue),
-                            WashingMachineTransactions = g.Sum(s => s.WashingMachineTransactions),
-                            DryerTransactions = g.Sum(s => s.DryerTransactions)
-                        })
-                        .FirstOrDefault() ?? new
+                    var aggregation =
+                        stats
+                            .GroupBy(s => 1) // Group all together
+                            .Select(g => new
+                            {
+                                TotalTransactions = g.Sum(s => s.TotalTransactions),
+                                TotalRevenue = g.Sum(s => s.TotalRevenue),
+                                WashingMachineTransactions = g.Sum(s =>
+                                    s.WashingMachineTransactions
+                                ),
+                                DryerTransactions = g.Sum(s => s.DryerTransactions),
+                            })
+                            .FirstOrDefault()
+                        ?? new
                         {
                             TotalTransactions = 0,
                             TotalRevenue = 0m,
                             WashingMachineTransactions = 0,
-                            DryerTransactions = 0
+                            DryerTransactions = 0,
                         };
 
                     // Calculate derived stats
@@ -181,9 +203,13 @@ namespace BlazorTest.Services
                     var washingMachineTransactions = aggregation.WashingMachineTransactions;
                     var dryerTransactions = aggregation.DryerTransactions;
 
-                    var avgRevenue = laundromatIds.Count > 0 ? totalRevenue / laundromatIds.Count : 0;
-                    var avgTransactions = laundromatIds.Count > 0 ? totalTransactions / (decimal)laundromatIds.Count : 0;
-                    
+                    var avgRevenue =
+                        laundromatIds.Count > 0 ? totalRevenue / laundromatIds.Count : 0;
+                    var avgTransactions =
+                        laundromatIds.Count > 0
+                            ? totalTransactions / (decimal)laundromatIds.Count
+                            : 0;
+
                     //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
                     //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
                     //IS NOT CALCULATING/SHOWING START PRICE FOR WASHERS AND DRYERS. IT'S NOT SAVED/CALCULATED IN LAUNDROMATSTATS
@@ -217,14 +243,26 @@ namespace BlazorTest.Services
 
                     // Format results with proper rounding
                     var result = new List<KeyValuePair<string, decimal>>
-            {
-                new KeyValuePair<string, decimal>("Total Revenue", Math.Round(totalRevenue, 2)),
-                new KeyValuePair<string, decimal>("Average Revenue", Math.Round(avgRevenue, 2)),
-                new KeyValuePair<string, decimal>("Total Transactions", totalTransactions),
-                new KeyValuePair<string, decimal>("Average Transactions", Math.Round(avgTransactions, 2)),
-                new KeyValuePair<string, decimal>("Washer Start", washingMachineTransactions),
-                new KeyValuePair<string, decimal>("Dryer Start", dryerTransactions)
-            };
+                    {
+                        new KeyValuePair<string, decimal>(
+                            "Total Revenue",
+                            Math.Round(totalRevenue, 2)
+                        ),
+                        new KeyValuePair<string, decimal>(
+                            "Average Revenue",
+                            Math.Round(avgRevenue, 2)
+                        ),
+                        new KeyValuePair<string, decimal>("Total Transactions", totalTransactions),
+                        new KeyValuePair<string, decimal>(
+                            "Average Transactions",
+                            Math.Round(avgTransactions, 2)
+                        ),
+                        new KeyValuePair<string, decimal>(
+                            "Washer Start",
+                            washingMachineTransactions
+                        ),
+                        new KeyValuePair<string, decimal>("Dryer Start", dryerTransactions),
+                    };
 
                     // Cache the result for 1 hour
                     _cache.Set(cacheKey, result, TimeSpan.FromHours(1));
@@ -238,63 +276,100 @@ namespace BlazorTest.Services
             return fallbackStats;
         }
 
-        public async Task<List<KeyValuePair<string, decimal>>> GetKeyValues(List<string> laundromatIds, DateTime? startDate, DateTime? endDate)
+        public async Task<List<KeyValuePair<string, decimal>>> GetKeyValues(
+            List<string> laundromatIds,
+            DateTime? startDate,
+            DateTime? endDate
+        )
         {
+            Console.WriteLine(
+                $"GetKeyValues called with laundromatIds: {JsonConvert.SerializeObject(laundromatIds)}, startDate: {startDate}, endDate: {endDate}"
+            );
             using var dbContext = _dbContextFactory.CreateDbContext();
 
             // Get total transactions and revenue in a single query
             var dryerUnitTypes = new[] { 1, 18, 5, 10, 14, 19, 27, 29, 41 };
 
-            var transactionStats = await dbContext.Transactions
-                .Where(t => laundromatIds.Contains(t.LaundromatId) &&
-                       t.date >= startDate &&
-                       t.date <= endDate &&
-                       t.amount != 0)
-                .GroupBy(t => 1) // Group all together
-                .Select(g => new
+            var transactionStats =
+                await dbContext
+                    .Transactions.Where(t =>
+                        laundromatIds.Contains(t.LaundromatId)
+                        && t.date >= startDate
+                        && t.date <= endDate
+                        && t.amount != 0
+                    )
+                    .GroupBy(t => 1) // Group all together
+                    .Select(g => new
+                    {
+                        TotalTransactions = g.Count(),
+                        TotalRevenue = g.Sum(t => Math.Abs(t.amount)) / 100m,
+                        DryerCount = g.Count(t => dryerUnitTypes.Contains(t.unitType)),
+                        DryerRevenue = g.Sum(t =>
+                            dryerUnitTypes.Contains(t.unitType) ? Math.Abs(t.amount) / 100m : 0m
+                        ),
+                    })
+                    .FirstOrDefaultAsync()
+                ?? new
                 {
-                    TotalTransactions = g.Count(),
-                    TotalRevenue = g.Sum(t => Math.Abs(t.amount)) / 100m,
-                    DryerCount = g.Count(t => dryerUnitTypes.Contains(t.unitType)),
-                    DryerRevenue = g.Sum(t => dryerUnitTypes.Contains(t.unitType) ? Math.Abs(t.amount) / 100m : 0m)
-                })
-                .FirstOrDefaultAsync() ?? new { TotalTransactions = 0, TotalRevenue = 0m, DryerCount = 0, DryerRevenue = 0m };
+                    TotalTransactions = 0,
+                    TotalRevenue = 0m,
+                    DryerCount = 0,
+                    DryerRevenue = 0m,
+                };
+
+            if (transactionStats.TotalTransactions == 0)
+            {
+                return new List<KeyValuePair<string, decimal>>
+                {
+                    new KeyValuePair<string, decimal>("Total Revenue", 0),
+                    new KeyValuePair<string, decimal>("Average Revenue", 0),
+                    new KeyValuePair<string, decimal>("Total Transactions", 0),
+                    new KeyValuePair<string, decimal>("Average Transactions", 0),
+                    new KeyValuePair<string, decimal>("Washer Start", 0),
+                    new KeyValuePair<string, decimal>("Washer Start Price", 0),
+                    new KeyValuePair<string, decimal>("Dryer Start", 0),
+                    new KeyValuePair<string, decimal>("Dryer Start Price", 0),
+                };
+            }
 
             var totalTransactions = transactionStats.TotalTransactions;
             var totalRevenue = transactionStats.TotalRevenue;
 
             // Calculate derived metrics
             var avgRevenue = totalTransactions > 0 ? totalRevenue / laundromatIds.Count : 0;
-            var avgTransactions = totalTransactions > 0 ? totalTransactions / laundromatIds.Count : 0;
+            var avgTransactions =
+                totalTransactions > 0 ? totalTransactions / laundromatIds.Count : 0;
             var washingMachineTransactions = totalTransactions - transactionStats.DryerCount;
             var dryerStartPrice = transactionStats.DryerRevenue / transactionStats.DryerCount;
-            var washerStartPrice = (transactionStats.TotalRevenue - transactionStats.DryerRevenue) / washingMachineTransactions;
+            var washerStartPrice =
+                (transactionStats.TotalRevenue - transactionStats.DryerRevenue)
+                / washingMachineTransactions;
 
             // Return results
             return new List<KeyValuePair<string, decimal>>
-    {
-        new KeyValuePair<string, decimal>("Total Revenue", totalRevenue),
-        new KeyValuePair<string, decimal>("Average Revenue", avgRevenue),
-        new KeyValuePair<string, decimal>("Total Transactions", totalTransactions),
-        new KeyValuePair<string, decimal>("Average Transactions", avgTransactions),
-        new KeyValuePair<string, decimal>("Washer Start", washingMachineTransactions),
-        new KeyValuePair<string, decimal>("Washer Start Price", washerStartPrice),
-        new KeyValuePair<string, decimal>("Dryer Start", transactionStats.DryerCount),
-        new KeyValuePair<string, decimal>("Dryer Start Price", dryerStartPrice),
-    };
+            {
+                new KeyValuePair<string, decimal>("Total Revenue", totalRevenue),
+                new KeyValuePair<string, decimal>("Average Revenue", avgRevenue),
+                new KeyValuePair<string, decimal>("Total Transactions", totalTransactions),
+                new KeyValuePair<string, decimal>("Average Transactions", avgTransactions),
+                new KeyValuePair<string, decimal>("Washer Start", washingMachineTransactions),
+                new KeyValuePair<string, decimal>("Washer Start Price", washerStartPrice),
+                new KeyValuePair<string, decimal>("Dryer Start", transactionStats.DryerCount),
+                new KeyValuePair<string, decimal>("Dryer Start Price", dryerStartPrice),
+            };
         }
 
-        public decimal CalculateTotalSoapProgramFromTransactions(List<TransactionEntity> transactions)
+        public decimal CalculateTotalSoapProgramFromTransactions(
+            List<TransactionEntity> transactions
+        )
         {
             return transactions.Sum(t => (Convert.ToDecimal(t.soap)));
         }
 
         public decimal CalculateRevenueFromTransactions(List<TransactionEntity> transactions)
         {
-
             return transactions.Sum(t => Math.Abs(t.amount)) / 100;
         }
-
 
         public decimal CalculateAvgSecoundsFromTransactions(List<TransactionEntity> transactions)
         {
@@ -309,26 +384,35 @@ namespace BlazorTest.Services
         public async Task<decimal> CalculateLaundromatsRevenue(
             List<string> laundromatIds,
             DateTime? startDate,
-            DateTime? endDate)
+            DateTime? endDate
+        )
         {
-            if (laundromatIds == null || !laundromatIds.Any() || startDate == null || endDate == null)
+            if (
+                laundromatIds == null
+                || !laundromatIds.Any()
+                || startDate == null
+                || endDate == null
+            )
             {
                 // Fall back to direct transaction calculation if any required parameters are missing
                 using var localDbContext = _dbContextFactory.CreateDbContext();
 
-                var transactions = await localDbContext.Transactions
-                    .Where(t => laundromatIds.Contains(t.LaundromatId) &&
-                           t.date >= startDate &&
-                           t.date <= endDate)
+                var transactions = await localDbContext
+                    .Transactions.Where(t =>
+                        laundromatIds.Contains(t.LaundromatId)
+                        && t.date >= startDate
+                        && t.date <= endDate
+                    )
                     .ToListAsync();
 
                 return transactions.Sum(t => Math.Abs(t.amount)) / 100m;
             }
 
             // Create cache key for the request
-            string cacheKey = $"revenue_{string.Join("_", laundromatIds.OrderBy(id => id))}_" +
-                             $"{startDate?.ToString("yyyyMMdd")}_" +
-                             $"{endDate?.ToString("yyyyMMdd")}";
+            string cacheKey =
+                $"revenue_{string.Join("_", laundromatIds.OrderBy(id => id))}_"
+                + $"{startDate?.ToString("yyyyMMdd")}_"
+                + $"{endDate?.ToString("yyyyMMdd")}";
 
             // Try to get from cache
             if (_cache.TryGetValue(cacheKey, out decimal cachedResult))
@@ -354,7 +438,9 @@ namespace BlazorTest.Services
                 periodType = StatsPeriodType.Month;
             }
             // CASE 2: Check for HalfYear period match
-            else if (DateEquals(endDate.Value, endOfToday) && DateEquals(startDate.Value, sixMonthsAgo))
+            else if (
+                DateEquals(endDate.Value, endOfToday) && DateEquals(startDate.Value, sixMonthsAgo)
+            )
             {
                 periodType = StatsPeriodType.HalfYear;
             }
@@ -388,10 +474,17 @@ namespace BlazorTest.Services
                     // Calculate quarter start and end dates
                     int startMonth = (quarter - 1) * 3 + 1;
                     var quarterStartDate = new DateTime(year, startMonth, 1);
-                    var quarterEndDate = quarterStartDate.AddMonths(3).AddDays(-1).Date.AddDays(1).AddMilliseconds(-1);
+                    var quarterEndDate = quarterStartDate
+                        .AddMonths(3)
+                        .AddDays(-1)
+                        .Date.AddDays(1)
+                        .AddMilliseconds(-1);
 
                     // Check if exact match (date only)
-                    if (DateEquals(startDate.Value, quarterStartDate) && DateEquals(endDate.Value, quarterEndDate))
+                    if (
+                        DateEquals(startDate.Value, quarterStartDate)
+                        && DateEquals(endDate.Value, quarterEndDate)
+                    )
                     {
                         periodType = StatsPeriodType.Quarter;
                         periodKey = $"{year}-Q{quarter}";
@@ -404,9 +497,11 @@ namespace BlazorTest.Services
             if (periodType.HasValue)
             {
                 // Optimization: Get stats for all laundromats in a single query
-                var statsQuery = dbContext.LaundromatStats
-                    .AsNoTracking()
-                    .Where(s => laundromatIds.Contains(s.LaundromatId) && s.PeriodType == periodType.Value);
+                var statsQuery = dbContext
+                    .LaundromatStats.AsNoTracking()
+                    .Where(s =>
+                        laundromatIds.Contains(s.LaundromatId) && s.PeriodType == periodType.Value
+                    );
 
                 // For quarters, we need to filter by the period key
                 if (periodType == StatsPeriodType.Quarter && !string.IsNullOrEmpty(periodKey))
@@ -427,10 +522,12 @@ namespace BlazorTest.Services
                     //System.Console.WriteLine($"Missing stats for {missingLaundromatIds.Count} laundromats for period {periodType}: {string.Join(", ", missingLaundromatIds)}");
 
                     // Fall back to direct transaction calculation
-                    var transactions = await dbContext.Transactions
-                        .Where(t => laundromatIds.Contains(t.LaundromatId) &&
-                               t.date >= startDate &&
-                               t.date <= endDate)
+                    var transactions = await dbContext
+                        .Transactions.Where(t =>
+                            laundromatIds.Contains(t.LaundromatId)
+                            && t.date >= startDate
+                            && t.date <= endDate
+                        )
                         .ToListAsync();
 
                     decimal revenue = transactions.Sum(t => Math.Abs(t.amount)) / 100m;
@@ -452,10 +549,12 @@ namespace BlazorTest.Services
             }
 
             // No matching precalculated stats found, fall back to direct calculation
-            var fallbackTransactions = await dbContext.Transactions
-                .Where(t => laundromatIds.Contains(t.LaundromatId) &&
-                       t.date >= startDate &&
-                       t.date <= endDate)
+            var fallbackTransactions = await dbContext
+                .Transactions.Where(t =>
+                    laundromatIds.Contains(t.LaundromatId)
+                    && t.date >= startDate
+                    && t.date <= endDate
+                )
                 .ToListAsync();
 
             decimal fallbackRevenue = fallbackTransactions.Sum(t => Math.Abs(t.amount)) / 100m;
@@ -475,7 +574,8 @@ namespace BlazorTest.Services
         public async Task<List<ChartDataPoint>> GetRevenueForLaundromatsFromStats(
             List<string> laundromatIds,
             DateTime? startDate,
-            DateTime? endDate)
+            DateTime? endDate
+        )
         {
             var now = DateTime.Now;
             var endOfToday = now.Date.AddDays(1).AddMilliseconds(-1); // 23:59:59.999
@@ -494,7 +594,9 @@ namespace BlazorTest.Services
                 periodType = StatsPeriodType.Month;
             }
             // CASE 2: Check for HalfYear period match
-            else if (DateEquals(endDate.Value, endOfToday) && DateEquals(startDate.Value, sixMonthsAgo))
+            else if (
+                DateEquals(endDate.Value, endOfToday) && DateEquals(startDate.Value, sixMonthsAgo)
+            )
             {
                 periodType = StatsPeriodType.HalfYear;
             }
@@ -528,10 +630,17 @@ namespace BlazorTest.Services
                     // Calculate quarter start and end dates
                     int startMonth = (quarter - 1) * 3 + 1;
                     var quarterStartDate = new DateTime(year, startMonth, 1);
-                    var quarterEndDate = quarterStartDate.AddMonths(3).AddDays(-1).Date.AddDays(1).AddMilliseconds(-1);
+                    var quarterEndDate = quarterStartDate
+                        .AddMonths(3)
+                        .AddDays(-1)
+                        .Date.AddDays(1)
+                        .AddMilliseconds(-1);
 
                     // Check if exact match (date only)
-                    if (DateEquals(startDate.Value, quarterStartDate) && DateEquals(endDate.Value, quarterEndDate))
+                    if (
+                        DateEquals(startDate.Value, quarterStartDate)
+                        && DateEquals(endDate.Value, quarterEndDate)
+                    )
                     {
                         periodType = StatsPeriodType.Quarter;
                         periodKey = $"{year}-Q{quarter}";
@@ -542,21 +651,26 @@ namespace BlazorTest.Services
 
             if (periodType.HasValue)
             {
-                var stats = await dbContext.LaundromatStats
-                    .AsNoTracking()
-                    .Where(s => laundromatIds.Contains(s.LaundromatId) &&
-                           s.PeriodType == periodType.Value &&
-                           (periodType != StatsPeriodType.Quarter || s.PeriodKey == periodKey))
+                var stats = await dbContext
+                    .LaundromatStats.AsNoTracking()
+                    .Where(s =>
+                        laundromatIds.Contains(s.LaundromatId)
+                        && s.PeriodType == periodType.Value
+                        && (periodType != StatsPeriodType.Quarter || s.PeriodKey == periodKey)
+                    )
                     .ToListAsync();
 
-                if (stats.Count > 0 && stats.Select(s => s.LaundromatId).Distinct().Count() == laundromatIds.Count)
+                if (
+                    stats.Count > 0
+                    && stats.Select(s => s.LaundromatId).Distinct().Count() == laundromatIds.Count
+                )
                 {
                     // We have stats for all laundromats
                     return stats
                         .Select(s => new ChartDataPoint
                         {
                             Label = s.LaundromatName ?? $"ID {s.LaundromatId}",
-                            Value = s.TotalRevenue
+                            Value = s.TotalRevenue,
                         })
                         .ToList();
                 }
@@ -569,11 +683,13 @@ namespace BlazorTest.Services
         public async Task<List<ChartDataPoint>> GetRevenueForLaundromats(
             List<string> laundromatIds,
             DateTime? startDate,
-            DateTime? endDate)
+            DateTime? endDate
+        )
         {
-            string cacheKey = $"revenue_direct_{string.Join("_", laundromatIds.OrderBy(id => id))}_" +
-                             $"{startDate?.ToString("yyyyMMdd") ?? "null"}_" +
-                             $"{endDate?.ToString("yyyyMMdd") ?? "null"}";
+            string cacheKey =
+                $"revenue_direct_{string.Join("_", laundromatIds.OrderBy(id => id))}_"
+                + $"{startDate?.ToString("yyyyMMdd") ?? "null"}_"
+                + $"{endDate?.ToString("yyyyMMdd") ?? "null"}";
 
             // Try to get from cache first
             if (_cache.TryGetValue(cacheKey, out List<ChartDataPoint> cachedResult))
@@ -593,7 +709,8 @@ namespace BlazorTest.Services
                 dateFilter += $" AND t.date <= '{endDate.Value:yyyy-MM-dd}'";
 
             // Direct SQL query bypassing EF Core navigation issues
-            var sql = @$"
+            var sql =
+                @$"
         SELECT 
             COALESCE(l.name, CONCAT('ID ', l.kId)) AS Label,
             COALESCE(SUM(ABS(t.amount)), 0) / 100 AS Value
@@ -619,11 +736,13 @@ namespace BlazorTest.Services
                 using var reader = await command.ExecuteReaderAsync();
                 while (await reader.ReadAsync())
                 {
-                    result.Add(new ChartDataPoint
-                    {
-                        Label = reader.GetString(0),
-                        Value = reader.GetDecimal(1)
-                    });
+                    result.Add(
+                        new ChartDataPoint
+                        {
+                            Label = reader.GetString(0),
+                            Value = reader.GetDecimal(1),
+                        }
+                    );
                 }
             }
 
@@ -633,98 +752,163 @@ namespace BlazorTest.Services
             return result;
         }
 
-        public async Task<List<ChartDataPoint>> GetRevenueForLaundromatsOverTime(List<string> laundromatIds, DateTime? startDate, DateTime? endDate)
+        public async Task<List<ChartDataPoint>> GetRevenueForLaundromatsOverTime(
+            List<string> laundromatIds,
+            DateTime? startDate,
+            DateTime? endDate
+        )
         {
             using var dbContext = _dbContextFactory.CreateDbContext();
 
-            var laundromats = await dbContext.Laundromat
-                .AsNoTracking()
+            // Fetch laundromats
+            var laundromats = await dbContext
+                .Laundromat.AsNoTracking()
                 .Where(l => laundromatIds.Contains(l.kId))
                 .Select(l => new { l.kId, l.name })
                 .ToListAsync();
 
             var laundromatIdList = laundromats.Select(l => l.kId).ToList();
 
-            var transactions = await dbContext.Transactions
-                .Where(t => laundromatIdList.Contains(t.LaundromatId) &&
-                            t.date >= startDate &&
-                            t.date <= endDate &&
-                            t.amount != 0)
+            // Fetch transactions
+            var transactions = await dbContext
+                .Transactions.Where(t =>
+                    laundromatIdList.Contains(t.LaundromatId)
+                    && t.date >= startDate
+                    && t.date <= endDate
+                    && t.amount != 0
+                )
                 .ToListAsync();
+
             var totalDays = (endDate - startDate).Value.TotalDays;
-            var interval = (endDate - startDate).Value.TotalDays >= 60 ? "month" : totalDays <= 7 ? "day" : "week";
+            var interval =
+                totalDays >= 60 ? "month"
+                : totalDays <= 7 ? "day"
+                : "week";
 
             List<ChartDataPoint> result = new List<ChartDataPoint>();
 
             if (interval == "month")
             {
-                var grouped = transactions
-                    .GroupBy(t => new { t.date.Year, t.date.Month })
-                    .OrderBy(g => g.Key.Year)
-                    .ThenBy(g => g.Key.Month)
-                    .Select(g => new ChartDataPoint
-                    {
-                        Label = $"{g.Key.Year}-{g.Key.Month:D2}",
-                        Value = g.Sum(t => Math.Abs(Convert.ToDecimal(t.amount))) / 100
-                    })
+                // Generate all months between startDate and endDate
+                var allMonths = Enumerable
+                    .Range(
+                        0,
+                        (int)(
+                            (endDate.Value.Year - startDate.Value.Year) * 12
+                            + endDate.Value.Month
+                            - startDate.Value.Month
+                            + 1
+                        )
+                    )
+                    .Select(i => startDate.Value.AddMonths(i))
+                    .Select(d => new { Year = d.Year, Month = d.Month })
                     .ToList();
 
-                result = grouped;
+                // Group transactions by month
+                var grouped = transactions
+                    .GroupBy(t => new { t.date.Year, t.date.Month })
+                    .ToDictionary(
+                        g => new { g.Key.Year, g.Key.Month },
+                        g => g.Sum(t => Math.Abs(Convert.ToDecimal(t.amount))) / 100
+                    );
+
+                // Merge with all months
+                result = allMonths
+                    .Select(m => new ChartDataPoint
+                    {
+                        Label = $"{m.Year}-{m.Month:D2}",
+                        Value = grouped.ContainsKey(m) ? grouped[m] : 0,
+                    })
+                    .ToList();
             }
-            else if (interval == "week")    // interval == "week"
+            else if (interval == "week")
             {
                 var calendar = System.Globalization.CultureInfo.InvariantCulture.Calendar;
 
+                // Generate all weeks between startDate and endDate
+                var allWeeks = Enumerable
+                    .Range(0, (int)totalDays / 7 + 1)
+                    .Select(i => startDate.Value.AddDays(i * 7))
+                    .Select(d => new
+                    {
+                        Year = d.Year,
+                        Week = calendar.GetWeekOfYear(
+                            d,
+                            System.Globalization.CalendarWeekRule.FirstDay,
+                            DayOfWeek.Monday
+                        ),
+                    })
+                    .ToList();
+
+                // Group transactions by week
                 var grouped = transactions
                     .GroupBy(t => new
                     {
                         t.date.Year,
-                        Week = calendar.GetWeekOfYear(t.date, System.Globalization.CalendarWeekRule.FirstDay, DayOfWeek.Monday)
+                        Week = calendar.GetWeekOfYear(
+                            t.date,
+                            System.Globalization.CalendarWeekRule.FirstDay,
+                            DayOfWeek.Monday
+                        ),
                     })
-                    .OrderBy(g => g.Key.Year)
-                    .ThenBy(g => g.Key.Week)
-                    .Select(g => new ChartDataPoint
+                    .ToDictionary(
+                        g => new { g.Key.Year, g.Key.Week },
+                        g => g.Sum(t => Math.Abs(Convert.ToDecimal(t.amount))) / 100
+                    );
+
+                // Merge with all weeks
+                result = allWeeks
+                    .Select(w => new ChartDataPoint
                     {
-                        Label = $"{g.Key.Year}-W{g.Key.Week:D2}",
-                        Value = g.Sum(t => Math.Abs(Convert.ToDecimal(t.amount))) / 100
+                        Label = $"{w.Year}-W{w.Week:D2}",
+                        Value = grouped.ContainsKey(w) ? grouped[w] : 0,
                     })
                     .ToList();
-
-                result = grouped;
             }
             else if (interval == "day")
             {
+                // Generate all days between startDate and endDate
+                var allDays = Enumerable
+                    .Range(0, (int)totalDays + 1)
+                    .Select(i => startDate.Value.AddDays(i))
+                    .ToList();
+
+                // Group transactions by day
                 var grouped = transactions
-                    .GroupBy(t => new
-                    {
-                        t.date.Year,
-                        t.date.Month,
-                        t.date.Day
+                    .GroupBy(t => t.date.Date)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Sum(t => Math.Abs(Convert.ToDecimal(t.amount))) / 100
+                    );
 
-                    })
-                    .OrderBy(g => g.Key.Year)
-                    .ThenBy(g => g.Key.Day)
-                    .Select(g => new ChartDataPoint
+                // Merge with all days
+                result = allDays
+                    .Select(d => new ChartDataPoint
                     {
-                        Label = $"{g.Key.Year}-D{g.Key.Day:D2}",
-                        Value = g.Sum(t => Math.Abs(Convert.ToDecimal(t.amount))) / 100m
-
+                        Label = d.ToString("yyyy-MM-dd"),
+                        Value = grouped.ContainsKey(d) ? grouped[d] : 0,
                     })
                     .ToList();
-                result = grouped;
             }
+
             return result;
         }
 
-        public async Task<List<ChartDataPoint>> CalculateTotalSoapProgramFromTransactions(List<string> laundromatIds, DateTime? startDate, DateTime? endDate)
+        public async Task<List<ChartDataPoint>> CalculateTotalSoapProgramFromTransactions(
+            List<string> laundromatIds,
+            DateTime? startDate,
+            DateTime? endDate
+        )
         {
             using var dbContext = _dbContextFactory.CreateDbContext();
 
-            var transactions = await dbContext.Transactions
-                .AsNoTracking()
-                .Where(t => laundromatIds.Contains(t.LaundromatId) &&
-                            t.date >= startDate &&
-                            t.date <= endDate)
+            var transactions = await dbContext
+                .Transactions.AsNoTracking()
+                .Where(t =>
+                    laundromatIds.Contains(t.LaundromatId)
+                    && t.date >= startDate
+                    && t.date <= endDate
+                )
                 .ToListAsync();
 
             int soap1Count = transactions.Count(t => t.soap == 1);
@@ -735,90 +919,136 @@ namespace BlazorTest.Services
             {
                 new ChartDataPoint { Label = "Soap 1", Value = soap1Count },
                 new ChartDataPoint { Label = "Soap 2", Value = soap2Count },
-                new ChartDataPoint { Label = "Soap 3", Value = soap3Count }
+                new ChartDataPoint { Label = "Soap 3", Value = soap3Count },
             };
         }
 
-        public async Task<List<ChartDataPoint>> CalculateTransactionOverTime(List<string> laundromatIds,
-            DateTime? startDate, DateTime? endDate)
+        public async Task<List<ChartDataPoint>> CalculateTransactionOverTime(
+            List<string> laundromatIds,
+            DateTime? startDate,
+            DateTime? endDate
+        )
         {
             using var dbContext = _dbContextFactory.CreateDbContext();
 
-            var laundromats = await dbContext.Laundromat
-                .AsNoTracking()
+            var laundromats = await dbContext
+                .Laundromat.AsNoTracking()
                 .Where(l => laundromatIds.Contains(l.kId))
                 .Select(l => new { l.kId, l.name })
                 .ToListAsync();
 
             var laundromatIdList = laundromats.Select(l => l.kId).ToList();
 
-            var transactions = await dbContext.Transactions
-                .Where(t => laundromatIdList.Contains(t.LaundromatId) &&
-                            t.date >= startDate &&
-                            t.date <= endDate &&
-                            t.amount != 0)
+            var transactions = await dbContext
+                .Transactions.Where(t =>
+                    laundromatIdList.Contains(t.LaundromatId)
+                    && t.date >= startDate
+                    && t.date <= endDate
+                    && t.amount != 0
+                )
                 .ToListAsync();
 
             var totalDays = (endDate - startDate).Value.TotalDays;
-            var interval = totalDays >= 60 ? "month" : totalDays <= 7 ? "day" : "week";
+            var interval =
+                totalDays >= 60 ? "month"
+                : totalDays <= 7 ? "day"
+                : "week";
 
             List<ChartDataPoint> result = new List<ChartDataPoint>();
 
             if (interval == "month")
             {
-                var grouped = transactions
-                    .GroupBy(t => new { t.date.Year, t.date.Month })
-                    .OrderBy(g => g.Key.Year)
-                    .ThenBy(g => g.Key.Month)
-                    .Select(g => new ChartDataPoint
-                    {
-                        Label = $"{g.Key.Year}-{g.Key.Month:D2}",
-                        Value = g.Count()
-                    })
+                // Generate all months between startDate and endDate
+                var allMonths = Enumerable
+                    .Range(
+                        0,
+                        (int)(
+                            (endDate.Value.Year - startDate.Value.Year) * 12
+                            + endDate.Value.Month
+                            - startDate.Value.Month
+                            + 1
+                        )
+                    )
+                    .Select(i => startDate.Value.AddMonths(i))
+                    .Select(d => new { Year = d.Year, Month = d.Month })
                     .ToList();
 
-                result = grouped;
+                // Group transactions by month
+                var grouped = transactions
+                    .GroupBy(t => new { t.date.Year, t.date.Month })
+                    .ToDictionary(g => new { g.Key.Year, g.Key.Month }, g => g.Count());
+
+                // Merge with all months
+                result = allMonths
+                    .Select(m => new ChartDataPoint
+                    {
+                        Label = $"{m.Year}-{m.Month:D2}",
+                        Value = grouped.ContainsKey(m) ? grouped[m] : 0,
+                    })
+                    .ToList();
             }
             else if (interval == "week")
             {
                 var calendar = System.Globalization.CultureInfo.InvariantCulture.Calendar;
 
+                // Generate all weeks between startDate and endDate
+                var allWeeks = Enumerable
+                    .Range(0, (int)totalDays / 7 + 1)
+                    .Select(i => startDate.Value.AddDays(i * 7))
+                    .Select(d => new
+                    {
+                        Year = d.Year,
+                        Week = calendar.GetWeekOfYear(
+                            d,
+                            System.Globalization.CalendarWeekRule.FirstDay,
+                            DayOfWeek.Monday
+                        ),
+                    })
+                    .ToList();
+
+                // Group transactions by week
                 var grouped = transactions
                     .GroupBy(t => new
                     {
                         t.date.Year,
-                        Week = calendar.GetWeekOfYear(t.date, System.Globalization.CalendarWeekRule.FirstDay, DayOfWeek.Monday)
+                        Week = calendar.GetWeekOfYear(
+                            t.date,
+                            System.Globalization.CalendarWeekRule.FirstDay,
+                            DayOfWeek.Monday
+                        ),
                     })
-                    .OrderBy(g => g.Key.Year)
-                    .ThenBy(g => g.Key.Week)
-                    .Select(g => new ChartDataPoint
+                    .ToDictionary(g => new { g.Key.Year, g.Key.Week }, g => g.Count());
+
+                // Merge with all weeks
+                result = allWeeks
+                    .Select(w => new ChartDataPoint
                     {
-                        Label = $"{g.Key.Year}-W{g.Key.Week:D2}",
-                        Value = g.Count()
+                        Label = $"{w.Year}-W{w.Week:D2}",
+                        Value = grouped.ContainsKey(w) ? grouped[w] : 0,
                     })
                     .ToList();
-
-                result = grouped;
             }
             else if (interval == "day")
             {
-                var grouped = transactions
-                    .GroupBy(t => new
-                    {
-                        t.date.Year,
-                        t.date.Month,
-                        t.date.Day
-                    })
-                    .OrderBy(g => g.Key.Year)
-                    .ThenBy(g => g.Key.Day)
-                    .Select(g => new ChartDataPoint
-                    {
-                        Label = $"{g.Key.Year}-{g.Key.Day:D2}",
-                        Value = g.Count()
-                    })
+                // Generate all days between startDate and endDate
+                var allDays = Enumerable
+                    .Range(0, (int)totalDays + 1)
+                    .Select(i => startDate.Value.AddDays(i))
                     .ToList();
 
-                result = grouped;
+                // Group transactions by day
+                var grouped = transactions
+                    .GroupBy(t => t.date.Date)
+                    .ToDictionary(g => g.Key, g => g.Count());
+
+                // Merge with all days
+                result = allDays
+                    .Select(d => new ChartDataPoint
+                    {
+                        Label = d.ToString("yyyy-MM-dd"),
+                        Value = grouped.ContainsKey(d) ? grouped[d] : 0,
+                    })
+                    .ToList();
             }
 
             return result;
@@ -827,15 +1057,18 @@ namespace BlazorTest.Services
         public async Task<List<ChartDataPoint>> CalculateTotalSoapProgramProcentageFromTransactions(
             List<string> laundromatIds,
             DateTime? startDate,
-            DateTime? endDate)
+            DateTime? endDate
+        )
         {
             using var dbContext = _dbContextFactory.CreateDbContext();
 
-            var transactions = await dbContext.Transactions
-                .Where(t => laundromatIds.Contains(t.LaundromatId) &&
-                            t.date >= startDate &&
-                            t.date <= endDate &&
-                            t.soap > 0) // only valid soap usages
+            var transactions = await dbContext
+                .Transactions.Where(t =>
+                    laundromatIds.Contains(t.LaundromatId)
+                    && t.date >= startDate
+                    && t.date <= endDate
+                    && t.soap > 0
+                ) // only valid soap usages
                 .ToListAsync();
 
             int total = transactions.Count;
@@ -844,54 +1077,54 @@ namespace BlazorTest.Services
             int soap2Count = transactions.Count(t => t.soap == 2);
             int soap3Count = transactions.Count(t => t.soap == 3);
 
-            decimal soap1Percent = total == 0 ? 0 : Math.Round((decimal)soap1Count / total * 100, 2);
-            decimal soap2Percent = total == 0 ? 0 : Math.Round((decimal)soap2Count / total * 100, 2);
-            decimal soap3Percent = total == 0 ? 0 : Math.Round(100 - soap1Percent - soap2Percent, 2); // adjust last one
+            decimal soap1Percent =
+                total == 0 ? 0 : Math.Round((decimal)soap1Count / total * 100, 2);
+            decimal soap2Percent =
+                total == 0 ? 0 : Math.Round((decimal)soap2Count / total * 100, 2);
+            decimal soap3Percent =
+                total == 0 ? 0 : Math.Round(100 - soap1Percent - soap2Percent, 2); // adjust last one
 
             return new List<ChartDataPoint>
             {
                 new ChartDataPoint { Label = "Soap 1", Value = soap1Percent },
                 new ChartDataPoint { Label = "Soap 2", Value = soap2Percent },
-                new ChartDataPoint { Label = "Soap 3", Value = soap3Percent }
+                new ChartDataPoint { Label = "Soap 3", Value = soap3Percent },
             };
         }
-
-
 
         public async Task<List<ChartDataPoint>> CalculateAvgSecoundsFromTransactions(int bankId)
         {
             using var dbContext = _dbContextFactory.CreateDbContext();
 
-
-            var laundromats = await dbContext.Laundromat
-                .AsNoTracking()
+            var laundromats = await dbContext
+                .Laundromat.AsNoTracking()
                 .Where(l => l.bankId == bankId)
                 .Select(l => new { l.kId, l.name })
                 .ToListAsync();
 
-
             var laundromatIds = laundromats.Select(l => l.kId).ToList();
 
-            var transactions = await dbContext.Transactions
-                .Where(t => laundromatIds.Contains(t.LaundromatId))
+            var transactions = await dbContext
+                .Transactions.Where(t => laundromatIds.Contains(t.LaundromatId))
                 .ToListAsync();
             // Group and compute revenue per laundromat
             var result = laundromats
-                .GroupJoin(transactions,
+                .GroupJoin(
+                    transactions,
                     l => l.kId,
                     t => t.LaundromatId,
-                    (l, ts) => new ChartDataPoint
-                    {
-                        Label = l.name ?? $"ID {l.kId}",
-                        Value = ts.Any()
-                            ? ts.Average(t => Math.Abs(Convert.ToDecimal(t.seconds))) / 60
-                            : 0
-
-                    })
+                    (l, ts) =>
+                        new ChartDataPoint
+                        {
+                            Label = l.name ?? $"ID {l.kId}",
+                            Value = ts.Any()
+                                ? ts.Average(t => Math.Abs(Convert.ToDecimal(t.seconds))) / 60
+                                : 0,
+                        }
+                )
                 .ToList();
 
             return result;
         }
-
     }
 }
