@@ -168,32 +168,29 @@ namespace BlazorTest.Services.Analytics
             // Get total transactions and revenue in a single query
             var dryerUnitTypes = new[] { 1, 18, 5, 10, 14, 19, 27, 29, 41 };
 
-            var transactionStats =
-                await dbContext
-                    .Transactions.Where(t =>
-                        laundromatIds.Contains(t.LaundromatId)
-                        && t.date >= startDate
-                        && t.date <= endDate
-                        && t.amount != 0
-                    )
-                    .GroupBy(t => 1) // Group all together
-                    .Select(g => new
-                    {
-                        TotalTransactions = g.Count(),
-                        TotalRevenue = g.Sum(t => Math.Abs(t.amount)) / 100m,
-                        DryerCount = g.Count(t => dryerUnitTypes.Contains(t.unitType)),
-                        DryerRevenue = g.Sum(t =>
-                            dryerUnitTypes.Contains(t.unitType) ? Math.Abs(t.amount) / 100m : 0m
-                        ),
-                    })
-                    .FirstOrDefaultAsync()
-                ?? new
+            var transactionStats = await dbContext.Transactions
+                .Where(t => laundromatIds.Contains(t.LaundromatId))
+                .Where(t => t.date >= startDate && t.date <= endDate)
+                .Where(t => t.amount != 0)
+                .AsNoTracking()
+                .GroupBy(t => 1)
+                .Select(g => new
                 {
-                    TotalTransactions = 0,
-                    TotalRevenue = 0m,
-                    DryerCount = 0,
-                    DryerRevenue = 0m,
-                };
+                    TotalTransactions = g.Count(),
+                    TotalRevenue = g.Sum(t => Math.Abs(t.amount)) / 100m,
+                    DryerCount = g.Count(t => dryerUnitTypes.Contains(t.unitType)),
+                    DryerRevenue = g.Sum(t =>
+                        dryerUnitTypes.Contains(t.unitType) ? Math.Abs(t.amount) / 100m : 0m
+                                    ),
+                })
+                                .FirstOrDefaultAsync()
+                            ?? new
+                            {
+                                TotalTransactions = 0,
+                                TotalRevenue = 0m,
+                                DryerCount = 0,
+                                DryerRevenue = 0m,
+                            };
 
             if (transactionStats.TotalTransactions == 0)
             {

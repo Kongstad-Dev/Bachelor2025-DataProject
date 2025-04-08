@@ -124,6 +124,11 @@
     private string[] chartLabelsMachine = Array.Empty<string>();
     private bool isLoading = true;
 
+    private string _lastSoapDataParams = string.Empty;
+    private string _lastTemperatureDataParams = string.Empty;
+    private string _lastProgramTypeDataParams = string.Empty;
+    private string _lastRinseDataParams = string.Empty;
+
     private List<string> effectiveLaundromats = new();
     private List<KeyValuePair<string, decimal>> keyValuePairs = new();
     private DateTime? startDate;
@@ -183,6 +188,13 @@
                 Console.WriteLine($"Error handling state change: {ex.Message}");
             }
         });
+    }
+
+    private string GetCurrentParams()
+    {
+        return string.Join(",", effectiveLaundromats) +
+        (startDate?.Ticks.ToString() ?? "0") +
+        (endDate?.Ticks.ToString() ?? "0");
     }
 
 
@@ -333,33 +345,72 @@
 
     private async Task UpdateChartData(string content)
     {
-        switch (content)
+        try
         {
-            case "Soap Statistics":
-                var soapData = await AnalysisService.CalculateTotalSoapProgramFromTransactions(effectiveLaundromats,
-                startDate ?? DateTime.MinValue,
-                endDate ?? DateTime.MaxValue);
-                chartLabelsSumSoap = soapData.Select(d => d.Label).ToArray();
-                chartValuesSumSoap = soapData.Select(d => d.Value).ToArray();
-                var soapDataProcentage = await AnalysisService.CalculateTotalSoapProgramProcentageFromTransactions(
+            if (content == "Soap Statistics" &&
+            (chartLabelsSumSoap.Length == 0 || _lastSoapDataParams != GetCurrentParams()))
+            {
+                // Show loading indicator for this section only
+                isLoading = true;
+                StateHasChanged();
+
+                // Load both soap datasets in parallel
+                var soapDataTask = AnalysisService.CalculateTotalSoapProgramFromTransactions(
                 effectiveLaundromats,
                 startDate ?? DateTime.MinValue,
                 endDate ?? DateTime.MaxValue);
-                chartLabelsProcentageSoap = soapDataProcentage.Select(d => d.Label).ToArray();
-                chartValuesProcentageSoap = soapDataProcentage.Select(d => d.Value).ToArray();
 
-                break;
-            case "Temperature Statistics":
-                // Call the appropriate method from AnalysisService and update chart data
-                break;
-            case "Program Type Statistics":
-                // Call the appropriate method from AnalysisService and update chart data
-                break;
-            case "Rinse Statistics":
-                // Call the appropriate method from AnalysisService and update chart data
-                break;
+                var soapPercentageDataTask = AnalysisService.CalculateTotalSoapProgramProcentageFromTransactions(
+                effectiveLaundromats,
+                startDate ?? DateTime.MinValue,
+                endDate ?? DateTime.MaxValue);
+
+                await Task.WhenAll(soapDataTask, soapPercentageDataTask);
+
+                // Process regular soap data
+                var soapData = await soapDataTask;
+                chartLabelsSumSoap = soapData.Select(d => d.Label).ToArray();
+                chartValuesSumSoap = soapData.Select(d => d.Value).ToArray();
+
+                // Process percentage soap data
+                var soapPercentageData = await soapPercentageDataTask;
+                chartLabelsProcentageSoap = soapPercentageData.Select(d => d.Label).ToArray();
+                chartValuesProcentageSoap = soapPercentageData.Select(d => d.Value).ToArray();
+
+                // Save current parameters to avoid reloading unnecessarily
+                _lastSoapDataParams = GetCurrentParams();
+
+                // Remove loading indicator
+                isLoading = false;
+            }
+            else if (content == "Temperature Statistics" &&
+            (chartLabelsProcentageSoap.Length == 0 || _lastTemperatureDataParams != GetCurrentParams()))
+            {
+                // Temperature data loading would go here
+                _lastTemperatureDataParams = GetCurrentParams();
+            }
+            else if (content == "Program Type Statistics" &&
+            (chartLabelsProcentageSoap.Length == 0 || _lastProgramTypeDataParams != GetCurrentParams()))
+            {
+                // Program type data loading would go here
+                _lastProgramTypeDataParams = GetCurrentParams();
+            }
+            else if (content == "Rinse Statistics" &&
+            (chartLabelsProcentageSoap.Length == 0 || _lastRinseDataParams != GetCurrentParams()))
+            {
+                // Rinse data loading would go here
+                _lastRinseDataParams = GetCurrentParams();
+            }
         }
-        StateHasChanged();
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading special content data: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
     }
 
     public void Dispose()
