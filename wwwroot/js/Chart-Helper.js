@@ -119,6 +119,7 @@ window.renderChart = function (config) {
             },
             scales: {
                 x: {
+                    beginAtZero: true,
                     stacked: config.stacked, // Enable stacking for x-axis
                     ticks: {
                         font: {
@@ -127,10 +128,13 @@ window.renderChart = function (config) {
                     }
                 },
                 y: {
+                    beginAtZero: true,
                     stacked: config.stacked, // Enable stacking for y-axis
                     ticks: {
                         font: {
-                            size: axisLabelSize // Set y-axis label font size
+                            size: axisLabelSize// Set y-axis label font size
+                            
+                            
                         }
                     }
                 }
