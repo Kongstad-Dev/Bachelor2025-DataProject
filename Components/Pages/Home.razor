@@ -85,7 +85,10 @@
                 }
                 else if (selectedSpecialContent == "Temperature Statistics")
                 {
-                    <p>Temperature data would appear here.</p>
+                    <div class="main-graph-container small">
+                        <ChartComponent CanvasId="TempUsage" Labels="@chartLabelsTemp" SingleValues="@chartValuesTemp"
+                                        Title="Temperature Usage" Type="bar" />
+                    </div>
                 }
                 else if (selectedSpecialContent == "Program Type Statistics")
                 {
@@ -122,6 +125,8 @@
     private string[] chartLabelsSumMachine = Array.Empty<string>();
     private decimal[][] chartValuesSumMachine = Array.Empty<decimal[]>();
     private string[] chartLabelsMachine = Array.Empty<string>();
+    private decimal[] chartValuesTemp = Array.Empty<decimal>();
+    private string[] chartLabelsTemp= Array.Empty<string>();
     private bool isLoading = true;
 
     private string _lastSoapDataParams = string.Empty;
@@ -231,6 +236,8 @@
             effectiveLaundromats,
             startDate ?? DateTime.MinValue,
             endDate ?? DateTime.MaxValue);
+            
+           
 
 
             // Wait for all tasks to complete
@@ -240,28 +247,28 @@
             token.ThrowIfCancellationRequested();
 
             keyValuePairs = await keyValuesTask;
-            Console.WriteLine($"Loaded key values: {keyValuePairs.Count}");
+           // Console.WriteLine($"Loaded key values: {keyValuePairs.Count}");
 
             var resultSum = await revenueSumTask;
             chartLabelsSum = resultSum.Select(r => r.Label).ToArray();
             chartValuesSum = resultSum.Select(r => r.Value).ToArray();
-            Console.WriteLine($"Loaded sum chart data: {chartLabelsSum.Length} items");
+           // Console.WriteLine($"Loaded sum chart data: {chartLabelsSum.Length} items");
 
             var resultTime = await revenueTimeTask;
             chartLabelsTime = resultTime.Select(r => r.Label).ToArray();
             chartValuesTime = resultTime.Select(r => r.Value).ToArray();
-            Console.WriteLine($"Loaded time chart data: {chartLabelsTime.Length} items");
+           // Console.WriteLine($"Loaded time chart data: {chartLabelsTime.Length} items");
 
             var resultTimeTrans = await transactionTimeTask;
             chartLabelsTimeTrans = resultTimeTrans.Select(r => r.Label).ToArray();
             chartValuesTimeTrans = resultTimeTrans.Select(r => r.Value).ToArray();
-            Console.WriteLine($"Loaded time chart data: {chartLabelsTime.Length} items");
+            //Console.WriteLine($"Loaded time chart data: {chartLabelsTime.Length} items");
 
             var resultStackedMachine = await stackedMachineTask;
             chartLabelsSumMachine = resultStackedMachine.Labels.ToArray();
             chartValuesSumMachine = resultStackedMachine.Values.Select(r => r).ToArray();
             chartLabelsMachine = resultStackedMachine.unitNames.ToArray();
-            Console.WriteLine($"Loaded stacked machine chart data: {chartLabelsSumMachine.Length} items");
+           // Console.WriteLine($"Loaded stacked machine chart data: {chartLabelsSumMachine.Length} items");
 
             await UpdateChartData(selectedSpecialContent);
         }
@@ -346,49 +353,65 @@
     private async Task UpdateChartData(string content)
     {
         try
-        {
-            if (content == "Soap Statistics" &&
-            (chartLabelsSumSoap.Length == 0 || _lastSoapDataParams != GetCurrentParams()))
-            {
-                // Show loading indicator for this section only
-                isLoading = true;
-                StateHasChanged();
+        {if (content == "Soap Statistics" &&
+(chartLabelsSumSoap.Length == 0 || _lastSoapDataParams != GetCurrentParams()))
+{
+    // Show loading indicator for this section only
+    isLoading = true;
+    StateHasChanged();
 
-                // Load both soap datasets in parallel
-                var soapDataTask = AnalysisService.CalculateTotalSoapProgramFromTransactions(
-                effectiveLaundromats,
-                startDate ?? DateTime.MinValue,
-                endDate ?? DateTime.MaxValue);
+    // Load both soap datasets in parallel
+    var soapDataTask = AnalysisService.CalculateTotalSoapProgramFromTransactions(
+        effectiveLaundromats,
+        startDate ?? DateTime.MinValue,
+        endDate ?? DateTime.MaxValue);
 
-                var soapPercentageDataTask = AnalysisService.CalculateTotalSoapProgramProcentageFromTransactions(
-                effectiveLaundromats,
-                startDate ?? DateTime.MinValue,
-                endDate ?? DateTime.MaxValue);
+    var soapPercentageDataTask = AnalysisService.CalculateTotalSoapProgramProcentageFromTransactions(
+        effectiveLaundromats,
+        startDate ?? DateTime.MinValue,
+        endDate ?? DateTime.MaxValue);
 
-                await Task.WhenAll(soapDataTask, soapPercentageDataTask);
+    await Task.WhenAll(soapDataTask, soapPercentageDataTask);
 
-                // Process regular soap data
-                var soapData = await soapDataTask;
-                chartLabelsSumSoap = soapData.Select(d => d.Label).ToArray();
-                chartValuesSumSoap = soapData.Select(d => d.Value).ToArray();
+    // Process regular soap data
+    var soapData = await soapDataTask;
+    chartLabelsSumSoap = soapData.Select(d => d.Label).ToArray();
+    chartValuesSumSoap = soapData.Select(d => d.Value).ToArray();
 
-                // Process percentage soap data
-                var soapPercentageData = await soapPercentageDataTask;
-                chartLabelsProcentageSoap = soapPercentageData.Select(d => d.Label).ToArray();
-                chartValuesProcentageSoap = soapPercentageData.Select(d => d.Value).ToArray();
+    // Process percentage soap data
+    var soapPercentageData = await soapPercentageDataTask;
+    chartLabelsProcentageSoap = soapPercentageData.Select(d => d.Label).ToArray();
+    chartValuesProcentageSoap = soapPercentageData.Select(d => d.Value).ToArray();
 
-                // Save current parameters to avoid reloading unnecessarily
-                _lastSoapDataParams = GetCurrentParams();
+    // Save current parameters to avoid reloading unnecessarily
+    _lastSoapDataParams = GetCurrentParams();
 
-                // Remove loading indicator
-                isLoading = false;
-            }
-            else if (content == "Temperature Statistics" &&
-            (chartLabelsProcentageSoap.Length == 0 || _lastTemperatureDataParams != GetCurrentParams()))
-            {
-                // Temperature data loading would go here
-                _lastTemperatureDataParams = GetCurrentParams();
-            }
+    // Remove loading indicator
+    isLoading = false;
+}
+else if (content == "Temperature Statistics" &&
+(chartLabelsTemp.Length == 0 || _lastTemperatureDataParams != GetCurrentParams()))
+{
+    isLoading = true;
+    StateHasChanged();
+
+    var TempTask = AnalysisService.TempProgramFromTransactions(
+        effectiveLaundromats,
+        startDate ?? DateTime.MinValue,
+        endDate ?? DateTime.MaxValue);
+
+    await Task.WhenAll(TempTask);
+    // Process temperature data
+    var tempData = await TempTask;
+    chartLabelsTemp = tempData.Select(d => d.Label).ToArray();
+    chartValuesTemp = tempData.Select(d => d.Value).ToArray();
+        
+    // Save current parameters to avoid reloading unnecessarily
+    _lastTemperatureDataParams = GetCurrentParams();
+
+    // Remove loading indicator
+    isLoading = false;
+}
             else if (content == "Program Type Statistics" &&
             (chartLabelsProcentageSoap.Length == 0 || _lastProgramTypeDataParams != GetCurrentParams()))
             {

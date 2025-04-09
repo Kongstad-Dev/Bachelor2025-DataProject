@@ -95,6 +95,18 @@ namespace BlazorTest.Services
             var soapService = new SoapAnalysisService(_dbContextFactory, _cache);
             return await soapService.CalculateTotalSoapProgramFromTransactions(laundromatIds, startDate, endDate);
         }
+        
+        public async Task<List<ChartDataPoint>> TempProgramFromTransactions(
+            List<string> laundromatIds,
+            DateTime? startDate,
+            DateTime? endDate
+        )
+        {
+          
+            var tempService = new TempAnalysisService(_dbContextFactory, _cache);
+            return await tempService.TempProgramFromTransactions(laundromatIds, startDate, endDate);
+           
+        }
 
         public async Task<List<ChartDataPoint>> CalculateTransactionOverTime(
             List<string> laundromatIds,
