@@ -107,6 +107,18 @@ namespace BlazorTest.Services
             return await tempService.TempProgramFromTransactions(laundromatIds, startDate, endDate);
            
         }
+        
+        public async Task<List<ChartDataPoint>> TempProgramProcentageFromTransactions(
+            List<string> laundromatIds,
+            DateTime? startDate,
+            DateTime? endDate
+        )
+        {
+          
+            var tempService = new TempAnalysisService(_dbContextFactory, _cache);
+            return await tempService.TempProgramProcentageFromTransactions(laundromatIds, startDate, endDate);
+           
+        }
 
         public async Task<List<ChartDataPoint>> CalculateTransactionOverTime(
             List<string> laundromatIds,

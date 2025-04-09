@@ -89,6 +89,10 @@
                         <ChartComponent CanvasId="TempUsage" Labels="@chartLabelsTemp" SingleValues="@chartValuesTemp"
                                         Title="Temperature Usage" Type="bar" />
                     </div>
+                    <div class="main-graph-container small">
+                        <ChartComponent CanvasId="TempUsageProcentage" Labels="@chartLabelsTempProcentage" SingleValues="@chartValuesTempProcentage"
+                                        Title="Temperature Usage %" Type="pie" />
+                    </div>
                 }
                 else if (selectedSpecialContent == "Program Type Statistics")
                 {
@@ -127,6 +131,8 @@
     private string[] chartLabelsMachine = Array.Empty<string>();
     private decimal[] chartValuesTemp = Array.Empty<decimal>();
     private string[] chartLabelsTemp= Array.Empty<string>();
+    private string[] chartLabelsTempProcentage = Array.Empty<string>();
+    private decimal[] chartValuesTempProcentage= Array.Empty<decimal>();
     private bool isLoading = true;
 
     private string _lastSoapDataParams = string.Empty;
@@ -399,12 +405,21 @@ else if (content == "Temperature Statistics" &&
         effectiveLaundromats,
         startDate ?? DateTime.MinValue,
         endDate ?? DateTime.MaxValue);
+    
+    var TempTaskProcentage = AnalysisService.TempProgramProcentageFromTransactions(
+        effectiveLaundromats,
+        startDate ?? DateTime.MinValue,
+        endDate ?? DateTime.MaxValue);
 
-    await Task.WhenAll(TempTask);
+    await Task.WhenAll(TempTask, TempTaskProcentage);
     // Process temperature data
     var tempData = await TempTask;
     chartLabelsTemp = tempData.Select(d => d.Label).ToArray();
     chartValuesTemp = tempData.Select(d => d.Value).ToArray();
+    
+    var tempDataProcentage = await TempTaskProcentage;
+    chartLabelsTempProcentage = tempDataProcentage.Select(d => d.Label).ToArray();
+    chartValuesTempProcentage = tempDataProcentage.Select(d => d.Value).ToArray();
         
     // Save current parameters to avoid reloading unnecessarily
     _lastTemperatureDataParams = GetCurrentParams();
