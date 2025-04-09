@@ -79,9 +79,6 @@
                         <ChartComponent CanvasId="soapDataProcentage" Labels="@chartLabelsProcentageSoap"
                             SingleValues="@chartValuesProcentageSoap" Title="Soap Usage Procent" Type="pie" />
                     </div>
-
-
-
                 }
                 else if (selectedSpecialContent == "Temperature Statistics")
                 {
@@ -96,7 +93,14 @@
                 }
                 else if (selectedSpecialContent == "Program Type Statistics")
                 {
-                    <p>Program type distribution would appear here.</p>
+                    <div class="main-graph-container small">
+                        <ChartComponent CanvasId="PTUsage" Labels="@chartLabelsPT" SingleValues="@chartValuesPT"
+                                        Title="Program Type Usage" Type="bar" />
+                    </div>
+                    <div class="main-graph-container small">
+                        <ChartComponent CanvasId="PTDataProcentage" Labels="@chartLabelsPTProcentage"
+                                        SingleValues="@chartValuesPTProcentage" Title="Program Type Usage Procent" Type="pie" />
+                    </div>
                 }
                 else if (selectedSpecialContent == "Rinse Statistics")
                 {
@@ -133,6 +137,13 @@
     private string[] chartLabelsTemp= Array.Empty<string>();
     private string[] chartLabelsTempProcentage = Array.Empty<string>();
     private decimal[] chartValuesTempProcentage= Array.Empty<decimal>();
+    private string[] chartLabelsPT = Array.Empty<string>();
+    private decimal[] chartValuesPT= Array.Empty<decimal>();
+    private string[] chartLabelsPTProcentage = Array.Empty<string>();
+    private decimal[] chartValuesPTProcentage= Array.Empty<decimal>();
+
+    
+    
     private bool isLoading = true;
 
     private string _lastSoapDataParams = string.Empty;
@@ -430,8 +441,35 @@ else if (content == "Temperature Statistics" &&
             else if (content == "Program Type Statistics" &&
             (chartLabelsProcentageSoap.Length == 0 || _lastProgramTypeDataParams != GetCurrentParams()))
             {
+                isLoading = true;
+                StateHasChanged();
+
+                var PTTask = AnalysisService.ProgramTypeProgramFromTransactions(
+                    effectiveLaundromats,
+                    startDate ?? DateTime.MinValue,
+                    endDate ?? DateTime.MaxValue);
+    
+                var PTTaskProcentage = AnalysisService.ProgramTypeProcentageFromTransactions(
+                    effectiveLaundromats,
+                    startDate ?? DateTime.MinValue,
+                    endDate ?? DateTime.MaxValue);
+
+                await Task.WhenAll(PTTask, PTTaskProcentage);
+                // Process temperature data
+                var PTData = await PTTask;
+                chartLabelsPT = PTData.Select(d => d.Label).ToArray();
+                chartValuesPT = PTData.Select(d => d.Value).ToArray();
+    
+                var PTDataProcentage = await PTTaskProcentage;
+                chartLabelsPTProcentage = PTDataProcentage.Select(d => d.Label).ToArray();
+                chartValuesPTProcentage = PTDataProcentage.Select(d => d.Value).ToArray();
+
                 // Program type data loading would go here
                 _lastProgramTypeDataParams = GetCurrentParams();
+                
+                // Remove loading indicator
+                isLoading = false;
+               
             }
             else if (content == "Rinse Statistics" &&
             (chartLabelsProcentageSoap.Length == 0 || _lastRinseDataParams != GetCurrentParams()))

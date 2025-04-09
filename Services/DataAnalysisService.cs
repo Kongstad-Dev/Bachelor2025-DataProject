@@ -95,32 +95,57 @@ namespace BlazorTest.Services
             var soapService = new SoapAnalysisService(_dbContextFactory, _cache);
             return await soapService.CalculateTotalSoapProgramFromTransactions(laundromatIds, startDate, endDate);
         }
-        
+
+        //Temp Total Calculation
         public async Task<List<ChartDataPoint>> TempProgramFromTransactions(
             List<string> laundromatIds,
             DateTime? startDate,
             DateTime? endDate
         )
         {
-          
+
             var tempService = new TempAnalysisService(_dbContextFactory, _cache);
             return await tempService.TempProgramFromTransactions(laundromatIds, startDate, endDate);
-           
+
         }
-        
+
+        //Temp Procentage
         public async Task<List<ChartDataPoint>> TempProgramProcentageFromTransactions(
             List<string> laundromatIds,
             DateTime? startDate,
             DateTime? endDate
         )
         {
-          
+
             var tempService = new TempAnalysisService(_dbContextFactory, _cache);
             return await tempService.TempProgramProcentageFromTransactions(laundromatIds, startDate, endDate);
-           
+
         }
 
-        public async Task<List<ChartDataPoint>> CalculateTransactionOverTime(
+        public async Task<List<ChartDataPoint>> ProgramTypeProgramFromTransactions(
+            List<string> laundromatIds,
+            DateTime? startDate,
+            DateTime? endDate
+        )
+        {
+            var ProgramTypeAnalysisService = new ProgramTypeAnalysisService(_dbContextFactory, _cache);
+            return await ProgramTypeAnalysisService.ProgramTypeProgramFromTransactions(laundromatIds, startDate,
+                endDate);
+        }
+
+        public async Task<List<ChartDataPoint>> ProgramTypeProcentageFromTransactions(
+            List<string> laundromatIds,
+            DateTime? startDate,
+            DateTime? endDate
+        )
+        {
+            var ProgramTypeAnalysisService = new ProgramTypeAnalysisService(_dbContextFactory, _cache);
+            return await ProgramTypeAnalysisService.ProgramTypeProcentageFromTransactions(laundromatIds, startDate,
+                endDate);
+        }
+
+
+    public async Task<List<ChartDataPoint>> CalculateTransactionOverTime(
             List<string> laundromatIds,
             DateTime? startDate,
             DateTime? endDate
