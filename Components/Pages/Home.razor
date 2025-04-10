@@ -104,7 +104,14 @@
                 }
                 else if (selectedSpecialContent == "Rinse Statistics")
                 {
-                    <p>Rinse cycle data would appear here.</p>
+                    <div class="main-graph-container small">
+                        <ChartComponent CanvasId="RinseUsage" Labels="@chartLabelsRinse" SingleValues="@chartValuesRinse"
+                                        Title="Rinse Usage" Type="bar" />
+                    </div>
+                    <div class="main-graph-container small">
+                        <ChartComponent CanvasId="RinseDataProcentage" Labels="@chartLabelsRinseProcentage"
+                                        SingleValues="@chartValuesRinseProcentage" Title="Rinse Usage Procent" Type="pie" />
+                    </div>
                 }
             </div>
         }
@@ -141,6 +148,12 @@
     private decimal[] chartValuesPT= Array.Empty<decimal>();
     private string[] chartLabelsPTProcentage = Array.Empty<string>();
     private decimal[] chartValuesPTProcentage= Array.Empty<decimal>();
+    
+    
+    private string[] chartLabelsRinse = Array.Empty<string>();
+    private decimal[] chartValuesRinse= Array.Empty<decimal>();
+    private string[] chartLabelsRinseProcentage = Array.Empty<string>();
+    private decimal[] chartValuesRinseProcentage= Array.Empty<decimal>();
 
     
     
@@ -474,8 +487,32 @@ else if (content == "Temperature Statistics" &&
             else if (content == "Rinse Statistics" &&
             (chartLabelsProcentageSoap.Length == 0 || _lastRinseDataParams != GetCurrentParams()))
             {
+                isLoading = true;
+                StateHasChanged();
+
+                var RinseTask = AnalysisService.RinseFromTransactions(
+                    effectiveLaundromats,
+                    startDate ?? DateTime.MinValue,
+                    endDate ?? DateTime.MaxValue);
+    
+                var RinseTaskProcentage = AnalysisService.RinseProcentageFromTransactions(
+                    effectiveLaundromats,
+                    startDate ?? DateTime.MinValue,
+                    endDate ?? DateTime.MaxValue);
+
+                await Task.WhenAll(RinseTask, RinseTaskProcentage);
+                // Process temperature data
+                var RinseData = await RinseTask;
+                chartLabelsRinse = RinseData.Select(d => d.Label).ToArray();
+                chartValuesRinse = RinseData.Select(d => d.Value).ToArray();
+    
+                var RinseDataProcentage = await RinseTaskProcentage;
+                chartLabelsRinseProcentage = RinseDataProcentage.Select(d => d.Label).ToArray();
+                chartValuesRinseProcentage = RinseDataProcentage.Select(d => d.Value).ToArray();
                 // Rinse data loading would go here
                 _lastRinseDataParams = GetCurrentParams();
+                // Remove loading indicator
+                isLoading = false;
             }
         }
         catch (Exception ex)

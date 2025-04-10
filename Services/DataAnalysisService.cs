@@ -143,6 +143,28 @@ namespace BlazorTest.Services
             return await ProgramTypeAnalysisService.ProgramTypeProcentageFromTransactions(laundromatIds, startDate,
                 endDate);
         }
+        
+        public async Task<List<ChartDataPoint>> RinseFromTransactions(
+            List<string> laundromatIds,
+            DateTime? startDate,
+            DateTime? endDate
+        )
+        {
+            var RinseAnalysisService = new RinseAnalysisService(_dbContextFactory, _cache);
+            return await RinseAnalysisService.RinseFromTransactions(laundromatIds, startDate,
+                endDate);
+        }
+        
+        public async Task<List<ChartDataPoint>> RinseProcentageFromTransactions(
+            List<string> laundromatIds,
+            DateTime? startDate,
+            DateTime? endDate
+        )
+        {
+            var RinseProcentageAnalysisService = new RinseAnalysisService(_dbContextFactory, _cache);
+            return await RinseProcentageAnalysisService.RinseProcentageFromTransactions(laundromatIds, startDate,
+                endDate);
+        }
 
 
     public async Task<List<ChartDataPoint>> CalculateTransactionOverTime(
