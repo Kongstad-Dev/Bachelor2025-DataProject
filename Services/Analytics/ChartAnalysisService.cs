@@ -20,8 +20,17 @@ namespace BlazorTest.Services.Analytics
         )
         {
             StatsPeriodType? periodType = GetMatchingStatsPeriodType(startDate, endDate);
-            string periodKey = periodType == StatsPeriodType.Quarter ?
-                GetQuarterPeriodKey(startDate) : null;
+
+            string periodKey = null;
+
+            if (periodType == StatsPeriodType.Quarter)
+            {
+                periodKey = GetQuarterPeriodKey(startDate);
+            }
+            else if (periodType == StatsPeriodType.CompletedQuarters)
+            {
+                periodKey = "past-4-completed-quarters";
+            }
 
             if (periodType.HasValue)
             {

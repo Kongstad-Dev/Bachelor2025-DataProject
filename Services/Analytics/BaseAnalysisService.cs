@@ -92,6 +92,42 @@ namespace BlazorTest.Services.Analytics
                         return StatsPeriodType.Quarter;
                     }
                 }
+
+                // CASE 5: Check for Past 4 Completed Quarters match
+                // Calculate the start and end dates for the past 4 completed quarters
+                int lastCompletedQuarter = currentQuarter - 1;
+                int lastCompletedYear = currentYear;
+
+                if (lastCompletedQuarter <= 0)
+                {
+                    lastCompletedQuarter += 4;
+                    lastCompletedYear -= 1;
+                }
+
+                // Calculate end date (last day of the last completed quarter)
+                int lastQuarterLastMonth = lastCompletedQuarter * 3;
+                var completedQuartersEndDate = new DateTime(lastCompletedYear, lastQuarterLastMonth, 1).AddMonths(1).AddDays(-1);
+
+                // Calculate start date (first day 4 quarters back from the last completed quarter)
+                int startQuarter = lastCompletedQuarter - 3;
+                int startYear = lastCompletedYear;
+
+                if (startQuarter <= 0)
+                {
+                    startQuarter += 4;
+                    startYear -= 1;
+                }
+
+                int completedQuartersStartMonth = (startQuarter - 1) * 3 + 1;
+                var completedQuartersStartDate = new DateTime(startYear, completedQuartersStartMonth, 1);
+                // Check if exact match for past 4 completed quarters
+                if (
+                    DateEquals(startDate.Value, completedQuartersStartDate)
+                    && DateEquals(endDate.Value, completedQuartersEndDate)
+                )
+                {
+                    return StatsPeriodType.CompletedQuarters;
+                }
             }
 
             return null;
@@ -115,6 +151,7 @@ namespace BlazorTest.Services.Analytics
                 StatsPeriodType.HalfYear => "Last 6 Months",
                 StatsPeriodType.Year => "Last Year",
                 StatsPeriodType.Quarter when periodKey != null => periodKey.Replace("-Q", " Q"),
+                StatsPeriodType.CompletedQuarters => "Past 4 Completed Quarters",
                 _ => "Custom"
             };
         }

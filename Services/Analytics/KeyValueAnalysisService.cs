@@ -10,9 +10,8 @@ namespace BlazorTest.Services.Analytics
         public KeyValueAnalysisService(
             IDbContextFactory<YourDbContext> dbContextFactory,
             IMemoryCache cache
-        ) : base(dbContextFactory, cache)
-        {
-        }
+        )
+            : base(dbContextFactory, cache) { }
 
         public async Task<List<KeyValuePair<string, decimal>>> GetKeyValuesFromStats(
             List<string> laundromatIds,
@@ -44,8 +43,16 @@ namespace BlazorTest.Services.Analytics
             }
 
             StatsPeriodType? periodType = GetMatchingStatsPeriodType(startDate, endDate);
-            string periodKey = periodType == StatsPeriodType.Quarter ?
-                GetQuarterPeriodKey(startDate) : null;
+            string periodKey = null;
+            if (periodType == StatsPeriodType.Quarter)
+            {
+                periodKey = GetQuarterPeriodKey(startDate);
+            }
+            else if (periodType == StatsPeriodType.CompletedQuarters)
+            {
+                periodKey = "past-4-completed-quarters";
+            }
+
             string periodName = GetPeriodName(periodType.GetValueOrDefault(), periodKey);
 
             // If we identified a matching period, get stats for all requested laundromats
@@ -61,7 +68,12 @@ namespace BlazorTest.Services.Analytics
                     );
 
                 // For quarters, we need to filter by the period key
-                if (periodType == StatsPeriodType.Quarter && !string.IsNullOrEmpty(periodKey))
+                if (
+                    (
+                        periodType == StatsPeriodType.Quarter
+                        || periodType == StatsPeriodType.CompletedQuarters
+                    ) && !string.IsNullOrEmpty(periodKey)
+                )
                 {
                     statsQuery = statsQuery.Where(s => s.PeriodKey == periodKey);
                 }
@@ -85,35 +97,44 @@ namespace BlazorTest.Services.Analytics
                 if (stats.Any())
                 {
                     // Aggregate the stats - optimized with LINQ
-                    var aggregation =
-                        stats
-                            .GroupBy(s => 1) // Group all together
-                            .Select(g => new
-                            {
-                                TotalTransactions = g.Sum(s => s.TotalTransactions),
-                                TotalRevenue = g.Sum(s => s.TotalRevenue),
-                                WashingMachineTransactions = g.Sum(s =>
-                                    s.WashingMachineTransactions
-                                ),
-                                DryerTransactions = g.Sum(s => s.DryerTransactions),
-                            })
-                            .FirstOrDefault()
-                        ?? new
+                    var aggregation = stats
+                        .GroupBy(s => 1) // Group all together
+                        .Select(g => new
                         {
-                            TotalTransactions = 0,
-                            TotalRevenue = 0m,
-                            WashingMachineTransactions = 0,
-                            DryerTransactions = 0,
-                        };
+                            TotalTransactions = g.Sum(s => s.TotalTransactions),
+                            TotalRevenue = g.Sum(s => s.TotalRevenue),
+                            WashingMachineTransactions = g.Sum(s => s.WashingMachineTransactions),
+                            DryerTransactions = g.Sum(s => s.DryerTransactions),
+                            // Include the start prices in the aggregation
+                            WasherStartPriceTotal = g.Sum(s =>
+                                s.WasherStartPrice * s.WashingMachineTransactions
+                            ),
+                            DryerStartPriceTotal = g.Sum(s =>
+                                s.DryerStartPrice * s.DryerTransactions
+                            ),
+                        })
+                        .FirstOrDefault();
 
-                    // Calculate derived stats
-                    var totalTransactions = aggregation.TotalTransactions;
-                    var totalRevenue = aggregation.TotalRevenue;
-                    var washingMachineTransactions = aggregation.WashingMachineTransactions;
-                    var dryerTransactions = aggregation.DryerTransactions;
+                    // Use null conditional operator to handle null aggregation
+                    var totalTransactions = aggregation?.TotalTransactions ?? 0;
+                    var totalRevenue = aggregation?.TotalRevenue ?? 0m;
+                    var washingMachineTransactions = aggregation?.WashingMachineTransactions ?? 0;
+                    var dryerTransactions = aggregation?.DryerTransactions ?? 0;
+
+                    // Calculate weighted average prices
+                    decimal washerStartPrice =
+                        washingMachineTransactions > 0
+                            ? (aggregation?.WasherStartPriceTotal ?? 0) / washingMachineTransactions
+                            : 0;
+
+                    decimal dryerStartPrice =
+                        dryerTransactions > 0
+                            ? (aggregation?.DryerStartPriceTotal ?? 0) / dryerTransactions
+                            : 0;
 
                     var avgRevenue =
                         laundromatIds.Count > 0 ? totalRevenue / laundromatIds.Count : 0;
+
                     var avgTransactions =
                         laundromatIds.Count > 0
                             ? totalTransactions / (decimal)laundromatIds.Count
@@ -139,7 +160,15 @@ namespace BlazorTest.Services.Analytics
                             "Washer Start",
                             washingMachineTransactions
                         ),
+                        new KeyValuePair<string, decimal>(
+                            "Washer Start Price",
+                            Math.Round(washerStartPrice, 2)
+                        ),
                         new KeyValuePair<string, decimal>("Dryer Start", dryerTransactions),
+                        new KeyValuePair<string, decimal>(
+                            "Dryer Start Price",
+                            Math.Round(dryerStartPrice, 2)
+                        ),
                     };
 
                     // Cache the result for 1 hour
@@ -168,29 +197,30 @@ namespace BlazorTest.Services.Analytics
             // Get total transactions and revenue in a single query
             var dryerUnitTypes = new[] { 1, 18, 5, 10, 14, 19, 27, 29, 41 };
 
-            var transactionStats = await dbContext.Transactions
-                .Where(t => laundromatIds.Contains(t.LaundromatId))
-                .Where(t => t.date >= startDate && t.date <= endDate)
-                .Where(t => t.amount != 0)
-                .AsNoTracking()
-                .GroupBy(t => 1)
-                .Select(g => new
+            var transactionStats =
+                await dbContext
+                    .Transactions.Where(t => laundromatIds.Contains(t.LaundromatId))
+                    .Where(t => t.date >= startDate && t.date <= endDate)
+                    .Where(t => t.amount != 0)
+                    .AsNoTracking()
+                    .GroupBy(t => 1)
+                    .Select(g => new
+                    {
+                        TotalTransactions = g.Count(),
+                        TotalRevenue = g.Sum(t => Math.Abs(t.amount)) / 100m,
+                        DryerCount = g.Count(t => dryerUnitTypes.Contains(t.unitType)),
+                        DryerRevenue = g.Sum(t =>
+                            dryerUnitTypes.Contains(t.unitType) ? Math.Abs(t.amount) / 100m : 0m
+                        ),
+                    })
+                    .FirstOrDefaultAsync()
+                ?? new
                 {
-                    TotalTransactions = g.Count(),
-                    TotalRevenue = g.Sum(t => Math.Abs(t.amount)) / 100m,
-                    DryerCount = g.Count(t => dryerUnitTypes.Contains(t.unitType)),
-                    DryerRevenue = g.Sum(t =>
-                        dryerUnitTypes.Contains(t.unitType) ? Math.Abs(t.amount) / 100m : 0m
-                                    ),
-                })
-                                .FirstOrDefaultAsync()
-                            ?? new
-                            {
-                                TotalTransactions = 0,
-                                TotalRevenue = 0m,
-                                DryerCount = 0,
-                                DryerRevenue = 0m,
-                            };
+                    TotalTransactions = 0,
+                    TotalRevenue = 0m,
+                    DryerCount = 0,
+                    DryerRevenue = 0m,
+                };
 
             if (transactionStats.TotalTransactions == 0)
             {

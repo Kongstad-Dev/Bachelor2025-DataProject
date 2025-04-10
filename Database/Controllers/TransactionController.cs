@@ -40,8 +40,10 @@ namespace BlazorTest.Database.Controllers
         {
             try
             {
+                using var dbContext = _dbContextFactory.CreateDbContext();
+
                 // Use AsNoTracking() to avoid any potential tracking conflicts
-                var laundromatIds = await _dbContext.Laundromat
+                var laundromatIds = await dbContext.Laundromat
                     .AsNoTracking()
                     .Select(l => l.kId)
                     .ToListAsync();
@@ -51,7 +53,7 @@ namespace BlazorTest.Database.Controllers
                 foreach (var id in laundromatIds)
                 {
                     // Find each entity separately to ensure we have the latest version
-                    var laundromat = await _dbContext.Laundromat.FindAsync(id);
+                    var laundromat = await dbContext.Laundromat.FindAsync(id);
 
                     if (laundromat != null)
                     {
@@ -59,14 +61,14 @@ namespace BlazorTest.Database.Controllers
                         laundromat.lastFetchDate = null;
 
                         // Explicitly mark the entity as modified
-                        _dbContext.Entry(laundromat).State = EntityState.Modified;
+                        dbContext.Entry(laundromat).State = EntityState.Modified;
                         count++;
 
                     }
                 }
 
                 // Save all changes at once
-                await _dbContext.SaveChangesAsync();
+                await dbContext.SaveChangesAsync();
 
                 return Ok($"Reset lastFetchDate for {count} laundromats");
             }
@@ -394,48 +396,33 @@ namespace BlazorTest.Database.Controllers
             // Process and save transactions
             int newTransactions = await ProcessTransactions(transactions, laundromatId);
 
-            if (newTransactions > 0)
+
+            // Update last fetch date for laundromat in a separate context
+            using var updateContext = _dbContextFactory.CreateDbContext();
+
+            var laundromatToUpdate = await updateContext.Laundromat
+                .FirstOrDefaultAsync(l => l.kId == laundromatId);
+
+            if (laundromatToUpdate != null)
             {
-                // Update last fetch date for laundromat in a separate context
-                using var updateContext = _dbContextFactory.CreateDbContext();
-
-                // THIS IS THE ISSUE: FindAsync doesn't work as expected here because
-                // while kId is the primary key, it's not being matched correctly
-                // var laundromatToUpdate = await updateContext.Laundromat.FindAsync(laundromatId);
-
-                // INSTEAD, use this:
-                var laundromatToUpdate = await updateContext.Laundromat
-                    .FirstOrDefaultAsync(l => l.kId == laundromatId);
-
-                if (laundromatToUpdate != null)
+                try
                 {
-                    // Add logging to debug
-                    Console.WriteLine($"Found laundromat {laundromatId}. Current lastFetchDate: {laundromatToUpdate.lastFetchDate}");
+                    await _statsController.UpdateStats(laundromatId);
+                    System.Console.WriteLine($"Stats updated for laundromat {laundromatId}");
 
                     laundromatToUpdate.lastFetchDate = DateTime.Now;
-
                     // Explicitly mark as modified to ensure the update is processed
                     updateContext.Entry(laundromatToUpdate).State = EntityState.Modified;
-
-                    var rowsAffected = await updateContext.SaveChangesAsync();
-                    Console.WriteLine($"Updated lastFetchDate to {DateTime.Now}, rows affected: {rowsAffected}");
-
-                    // Call the stats controller's update method directly
-                    try
-                    {
-                        await _statsController.UpdateStats(laundromatId);
-                        System.Console.WriteLine($"Stats updated for laundromat {laundromatId}");
-                    }
-                    catch (Exception ex)
-                    {
-                        // Log but don't fail if stats update has issues
-                        System.Console.WriteLine($"Error updating stats: {ex.Message}");
-                    }
+                    await updateContext.SaveChangesAsync();
                 }
-                else
+                catch (Exception ex)
                 {
-                    Console.WriteLine($"WARNING: Could not find laundromat with kId {laundromatId}");
+                    System.Console.WriteLine($"Error updating stats: {ex.Message}");
                 }
+            }
+            else
+            {
+                Console.WriteLine($"WARNING: Could not find laundromat with kId {laundromatId}");
             }
 
             return newTransactions;
