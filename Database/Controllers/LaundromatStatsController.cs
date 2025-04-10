@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using BlazorTest.Database;
+using BlazorTest.Services.Analytics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -227,19 +228,60 @@ namespace BlazorTest.Database.Controllers
             decimal washerStartPrice =
                 washerTransactions > 0 ? washerRevenue / washerTransactions : 0;
 
+            // Generate time series data for revenue
+            var revenueTimeSeriesData = await GenerateTimeSeriesData(
+                dbContext,
+                laundromatId,
+                startDate,
+                endDate,
+                periodType,
+                TimeSeriesDataType.Revenue
+            );
+
+            // Generate time series data for transaction counts
+            var transactionCountTimeSeriesData = await GenerateTimeSeriesData(
+                dbContext,
+                laundromatId,
+                startDate,
+                endDate,
+                periodType,
+                TimeSeriesDataType.TransactionCount
+            );
+
+            // Convert to JSON
+            string revenueTimeSeriesJson = System.Text.Json.JsonSerializer.Serialize(
+                revenueTimeSeriesData
+            );
+
+            string transactionCountTimeSeriesJson = System.Text.Json.JsonSerializer.Serialize(
+                transactionCountTimeSeriesData
+            );
+
+            // Calculate available time series data types
+            TimeSeriesDataTypes availableTypes = TimeSeriesDataTypes.None;
+
+            if (!string.IsNullOrEmpty(revenueTimeSeriesJson))
+                availableTypes |= TimeSeriesDataTypes.Revenue;
+
+            if (!string.IsNullOrEmpty(transactionCountTimeSeriesJson))
+                availableTypes |= TimeSeriesDataTypes.TransactionCount;
+
             // Create or update stats entity
             if (existingStats == null)
             {
                 existingStats = new LaundromatStats
                 {
                     LaundromatId = laundromatId,
-                    LaundromatName = laundromatName, // Ensure this isn't null
+                    LaundromatName = laundromatName,
                     PeriodType = periodType,
                     PeriodKey = periodKey,
                     StartDate = startDate,
                     EndDate = endDate,
                     WasherStartPrice = washerStartPrice,
                     DryerStartPrice = dryerStartPrice,
+                    RevenueTimeSeriesData = revenueTimeSeriesJson,
+                    TransactionCountTimeSeriesData = transactionCountTimeSeriesJson,
+                    AvailableTimeSeriesData = availableTypes,
                 };
                 dbContext.LaundromatStats.Add(existingStats);
             }
@@ -250,7 +292,9 @@ namespace BlazorTest.Database.Controllers
                 existingStats.EndDate = endDate;
                 existingStats.WasherStartPrice = washerStartPrice;
                 existingStats.DryerStartPrice = dryerStartPrice;
-
+                existingStats.RevenueTimeSeriesData = revenueTimeSeriesJson;
+                existingStats.TransactionCountTimeSeriesData = transactionCountTimeSeriesJson;
+                existingStats.AvailableTimeSeriesData = availableTypes;
                 // Make sure LaundromatName is set
                 if (string.IsNullOrEmpty(existingStats.LaundromatName))
                 {
@@ -324,6 +368,43 @@ namespace BlazorTest.Database.Controllers
             decimal washerStartPrice =
                 washerTransactions > 0 ? washerRevenue / washerTransactions : 0;
 
+            // Generate time series data for revenue
+            var revenueTimeSeriesData = await GenerateTimeSeriesData(
+                dbContext,
+                laundromatId,
+                startDate,
+                endDate,
+                StatsPeriodType.Quarter,
+                TimeSeriesDataType.Revenue
+            );
+
+            // Generate time series data for transaction counts
+            var transactionCountTimeSeriesData = await GenerateTimeSeriesData(
+                dbContext,
+                laundromatId,
+                startDate,
+                endDate,
+                StatsPeriodType.Quarter,
+                TimeSeriesDataType.TransactionCount
+            );
+
+            // Convert to JSON - ALWAYS provide a valid JSON, never null
+            string revenueTimeSeriesJson = System.Text.Json.JsonSerializer.Serialize(
+                revenueTimeSeriesData
+            );
+            string transactionCountTimeSeriesJson = System.Text.Json.JsonSerializer.Serialize(
+                transactionCountTimeSeriesData
+            );
+
+            // Calculate available time series data types
+            TimeSeriesDataTypes availableTypes = TimeSeriesDataTypes.None;
+
+            if (revenueTimeSeriesData.DataPoints?.Count > 0)
+                availableTypes |= TimeSeriesDataTypes.Revenue;
+
+            if (transactionCountTimeSeriesData.DataPoints?.Count > 0)
+                availableTypes |= TimeSeriesDataTypes.TransactionCount;
+
             // Create or update stats entity
             if (existingStats == null)
             {
@@ -337,6 +418,9 @@ namespace BlazorTest.Database.Controllers
                     EndDate = endDate,
                     WasherStartPrice = washerStartPrice,
                     DryerStartPrice = dryerStartPrice,
+                    RevenueTimeSeriesData = revenueTimeSeriesJson,
+                    TransactionCountTimeSeriesData = transactionCountTimeSeriesJson,
+                    AvailableTimeSeriesData = availableTypes,
                 };
                 dbContext.LaundromatStats.Add(existingStats);
             }
@@ -347,7 +431,9 @@ namespace BlazorTest.Database.Controllers
                 {
                     existingStats.LaundromatName = laundromatName;
                 }
-
+                existingStats.RevenueTimeSeriesData = revenueTimeSeriesJson;
+                existingStats.TransactionCountTimeSeriesData = transactionCountTimeSeriesJson;
+                existingStats.AvailableTimeSeriesData = availableTypes;
                 existingStats.WasherStartPrice = washerStartPrice;
                 existingStats.DryerStartPrice = dryerStartPrice;
             }
@@ -446,6 +532,43 @@ namespace BlazorTest.Database.Controllers
             decimal washerStartPrice =
                 washerTransactions > 0 ? washerRevenue / washerTransactions : 0;
 
+            // Generate time series data for revenue
+            var revenueTimeSeriesData = await GenerateTimeSeriesData(
+                dbContext,
+                laundromatId,
+                startDate,
+                endDate,
+                StatsPeriodType.CompletedQuarters,
+                TimeSeriesDataType.Revenue
+            );
+
+            // Generate time series data for transaction counts
+            var transactionCountTimeSeriesData = await GenerateTimeSeriesData(
+                dbContext,
+                laundromatId,
+                startDate,
+                endDate,
+                StatsPeriodType.CompletedQuarters,
+                TimeSeriesDataType.TransactionCount
+            );
+
+            // Convert to JSON - ALWAYS provide a valid JSON, never null
+            string revenueTimeSeriesJson = System.Text.Json.JsonSerializer.Serialize(
+                revenueTimeSeriesData
+            );
+            string transactionCountTimeSeriesJson = System.Text.Json.JsonSerializer.Serialize(
+                transactionCountTimeSeriesData
+            );
+
+            // Calculate available time series data types
+            TimeSeriesDataTypes availableTypes = TimeSeriesDataTypes.None;
+
+            if (revenueTimeSeriesData.DataPoints?.Count > 0)
+                availableTypes |= TimeSeriesDataTypes.Revenue;
+
+            if (transactionCountTimeSeriesData.DataPoints?.Count > 0)
+                availableTypes |= TimeSeriesDataTypes.TransactionCount;
+
             // Create or update stats entity
             if (existingStats == null)
             {
@@ -459,12 +582,18 @@ namespace BlazorTest.Database.Controllers
                     EndDate = endDate,
                     WasherStartPrice = washerStartPrice,
                     DryerStartPrice = dryerStartPrice,
+                    RevenueTimeSeriesData = revenueTimeSeriesJson,
+                    TransactionCountTimeSeriesData = transactionCountTimeSeriesJson,
+                    AvailableTimeSeriesData = availableTypes,
                 };
                 dbContext.LaundromatStats.Add(existingStats);
             }
             else
             {
                 // Update date range
+                existingStats.RevenueTimeSeriesData = revenueTimeSeriesJson;
+                existingStats.TransactionCountTimeSeriesData = transactionCountTimeSeriesJson;
+                existingStats.AvailableTimeSeriesData = availableTypes;
                 existingStats.StartDate = startDate;
                 existingStats.EndDate = endDate;
                 existingStats.WasherStartPrice = washerStartPrice;
@@ -483,6 +612,311 @@ namespace BlazorTest.Database.Controllers
             existingStats.DryerTransactions = stats.DryerTransactions;
             existingStats.WashingMachineTransactions = washerTransactions;
             existingStats.CalculatedAt = DateTime.Now;
+        }
+
+        private async Task<TimeSeriesInfo> GenerateTimeSeriesData(
+            YourDbContext dbContext,
+            string laundromatId,
+            DateTime startDate,
+            DateTime endDate,
+            StatsPeriodType periodType,
+            TimeSeriesDataType dataType
+        )
+        {
+            // Determine interval based on period type
+            string interval;
+            switch (periodType)
+            {
+                case StatsPeriodType.Month:
+                    interval = "day"; // Daily data points for month view
+                    break;
+                case StatsPeriodType.HalfYear:
+                    interval = "week"; // Weekly data points for half-year view
+                    break;
+                case StatsPeriodType.Year:
+                case StatsPeriodType.CompletedQuarters:
+                    interval = "month"; // Monthly data points for year view
+                    break;
+                case StatsPeriodType.Quarter:
+                    interval = startDate.AddDays(90) < endDate ? "month" : "week"; // Use weeks for short quarters, months for longer periods
+                    break;
+                default:
+                    return new TimeSeriesInfo
+                    {
+                        DataPoints = new List<ChartDataPoint>(),
+                        Interval = "unknown",
+                        StartDate = startDate,
+                        EndDate = endDate,
+                    };
+            }
+
+            var result = new List<ChartDataPoint>();
+            var totalDays = (endDate - startDate).TotalDays;
+
+            if (interval == "day")
+            {
+                // Generate all days between startDate and endDate
+                var allDays = Enumerable
+                    .Range(0, (int)totalDays + 1)
+                    .Select(i => startDate.AddDays(i).Date)
+                    .ToList();
+
+                if (dataType == TimeSeriesDataType.Revenue)
+                {
+                    // Get daily revenue data
+                    var dailyData = await dbContext
+                        .Transactions.Where(t =>
+                            t.LaundromatId == laundromatId
+                            && t.date >= startDate
+                            && t.date <= endDate
+                            && t.amount != 0
+                        )
+                        .GroupBy(t => t.date.Date)
+                        .Select(g => new
+                        {
+                            Date = g.Key,
+                            Value = g.Sum(t => Math.Abs(t.amount)) / 100m,
+                        })
+                        .ToDictionaryAsync(k => k.Date, v => v.Value);
+
+                    // Create data points for all days
+                    result = allDays
+                        .Select(day => new ChartDataPoint
+                        {
+                            Label = day.ToString("yyyy-MM-dd"),
+                            Value = dailyData.ContainsKey(day) ? dailyData[day] : 0m,
+                        })
+                        .ToList();
+                }
+                else if (dataType == TimeSeriesDataType.TransactionCount)
+                {
+                    // Get daily transaction counts
+                    var dailyData = await dbContext
+                        .Transactions.Where(t =>
+                            t.LaundromatId == laundromatId
+                            && t.date >= startDate
+                            && t.date <= endDate
+                        )
+                        .GroupBy(t => t.date.Date)
+                        .Select(g => new { Date = g.Key, Value = g.Count() })
+                        .ToDictionaryAsync(k => k.Date, v => v.Value);
+
+                    // Create data points for all days
+                    result = allDays
+                        .Select(day => new ChartDataPoint
+                        {
+                            Label = day.ToString("yyyy-MM-dd"),
+                            Value = dailyData.ContainsKey(day) ? dailyData[day] : 0,
+                        })
+                        .ToList();
+                }
+            }
+            else if (interval == "week")
+            {
+                var calendar = System.Globalization.CultureInfo.InvariantCulture.Calendar;
+                int totalWeeks = (int)(totalDays / 7) + 1;
+
+                // Generate all weeks between startDate and endDate
+                var allWeeks = Enumerable
+                    .Range(0, totalWeeks)
+                    .Select(i => startDate.AddDays(i * 7))
+                    .Select(d => new
+                    {
+                        Date = d,
+                        Year = d.Year,
+                        Week = calendar.GetWeekOfYear(
+                            d,
+                            System.Globalization.CalendarWeekRule.FirstDay,
+                            DayOfWeek.Monday
+                        ),
+                    })
+                    .ToList();
+
+                if (dataType == TimeSeriesDataType.Revenue)
+                {
+                    // Get daily data first (this can be done in the database)
+                    var dailyData = await dbContext
+                        .Transactions.Where(t =>
+                            t.LaundromatId == laundromatId
+                            && t.date >= startDate
+                            && t.date <= endDate
+                            && t.amount != 0
+                        )
+                        // Pull only necessary data to client side
+                        .Select(t => new { t.date, t.amount })
+                        .AsNoTracking()
+                        .ToListAsync();
+
+                    // Then do the week grouping on the client side
+                    var weeklyData = dailyData
+                        .GroupBy(t => new
+                        {
+                            Year = t.date.Year,
+                            Week = calendar.GetWeekOfYear(
+                                t.date,
+                                System.Globalization.CalendarWeekRule.FirstDay,
+                                DayOfWeek.Monday
+                            ),
+                        })
+                        .Select(g => new
+                        {
+                            g.Key.Year,
+                            g.Key.Week,
+                            Value = g.Sum(t => Math.Abs(t.amount)) / 100m,
+                        })
+                        .ToDictionary(k => new { k.Year, k.Week }, v => v.Value);
+
+                    // Create data points for all weeks
+                    result = allWeeks
+                        .Select(w =>
+                        {
+                            var key = new { w.Year, w.Week };
+                            return new ChartDataPoint
+                            {
+                                Label = $"{w.Year}-W{w.Week:D2}",
+                                Value = weeklyData.ContainsKey(key) ? weeklyData[key] : 0m,
+                            };
+                        })
+                        .ToList();
+                }
+                else if (dataType == TimeSeriesDataType.TransactionCount)
+                {
+                    // Get daily data first (this can be done in the database)
+                    var dailyData = await dbContext
+                        .Transactions.Where(t =>
+                            t.LaundromatId == laundromatId
+                            && t.date >= startDate
+                            && t.date <= endDate
+                        )
+                        // Select the transaction entity or at least a reference type, not just the date
+                        .Select(t => new { t.date }) // Change this from just t.date to an anonymous object
+                        .AsNoTracking()
+                        .ToListAsync();
+
+                    // Then do the week grouping on the client side
+                    var weeklyData = dailyData
+                        .GroupBy(t => new
+                        {
+                            Year = t.date.Year,
+                            Week = calendar.GetWeekOfYear(
+                                t.date,
+                                System.Globalization.CalendarWeekRule.FirstDay,
+                                DayOfWeek.Monday
+                            ),
+                        })
+                        .Select(g => new
+                        {
+                            g.Key.Year,
+                            g.Key.Week,
+                            Value = g.Count(),
+                        })
+                        .ToDictionary(k => new { k.Year, k.Week }, v => v.Value);
+
+                    // Create data points for all weeks
+                    result = allWeeks
+                        .Select(w =>
+                        {
+                            var key = new { w.Year, w.Week };
+                            return new ChartDataPoint
+                            {
+                                Label = $"{w.Year}-W{w.Week:D2}",
+                                Value = weeklyData.ContainsKey(key) ? weeklyData[key] : 0,
+                            };
+                        })
+                        .ToList();
+                }
+            }
+            else if (interval == "month")
+            {
+                // Calculate total months
+                int totalMonths =
+                    (endDate.Year - startDate.Year) * 12 + endDate.Month - startDate.Month + 1;
+
+                // Generate all months between startDate and endDate
+                var allMonths = Enumerable
+                    .Range(0, totalMonths)
+                    .Select(i => startDate.AddMonths(i))
+                    .Select(d => new { Year = d.Year, Month = d.Month })
+                    .ToList();
+
+                if (dataType == TimeSeriesDataType.Revenue)
+                {
+                    // Get monthly revenue data
+                    var monthlyData = await dbContext
+                        .Transactions.Where(t =>
+                            t.LaundromatId == laundromatId
+                            && t.date >= startDate
+                            && t.date <= endDate
+                            && t.amount != 0
+                        )
+                        .GroupBy(t => new { t.date.Year, t.date.Month })
+                        .Select(g => new
+                        {
+                            Year = g.Key.Year,
+                            Month = g.Key.Month,
+                            Value = g.Sum(t => Math.Abs(t.amount)) / 100m,
+                        })
+                        .ToDictionaryAsync(k => new { k.Year, k.Month }, v => v.Value);
+
+                    // Create data points for all months
+                    result = allMonths
+                        .Select(m =>
+                        {
+                            var key = new { m.Year, m.Month };
+                            return new ChartDataPoint
+                            {
+                                Label = $"{m.Year}-{m.Month:D2}",
+                                Value = monthlyData.ContainsKey(key) ? monthlyData[key] : 0m,
+                            };
+                        })
+                        .ToList();
+                }
+                else if (dataType == TimeSeriesDataType.TransactionCount)
+                {
+                    // Get monthly transaction counts
+                    var monthlyData = await dbContext
+                        .Transactions.Where(t =>
+                            t.LaundromatId == laundromatId
+                            && t.date >= startDate
+                            && t.date <= endDate
+                        )
+                        .GroupBy(t => new { t.date.Year, t.date.Month })
+                        .Select(g => new
+                        {
+                            Year = g.Key.Year,
+                            Month = g.Key.Month,
+                            Value = g.Count(),
+                        })
+                        .ToDictionaryAsync(k => new { k.Year, k.Month }, v => v.Value);
+
+                    // Create data points for all months
+                    result = allMonths
+                        .Select(m =>
+                        {
+                            var key = new { m.Year, m.Month };
+                            return new ChartDataPoint
+                            {
+                                Label = $"{m.Year}-{m.Month:D2}",
+                                Value = monthlyData.ContainsKey(key) ? monthlyData[key] : 0,
+                            };
+                        })
+                        .ToList();
+                }
+            }
+
+            return new TimeSeriesInfo
+            {
+                DataPoints = result,
+                Interval = interval,
+                StartDate = startDate,
+                EndDate = endDate,
+            };
+        }
+
+        public enum TimeSeriesDataType
+        {
+            Revenue,
+            TransactionCount,
         }
     }
 }

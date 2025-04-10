@@ -24,7 +24,7 @@
         </div>
 
         <div class="main-content-graphs">
-            @if (!isLoading && chartLabelsSum.Length > 0)
+            @if (!isLoading)
             {
                 <div class="main-graph-container">
                     <ChartComponent CanvasId="revenueOverTime" Labels="@chartLabelsTime" SingleValues="@chartValuesTime"
@@ -39,13 +39,14 @@
                 <ChartComponent CanvasId="revenueDistribution" Labels="@chartLabelsSum" SingleValues="@chartValuesSum"
                 Title="Revenue Distribution" Type="pie" />
                 </div>
-                */
+                
                 <div class="main-graph-container">
                     <ChartComponent CanvasId="stackedBarChart" Labels='@chartLabelsSumMachine'
                         MultiValues="@chartValuesSumMachine" Title='Stacked Bar Chart' Type="bar" Stacked="true"
                         BackgroundColors='new[] { "rgba(255, 99, 132, 0.7)", "rgba(54, 162, 235, 0.7)", "rgba(75, 192, 192, 0.7)" }'
                         DatasetLabels="@chartLabelsMachine" />
                 </div>
+                */
             }
             else if (isLoading)
             {
@@ -221,79 +222,53 @@
 
 
     private async Task LoadDashboardData(CancellationToken token)
+{
+    if (isDataLoading) return;
+
+    try
     {
-        if (isDataLoading) return;
+        isDataLoading = true;
 
-        try
-        {
-            isDataLoading = true;
-
-            // Create tasks for parallel execution
-            var keyValuesTask = AnalysisService.GetKeyValuesFromStats(
+        // Create tasks for parallel execution
+        var keyValuesTask = AnalysisService.GetKeyValuesFromStats(
             effectiveLaundromats,
             startDate,
             endDate);
 
-            var revenueSumTask = AnalysisService.GetRevenueForLaundromatsFromStats(
+        var revenueTimeTask = AnalysisService.GetRevenueForLaundromatsOverTimeFromStats(
             effectiveLaundromats,
             startDate ?? DateTime.MinValue,
             endDate ?? DateTime.MaxValue);
 
-            var revenueTimeTask = AnalysisService.GetRevenueForLaundromatsOverTime(
+        var transactionTimeTask = AnalysisService.CalculateTransactionOverTimeFromStats(
             effectiveLaundromats,
             startDate ?? DateTime.MinValue,
             endDate ?? DateTime.MaxValue);
 
-            var transactionTimeTask = AnalysisService.CalculateTransactionOverTime(
-            effectiveLaundromats,
-            startDate ?? DateTime.MinValue,
-            endDate ?? DateTime.MaxValue);
+        // Wait for ALL tasks to complete (not just the first three)
+        await Task.WhenAll(keyValuesTask, revenueTimeTask, transactionTimeTask);
 
-            var stackedMachineTask = AnalysisService.getStackedMachineStarts(
-            effectiveLaundromats,
-            startDate ?? DateTime.MinValue,
-            endDate ?? DateTime.MaxValue);
-            
-           
+        // Process results
+        token.ThrowIfCancellationRequested();
 
-
-            // Wait for all tasks to complete
-            await Task.WhenAll(keyValuesTask, revenueSumTask, revenueTimeTask);
-
-            // Process results (only if not canceled)
-            token.ThrowIfCancellationRequested();
-
-            keyValuePairs = await keyValuesTask;
-           // Console.WriteLine($"Loaded key values: {keyValuePairs.Count}");
-
-            var resultSum = await revenueSumTask;
-            chartLabelsSum = resultSum.Select(r => r.Label).ToArray();
-            chartValuesSum = resultSum.Select(r => r.Value).ToArray();
-           // Console.WriteLine($"Loaded sum chart data: {chartLabelsSum.Length} items");
-
-            var resultTime = await revenueTimeTask;
-            chartLabelsTime = resultTime.Select(r => r.Label).ToArray();
-            chartValuesTime = resultTime.Select(r => r.Value).ToArray();
-           // Console.WriteLine($"Loaded time chart data: {chartLabelsTime.Length} items");
-
-            var resultTimeTrans = await transactionTimeTask;
-            chartLabelsTimeTrans = resultTimeTrans.Select(r => r.Label).ToArray();
-            chartValuesTimeTrans = resultTimeTrans.Select(r => r.Value).ToArray();
-            //Console.WriteLine($"Loaded time chart data: {chartLabelsTime.Length} items");
-
-            var resultStackedMachine = await stackedMachineTask;
-            chartLabelsSumMachine = resultStackedMachine.Labels.ToArray();
-            chartValuesSumMachine = resultStackedMachine.Values.Select(r => r).ToArray();
-            chartLabelsMachine = resultStackedMachine.unitNames.ToArray();
-           // Console.WriteLine($"Loaded stacked machine chart data: {chartLabelsSumMachine.Length} items");
-
-            await UpdateChartData(selectedSpecialContent);
-        }
-        finally
-        {
-            isDataLoading = false;
-        }
+        keyValuePairs = await keyValuesTask;
+        
+        var resultTime = await revenueTimeTask;
+        chartLabelsTime = resultTime.Select(r => r.Label).ToArray();
+        chartValuesTime = resultTime.Select(r => r.Value).ToArray();
+        
+        var resultTimeTrans = await transactionTimeTask;
+        chartLabelsTimeTrans = resultTimeTrans.Select(r => r.Label).ToArray();
+        chartValuesTimeTrans = resultTimeTrans.Select(r => r.Value).ToArray();
+        
+        // Update UI after all data is loaded
+        StateHasChanged();
     }
+    finally
+    {
+        isDataLoading = false;
+    }
+}
 
     private async Task HandleStateChanged()
     {

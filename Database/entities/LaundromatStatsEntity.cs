@@ -47,6 +47,15 @@ namespace BlazorTest.Database
         [Required]
         public decimal DryerStartPrice { get; set; }
 
+        [Column(TypeName = "json")]
+        public string RevenueTimeSeriesData { get; set; }
+
+        [Column(TypeName = "json")]
+        public string TransactionCountTimeSeriesData { get; set; }
+
+        [Required]
+        public TimeSeriesDataTypes AvailableTimeSeriesData { get; set; }
+
         [Required]
         public DateTime CalculatedAt { get; set; }
 
@@ -63,6 +72,14 @@ namespace BlazorTest.Database
         [NotMapped]
         public decimal DryerPercentage =>
             TotalTransactions > 0 ? (decimal)DryerTransactions / TotalTransactions * 100 : 0;
+    }
+
+    [Flags]
+    public enum TimeSeriesDataTypes
+    {
+        None = 0,
+        Revenue = 1,
+        TransactionCount = 2,
     }
 
     public enum StatsPeriodType
