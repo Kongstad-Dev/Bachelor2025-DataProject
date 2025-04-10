@@ -206,6 +206,20 @@ namespace BlazorTest.Services
             var machineService = new MachineAnalysisService(_dbContextFactory, _cache);
             return await machineService.getStackedMachineStarts(laundromatIds, startDate, endDate);
         }
+        
+        public async Task<(
+            string[] Labels,
+            decimal[][] Values,
+            string[] unitNames
+            )> getStackedMachineRevenue(
+            List<string> laundromatIds,
+            DateTime? startDate,
+            DateTime? endDate
+        )
+        {
+            var machineService = new MachineAnalysisService(_dbContextFactory, _cache);
+            return await machineService.getStackedMachineRevenue(laundromatIds, startDate, endDate);
+        }
 
         // Legacy methods that operate on transaction lists directly
         public decimal CalculateTotalSoapProgramFromTransactions(List<TransactionEntity> transactions)

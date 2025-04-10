@@ -39,6 +39,7 @@ namespace BlazorTest.Services.Analytics
                         laundromatIds.Contains(t.LaundromatId)
                         && t.date >= startDate
                         && t.date <= endDate
+                        && t.amount != 0
                     )
                     .ToListAsync();
 
@@ -94,6 +95,7 @@ namespace BlazorTest.Services.Analytics
                             laundromatIds.Contains(t.LaundromatId)
                             && t.date >= startDate
                             && t.date <= endDate
+                            && t.amount != 0
                         )
                         .ToListAsync();
 
@@ -122,6 +124,7 @@ namespace BlazorTest.Services.Analytics
                     laundromatIds.Contains(t.LaundromatId)
                     && t.date >= startDate
                     && t.date <= endDate
+                    && t.amount != 0
                 )
                 .ToListAsync();
 

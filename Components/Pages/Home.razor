@@ -42,9 +42,15 @@
                 */
                 <div class="main-graph-container">
                     <ChartComponent CanvasId="stackedBarChart" Labels='@chartLabelsSumMachine'
-                        MultiValues="@chartValuesSumMachine" Title='Stacked Bar Chart' Type="bar" Stacked="true"
-                        BackgroundColors='new[] { "rgba(255, 99, 132, 0.7)", "rgba(54, 162, 235, 0.7)", "rgba(75, 192, 192, 0.7)" }'
-                        DatasetLabels="@chartLabelsMachine" />
+                                    MultiValues="@chartValuesSumMachine" Title='Machine Starts' Type="bar" Stacked="true"
+                                    BackgroundColors='new[] { "rgba(255, 99, 132, 0.7)", "rgba(54, 162, 235, 0.7)", "rgba(75, 192, 192, 0.7)" }'
+                                    DatasetLabels="@chartLabelsMachine" />
+                </div>
+                <div class="main-graph-container">
+                    <ChartComponent CanvasId="stackedBarChartRev" Labels='@chartLabelsSumMachineRev'
+                                    MultiValues="@chartValuesSumMachineRev" Title='Revenue pr Machine' Type="bar" Stacked="true"
+                                    BackgroundColors='new[] { "rgba(255, 99, 132, 0.7)", "rgba(54, 162, 235, 0.7)", "rgba(75, 192, 192, 0.7)" }'
+                                    DatasetLabels="@chartLabelsMachineRev" />
                 </div>
             }
             else if (isLoading)
@@ -137,9 +143,15 @@
     private decimal[] chartValuesProcentageSoap = Array.Empty<decimal>();
     private string[] chartLabelsTimeTrans = Array.Empty<string>();
     private decimal[] chartValuesTimeTrans = Array.Empty<decimal>();
+    
     private string[] chartLabelsSumMachine = Array.Empty<string>();
     private decimal[][] chartValuesSumMachine = Array.Empty<decimal[]>();
     private string[] chartLabelsMachine = Array.Empty<string>();
+    
+    private string[] chartLabelsSumMachineRev = Array.Empty<string>();
+    private decimal[][] chartValuesSumMachineRev = Array.Empty<decimal[]>();
+    private string[] chartLabelsMachineRev = Array.Empty<string>();
+    
     private decimal[] chartValuesTemp = Array.Empty<decimal>();
     private string[] chartLabelsTemp= Array.Empty<string>();
     private string[] chartLabelsTempProcentage = Array.Empty<string>();
@@ -267,6 +279,11 @@
             startDate ?? DateTime.MinValue,
             endDate ?? DateTime.MaxValue);
             
+            var stackedMachineTaskRev = AnalysisService.getStackedMachineRevenue(
+                effectiveLaundromats,
+                startDate ?? DateTime.MinValue,
+                endDate ?? DateTime.MaxValue);
+            
            
 
 
@@ -300,6 +317,11 @@
             chartLabelsMachine = resultStackedMachine.unitNames.ToArray();
            // Console.WriteLine($"Loaded stacked machine chart data: {chartLabelsSumMachine.Length} items");
 
+           var resultStackedMachineRev = await stackedMachineTaskRev;
+           chartLabelsSumMachineRev = resultStackedMachineRev.Labels.ToArray();
+           chartValuesSumMachineRev = resultStackedMachineRev.Values.Select(r => r).ToArray();
+           chartLabelsMachineRev = resultStackedMachineRev.unitNames.ToArray();
+           
             await UpdateChartData(selectedSpecialContent);
         }
         finally
