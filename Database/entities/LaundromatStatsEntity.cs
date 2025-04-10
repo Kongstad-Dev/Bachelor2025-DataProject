@@ -39,7 +39,13 @@ namespace BlazorTest.Database
         public int WashingMachineTransactions { get; set; }
 
         [Required]
+        public decimal WasherStartPrice { get; set; }
+
+        [Required]
         public int DryerTransactions { get; set; }
+
+        [Required]
+        public decimal DryerStartPrice { get; set; }
 
         [Required]
         public DateTime CalculatedAt { get; set; }
@@ -49,19 +55,22 @@ namespace BlazorTest.Database
 
         // Calculated properties that don't need to be stored
         [NotMapped]
-        public decimal WashingMachinePercentage => TotalTransactions > 0 ?
-            (decimal)WashingMachineTransactions / TotalTransactions * 100 : 0;
+        public decimal WashingMachinePercentage =>
+            TotalTransactions > 0
+                ? (decimal)WashingMachineTransactions / TotalTransactions * 100
+                : 0;
 
         [NotMapped]
-        public decimal DryerPercentage => TotalTransactions > 0 ?
-            (decimal)DryerTransactions / TotalTransactions * 100 : 0;
+        public decimal DryerPercentage =>
+            TotalTransactions > 0 ? (decimal)DryerTransactions / TotalTransactions * 100 : 0;
     }
 
     public enum StatsPeriodType
     {
-        Month = 1,      // Rolling 30-day period from current date
-        HalfYear = 2,     // Rolling 180-day (6 month) period from current date
-        Year = 3,        // Rolling 365-day period from current date
-        Quarter = 4,         // Calendar quarter
+        Month = 1, // Rolling 30-day period from current date
+        HalfYear = 2, // Rolling 180-day (6 month) period from current date
+        Year = 3, // Rolling 365-day period from current date
+        Quarter = 4, // Calendar quarter
+        CompletedQuarters = 5, // Last 4 completed quarters
     }
 }
