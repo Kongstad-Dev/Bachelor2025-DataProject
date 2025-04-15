@@ -166,8 +166,8 @@
 
 function generateColors(count, type) {
     const baseColors = [
+        'rgba(102, 221, 102, 1)', // light lime green
         'rgba(255, 160, 122, 0.7)',  // soft coral (orange) - changed to first position
-        'rgba(144, 238, 144, 0.7)',  // light lime green
         'rgba(135, 206, 250, 0.7)',  // sky blue
         'rgba(255, 220, 105, 0.7)',  // warm pastel yellow
         'rgba(255, 105, 180, 0.7)',  // vibrant pastel pink
