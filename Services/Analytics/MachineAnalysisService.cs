@@ -46,11 +46,20 @@ namespace BlazorTest.Services.Analytics
                 )
                 .ToListAsync();
 
-            // Get all unique unitNames
+// Get all unique unitNames
             var uniqueUnitNames = transactions
                 .Select(t => t.unitName)
                 .Distinct()
-                .OrderBy(name => name)
+                .Select(name => {
+                    // Extract prefix and number parts with regex
+                    var match = System.Text.RegularExpressions.Regex.Match(name, @"^([^\d]+)(\d+)?");
+                    string prefix = match.Groups[1].Value.Trim();
+                    int number = match.Groups[2].Success ? int.Parse(match.Groups[2].Value) : 0;
+                    return new { Name = name, Prefix = prefix, Number = number };
+                })
+                .OrderBy(item => item.Prefix)
+                .ThenBy(item => item.Number)
+                .Select(item => item.Name)
                 .ToList();
 
             // Group transactions by laundromat and unitName

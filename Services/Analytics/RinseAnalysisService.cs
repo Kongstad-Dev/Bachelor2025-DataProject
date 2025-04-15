@@ -32,6 +32,7 @@ public class RinseAnalysisService : BaseAnalysisService
         // Group by temperature and count occurrences
         var groupedByProgramType = transactions
             .GroupBy(t => t.rinse)
+            .OrderBy(g => g.Key)
             .Select(g => new ChartDataPoint
             {
                 Label = $"{g.Key}",

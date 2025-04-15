@@ -31,6 +31,7 @@ public class TempAnalysisService : BaseAnalysisService
         // Group by temperature and count occurrences
         var groupedByTemp = transactions
             .GroupBy(t => t.temperature)
+            .OrderBy(g => g.Key)
             .Select(g => new ChartDataPoint
             {
                 Label = $"{g.Key}°C",
