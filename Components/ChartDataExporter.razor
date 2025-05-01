@@ -1,0 +1,30 @@
+﻿@using BlazorTest.Services.Analytics
+@using BlazorTest.Services.Analytics.Util
+@inject IJSRuntime JS
+
+<h4>Export CSV</h4>
+
+<button @onclick="GenerateCsv">Generate CSV</button>
+@if (!string.IsNullOrEmpty(CsvText))
+{
+    <button @onclick="CopyToClipboard" style="margin-left: 10px;">Copy to Clipboard</button>
+
+    <textarea rows="10" style="width:100%; margin-top: 10px;" readonly>@CsvText</textarea>
+}
+
+@code {
+    [Parameter]
+    public List<ChartDataPoint> Data { get; set; }
+
+    private string CsvText;
+
+    private void GenerateCsv()
+    {
+        CsvText = CsvExporter.ExportChartDataToCsv(Data);
+    }
+
+    private async Task CopyToClipboard()
+    {
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", CsvText);
+    }
+}

@@ -3,6 +3,7 @@
 @using BlazorTest.Services
 @using BlazorTest.Components
 @using BlazorTest.Database
+@using BlazorTest.Services.Analytics
 @inject DataAnalysisService AnalysisService
 @inject LaundryStateService LaundryState
 @rendermode InteractiveServer
@@ -28,18 +29,15 @@
             {
                 <div class="main-graph-container">
                     <ChartComponent CanvasId="revenueOverTime" Labels="@chartLabelsTime" SingleValues="@chartValuesTime"
-                        Title="Revenue Over Time" Type="line" Stacked=false />
+                                    Title="Revenue Over Time" Type="line" Stacked=false />
                 </div>
+                
+                <ChartDataExporter Data="chartDataPoints" />
+
                 <div class="main-graph-container">
                     <ChartComponent CanvasId="TransactionsOverTime" Labels="@chartLabelsTimeTrans"
                         SingleValues="@chartValuesTimeTrans" Title="Transactions Over Time" Type="line" />
                 </div>
-                /*
-                <div class="main-graph-container">
-                <ChartComponent CanvasId="revenueDistribution" Labels="@chartLabelsSum" SingleValues="@chartValuesSum"
-                Title="Revenue Distribution" Type="pie" />
-                </div>
-                */
                 <div class="main-graph-container">
                     <ChartComponent CanvasId="stackedBarChart" Labels='@chartLabelsSumMachine'
                                     MultiValues="@chartValuesSumMachine" Title='Machine Starts' Type="bar" Stacked="true"
@@ -125,6 +123,9 @@
 </div>
 
 @code {
+    private bool hasInitializedChartExportData = false;
+    private List<ChartDataPoint> chartDataPoints = new();
+
     private string selectedSpecialContent = "";
     private readonly string[] specialOptions = {
 "Soap Statistics",
@@ -166,8 +167,6 @@
     private decimal[] chartValuesRinse= Array.Empty<decimal>();
     private string[] chartLabelsRinseProcentage = Array.Empty<string>();
     private decimal[] chartValuesRinseProcentage= Array.Empty<decimal>();
-
-    
     
     private bool isLoading = true;
 
@@ -198,7 +197,7 @@
             effectiveLaundromats = LaundryState.GetEffectiveSelectedLaundromatsIds();
             startDate = LaundryState.GetStartDate();
             endDate = LaundryState.GetEndDate();
-
+            
             // Load data
             await LoadDashboardData(cts.Token);
         }
@@ -304,6 +303,8 @@
             var resultTime = await revenueTimeTask;
             chartLabelsTime = resultTime.Select(r => r.Label).ToArray();
             chartValuesTime = resultTime.Select(r => r.Value).ToArray();
+            chartDataPoints = DataConverter.ToChartDataPoints(chartLabelsTime, chartValuesTime);
+
            // Console.WriteLine($"Loaded time chart data: {chartLabelsTime.Length} items");
 
             var resultTimeTrans = await transactionTimeTask;
@@ -547,6 +548,23 @@ else if (content == "Temperature Statistics" &&
             StateHasChanged();
         }
     }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Wait until data is loaded and we haven’t done this yet
+        if (!isLoading && !hasInitializedChartExportData && chartLabelsTime.Length > 0 && chartValuesTime.Length > 0)
+        {
+            Console.WriteLine("chartLabelsTime: " + string.Join(", ", chartLabelsTime));
+        Console.WriteLine("chartValuesTime: " + string.Join(", ", chartValuesTime));
+            hasInitializedChartExportData = true;
+            
+            
+
+            // Tell Blazor to refresh the UI so your <ChartDataExporter> will now work
+            StateHasChanged();
+        }
+    }
+
 
     public void Dispose()
     {
