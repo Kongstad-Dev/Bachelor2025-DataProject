@@ -1,6 +1,124 @@
 ﻿@page "/compare"
+@using BlazorTest.Services.Analytics
+@using BlazorTest.Services
+@inject CompareAnalysisServices CompareService
+@inject LaundryStateService LaundryState
 @rendermode InteractiveServer
 
 <PageTitle>Compare</PageTitle>
 
-<h1>Compare</h1>
+<div class="main-container">
+    <div class="main-content">
+        <div class="main-content-tabels">
+            <SelectedLaudromats />
+        </div>
+
+        <div class="main-content-graphs">
+            @if (isLoading)
+            {
+                <div>Loading comparison charts...</div>
+            }
+            else if (chartLabelsCompare.Length > 0)
+            {
+                <div class="main-graph-container">
+                    <ChartComponent CanvasId="compareTransactions"
+                                    Labels="@chartLabelsCompare"
+                                    MultiValues="@chartValuesCompare"
+                                    DatasetLabels="@chartDatasetLabelsCompare"
+                                    Title="Transactions Over Time"
+                                    Type="line"
+                                    Stacked="false"
+                                    BackgroundColors='new[] {
+                                        "rgba(255, 99, 132, 0.7)",
+                                        "rgba(54, 162, 235, 0.7)",
+                                        "rgba(255, 206, 86, 0.7)",
+                                        "rgba(75, 192, 192, 0.7)"
+                                    }' />
+                </div>
+            }
+            else
+            {
+                <div>No data available for selected laundromats or date range.</div>
+                <div>Loaded laundromats: @chartDatasetLabelsCompare.Length</div>
+                <div>Labels: @string.Join(", ", chartLabelsCompare)</div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool isLoading = true;
+
+    private string[] chartLabelsCompare = Array.Empty<string>();
+    private decimal[][] chartValuesCompare = Array.Empty<decimal[]>();
+    private string[] chartDatasetLabelsCompare = Array.Empty<string>();
+
+    private List<string> laundromatIds = new();
+    private DateTime? startDate;
+    private DateTime? endDate;
+
+    protected override async Task OnInitializedAsync()
+    {
+        LaundryState.OnStateChanged += OnStateChanged;
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            isLoading = true;
+            StateHasChanged();
+
+            laundromatIds = LaundryState.GetEffectiveSelectedLaundromatsIds();
+            startDate = LaundryState.GetStartDate();
+            endDate = LaundryState.GetEndDate();
+
+            var safeStart = startDate ?? DateTime.Today.AddMonths(-6);
+            var safeEnd = endDate ?? DateTime.Today;
+
+            // Step 1: Get raw dictionary data per laundromat and month
+            var raw = await CompareService.CalcTransactionOverTimeCompare(laundromatIds, safeStart, safeEnd);
+
+            // Step 2: Extract all months (like labels in Home.razor)
+            chartLabelsCompare = raw.Values
+                .SelectMany(dict => dict.Keys)
+                .Distinct()
+                .OrderBy(label => label)
+                .ToArray();
+
+            // Step 3: One decimal[] per laundromat (like chartValuesTimeTrans, but per dataset)
+            chartDatasetLabelsCompare = raw.Keys.ToArray();
+            chartValuesCompare = raw.Select(kvp =>
+            {
+                var monthDict = kvp.Value;
+                return chartLabelsCompare
+                    .Select(label => monthDict.TryGetValue(label, out var value) ? value : 0m)
+                    .ToArray();
+            }).ToArray();
+
+            Console.WriteLine("Compare chart loaded with labels: " + string.Join(", ", chartLabelsCompare));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"ComparePage error: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+
+
+    private void OnStateChanged()
+    {
+        InvokeAsync(LoadData);
+    }
+
+    public void Dispose()
+    {
+        LaundryState.OnStateChanged -= OnStateChanged;
+    }
+}

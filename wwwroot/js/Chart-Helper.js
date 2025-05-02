@@ -183,8 +183,8 @@ function generateColors(count, type) {
 
 function generateBorderColors(count) {
     const baseColors = [
-        'rgba(255, 160, 122, 1)',  // soft coral (orange) - matched to first position
-        'rgba(144, 238, 144, 1)',  // light lime green
+        'rgba(102, 221, 102, 1)', // light lime green
+        'rgba(255, 160, 122, 0.7)',  // soft coral (orange) - changed to first position
         'rgba(135, 206, 250, 1)',  // sky blue
         'rgba(255, 220, 105, 1)',  // warm pastel yellow
         'rgba(255, 105, 180, 1)',  // vibrant pastel pink

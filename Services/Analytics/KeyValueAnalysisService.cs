@@ -189,9 +189,9 @@ namespace BlazorTest.Services.Analytics
             DateTime? endDate
         )
         {
-            Console.WriteLine(
-                $"GetKeyValues called with laundromatIds: {JsonConvert.SerializeObject(laundromatIds)}, startDate: {startDate}, endDate: {endDate}"
-            );
+            // Console.WriteLine(
+            //     $"GetKeyValues called with laundromatIds: {JsonConvert.SerializeObject(laundromatIds)}, startDate: {startDate}, endDate: {endDate}"
+            // );
             using var dbContext = _dbContextFactory.CreateDbContext();
 
             // Get total transactions and revenue in a single query

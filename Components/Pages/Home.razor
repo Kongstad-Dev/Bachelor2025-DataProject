@@ -554,8 +554,7 @@ else if (content == "Temperature Statistics" &&
         // Wait until data is loaded and we haven’t done this yet
         if (!isLoading && !hasInitializedChartExportData && chartLabelsTime.Length > 0 && chartValuesTime.Length > 0)
         {
-            Console.WriteLine("chartLabelsTime: " + string.Join(", ", chartLabelsTime));
-        Console.WriteLine("chartValuesTime: " + string.Join(", ", chartValuesTime));
+         
             hasInitializedChartExportData = true;
             
             

@@ -11,13 +11,14 @@ public static class CsvExporter
             return string.Empty;
 
         var csv = new StringBuilder();
-        csv.AppendLine("Label\tValue"); // Tab-separated for easier Excel pasting
+        csv.AppendLine("\"Label\",\"Value\"");
 
         foreach (var point in data)
         {
-            csv.AppendLine($"{point.Label}\t{point.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
+            csv.AppendLine($"\"{point.Label}\",\"{point.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)}\"");
         }
 
         return csv.ToString();
     }
+
 }

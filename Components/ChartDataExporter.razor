@@ -7,7 +7,8 @@
 <button @onclick="GenerateCsv">Generate CSV</button>
 @if (!string.IsNullOrEmpty(CsvText))
 {
-    <button @onclick="CopyToClipboard" style="margin-left: 10px;">Copy to Clipboard</button>
+    <button @onclick="DownloadCsv" style="margin-left: 10px;">Download CSV</button>
+
 
     <textarea rows="10" style="width:100%; margin-top: 10px;" readonly>@CsvText</textarea>
 }
@@ -23,8 +24,9 @@
         CsvText = CsvExporter.ExportChartDataToCsv(Data);
     }
 
-    private async Task CopyToClipboard()
+    private async Task DownloadCsv()
     {
-        await JS.InvokeVoidAsync("navigator.clipboard.writeText", CsvText);
+        await JS.InvokeVoidAsync("downloadCsv", "laundromat-data.csv", CsvText);
+
     }
 }

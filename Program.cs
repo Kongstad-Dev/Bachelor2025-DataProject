@@ -5,6 +5,7 @@ using DotNetEnv;
 using System.Net.Http;
 using BlazorTest.Services;
 using BlazorTest.Database.Controllers;
+using BlazorTest.Services.Analytics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,10 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddScoped<DataAnalysisService>();
+
+builder.Services.AddScoped<CompareAnalysisServices>();
+
+builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
 
 
 // Configure MySQL
