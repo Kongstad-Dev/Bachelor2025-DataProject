@@ -24,7 +24,7 @@
         </div>
 
         <div class="main-content-graphs">
-            @if (!isLoading && chartLabelsSum.Length > 0)
+            @if (!isLoading)
             {
                 <div class="main-graph-container">
                     <ChartComponent CanvasId="revenueOverTime" Labels="@chartLabelsTime" SingleValues="@chartValuesTime"

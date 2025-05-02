@@ -144,10 +144,8 @@ namespace BlazorTest.Services.Analytics
             // Validate required parameters
             if (laundromatIds == null || !laundromatIds.Any())
             {
-                throw new ArgumentException(
-                    "At least one laundromat ID must be specified",
-                    nameof(laundromatIds)
-                );
+            // Return empty result instead of throwing
+            return new List<ChartDataPoint>();
             }
 
             if (startDate == null)

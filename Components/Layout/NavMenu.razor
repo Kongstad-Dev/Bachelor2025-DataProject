@@ -132,7 +132,7 @@
                 bankItems = response.Banks.Select(b => new SearchItem
                 {
                     Id = b.bankId.ToString(),
-                    DisplayText = b.name ?? "Unnamed Bank",
+                    DisplayText = string.IsNullOrEmpty(b.name) ? "Unnamed Bank" : b.name,
                     Data = b
                 }).OrderBy(b => b.DisplayText).ToList();
 
@@ -177,7 +177,7 @@
                 erpIdItems = response.Laundromats.Select(l => new SearchItem
                 {
                     Id = l.kId,
-                    DisplayText = l.externalId ?? "No ERP ID",
+                    DisplayText = string.IsNullOrEmpty(l.externalId) ? "No ERP ID" : l.externalId,
                     Data = l
                 }).OrderBy(l => l.DisplayText).ToList();
 
@@ -200,9 +200,11 @@
 
     private void HandleBankSelection(List<SearchItem> items)
     {
+        // Store previous state
         var previouslySelectedBankIds = selectedBanks.Select(b => b.bankId).ToHashSet();
         var previousSelectedLaundromats = selectedLaundromats.ToList();
 
+        // Clear and update selected banks
         selectedBanks.Clear();
         foreach (var item in items)
         {
@@ -212,67 +214,98 @@
             }
         }
 
-        var selectedBankIds = selectedBanks.Select(b => b.bankId).ToHashSet();
-        bool bankSelectionChanged = !previouslySelectedBankIds.SetEquals(selectedBankIds);
-
+        // Identify newly selected banks
+        var currentSelectedBankIds = selectedBanks.Select(b => b.bankId).ToHashSet();
+        var newlySelectedBankIds = currentSelectedBankIds.Except(previouslySelectedBankIds).ToHashSet();
+        
         if (!laundromatItemsOriginal.Any())
         {
             laundromatItemsOriginal = new List<SearchItem>(laundromatItems);
         }
 
-        if (selectedBankIds.Any())
+        if (currentSelectedBankIds.Any())
         {
+            // Reorder bank items to show selected banks first
             bankItems = bankItems.OrderByDescending(item =>
-            !string.IsNullOrEmpty(item.Id) && selectedBankIds.Contains(int.Parse(item.Id)))
-            .ThenBy(item => item.DisplayText)
-            .ToList();
+                !string.IsNullOrEmpty(item.Id) && currentSelectedBankIds.Contains(int.Parse(item.Id)))
+                .ThenBy(item => item.DisplayText)
+                .ToList();
 
             bankIdItems = bankIdItems.OrderByDescending(item =>
-            !string.IsNullOrEmpty(item.Id) && selectedBankIds.Contains(int.Parse(item.Id)))
-            .ThenBy(item => item.DisplayText)
-            .ToList();
+                !string.IsNullOrEmpty(item.Id) && currentSelectedBankIds.Contains(int.Parse(item.Id)))
+                .ThenBy(item => item.DisplayText)
+                .ToList();
 
-            if (bankSelectionChanged)
+            // Filter laundromats to only those belonging to selected banks
+            var filteredLaundromatItems = laundromatItemsOriginal
+                .Where(item => item.Data is Laundromat laundromat && 
+                    currentSelectedBankIds.Contains(laundromat.bankId))
+                .ToList();
+
+            // MODIFIED: Add only laundromats from newly selected banks
+            if (newlySelectedBankIds.Any())
             {
-                selectedLaundromats = previousSelectedLaundromats.Where(l => selectedBankIds.Contains(l.bankId)).ToList();
-                Console.WriteLine($"Bank selection changed - kept {selectedLaundromats.Count} valid laundromat selections");
+                foreach (var item in filteredLaundromatItems)
+                {
+                    if (item.Data is Laundromat laundromat && 
+                        newlySelectedBankIds.Contains(laundromat.bankId) &&
+                        !selectedLaundromats.Any(l => l.kId == laundromat.kId))
+                    {
+                        selectedLaundromats.Add(laundromat);
+                    }
+                }
+                
+                Console.WriteLine($"Added {selectedLaundromats.Count - previousSelectedLaundromats.Count} " +
+                    $"laundromats from {newlySelectedBankIds.Count} newly selected banks");
             }
-
+            
+            // Get the IDs of selected laundromats for sorting
             var selectedLaundromatIds = selectedLaundromats.Select(l => l.kId).ToHashSet();
-            laundromatItems = laundromatItemsOriginal.Where(item => item.Data is Laundromat laundromat &&
-            selectedBankIds.Contains(laundromat.bankId))
-            .OrderByDescending(item => selectedLaundromatIds.Contains(item.Id)).ThenBy(item => item.DisplayText).ToList();
-
+            
+            // Update laundromat items list to show selected ones first
+            laundromatItems = filteredLaundromatItems
+                .OrderByDescending(item => selectedLaundromatIds.Contains(item.Id))
+                .ThenBy(item => item.DisplayText)
+                .ToList();
+            // Update ERP ID items to match the filtered laundromats
             var visibleLaundromatIds = laundromatItems.Select(item => item.Id).ToHashSet();
-            erpIdItems = erpIdItems.Where(item => visibleLaundromatIds.Contains(item.Id))
-            .OrderByDescending(item => selectedLaundromatIds.Contains(item.Id)).ThenBy(item => item.DisplayText).ToList();
-
-            selectedLaundromats = selectedLaundromats.Where(l => selectedBankIds.Contains(l.bankId)).ToList();
+            erpIdItems = laundromatItems
+                .Select(item => new SearchItem
+                {
+                    Id = item.Id,
+                    DisplayText = string.IsNullOrEmpty((item.Data as Laundromat)?.externalId) ? "No ERP ID" : (item.Data as Laundromat).externalId,
+                    Data = item.Data
+                })
+                .OrderByDescending(item => selectedLaundromatIds.Contains(item.Id))
+                .ThenBy(item => item.DisplayText)
+                .ToList();
         }
         else
         {
+            // No banks selected, show all laundromats but none selected
             bankItems = bankItems.OrderBy(item => item.DisplayText).ToList();
             bankIdItems = bankIdItems.OrderBy(item => item.DisplayText).ToList();
 
             if (laundromatItemsOriginal.Any())
             {
-                var selectedLaundromatIds = selectedLaundromats.Select(l => l.kId).ToHashSet();
-                laundromatItems = laundromatItemsOriginal.OrderByDescending(item => selectedLaundromatIds.Contains(item.Id))
-                .ThenBy(item => item.DisplayText).ToList();
+                selectedLaundromats.Clear();
+                laundromatItems = laundromatItemsOriginal
+                    .OrderBy(item => item.DisplayText)
+                    .ToList();
 
-                erpIdItems = laundromatItemsOriginal.Select(item =>
-                {
-                    var laundromat = item.Data as Laundromat;
-                    return new SearchItem
+                erpIdItems = laundromatItemsOriginal
+                    .Select(item => new SearchItem
                     {
                         Id = item.Id,
-                        DisplayText = laundromat?.externalId ?? "No ERP ID",
-                        Data = laundromat
-                    };
-                }).OrderByDescending(item => selectedLaundromatIds.Contains(item.Id)).ThenBy(item => item.DisplayText).ToList();
+                        DisplayText = string.IsNullOrEmpty((item.Data as Laundromat)?.externalId) ? "No ERP ID" : (item.Data as Laundromat).externalId,
+                        Data = item.Data
+                    })
+                    .OrderBy(item => item.DisplayText)
+                    .ToList();
             }
         }
 
+        // Update the shared state service
         LaundryState.UpdateSelectedLaundromats(selectedLaundromats);
         LaundryState.UpdateBankItems(bankItems);
         LaundryState.UpdateBankIdItems(bankIdItems);
