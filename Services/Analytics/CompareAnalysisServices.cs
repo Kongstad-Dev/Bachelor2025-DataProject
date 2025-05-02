@@ -27,6 +27,11 @@ public class CompareAnalysisServices : BaseAnalysisService
     {
         using var db = _dbContextFactory.CreateDbContext();
 
+        // Get laundromat names for mapping
+        var nameMap = await db.Laundromat
+            .Where(l => laundromatIds.Contains(l.kId))
+            .ToDictionaryAsync(l => l.kId, l => l.name);
+
         // Get all transactions for selected laundromats in range
         var transactions = await db.Transactions
             .Where(t =>
@@ -47,11 +52,12 @@ public class CompareAnalysisServices : BaseAnalysisService
             current = current.AddMonths(1);
         }
 
-        // Create dictionary: laundromatId => list of ChartDataPoint
+        // Create dictionary: laundromatName => list of ChartDataPoint
         var result = new Dictionary<string, List<ChartDataPoint>>();
 
         foreach (var laundromatId in laundromatIds)
         {
+            var laundromatName = nameMap.TryGetValue(laundromatId, out var name) ? name : laundromatId;
             var dataPoints = new List<ChartDataPoint>();
 
             foreach (var interval in intervals)
@@ -65,17 +71,16 @@ public class CompareAnalysisServices : BaseAnalysisService
 
                 dataPoints.Add(new ChartDataPoint
                 {
-                    Label = interval.ToString("yyyy-MM"),
+                    Label = interval.ToString("yyyy-MM"), // X-axis label
                     Value = total
                 });
             }
 
-            result[laundromatId] = dataPoints;
+            result[laundromatName] = dataPoints;
         }
 
         return result;
     }
-
 
     public async Task<Dictionary<string, Dictionary<string, decimal>>> CalcTransactionOverTimeCompare(
         List<string> laundromatIds,
@@ -84,6 +89,10 @@ public class CompareAnalysisServices : BaseAnalysisService
     )
     {
         using var db = _dbContextFactory.CreateDbContext();
+
+        var nameMap = await db.Laundromat
+            .Where(l => laundromatIds.Contains(l.kId))
+            .ToDictionaryAsync(l => l.kId, l => l.name);
 
         var transactions = await db.Transactions
             .Where(t =>
@@ -101,7 +110,7 @@ public class CompareAnalysisServices : BaseAnalysisService
             })
             .GroupBy(g => g.Key.LaundromatId)
             .ToDictionary(
-                g => g.Key,
+                g => nameMap.TryGetValue(g.Key, out var name) ? name : g.Key,
                 g => g.ToDictionary(
                     x => x.Key.Month.ToString("yyyy-MM"),
                     x => x.Sum(t => Math.Abs(t.amount)) / 100m
@@ -110,7 +119,7 @@ public class CompareAnalysisServices : BaseAnalysisService
 
         return grouped;
     }
-    
+
     public async Task<MultiLineChartResult> GetTransactionChartData(
         List<string> laundromatIds,
         DateTime? startDate,
@@ -134,9 +143,7 @@ public class CompareAnalysisServices : BaseAnalysisService
         {
             Labels = allLabels,
             Values = datasets,
-            DatasetLabels = raw.Keys.ToArray()
+            DatasetLabels = raw.Keys.ToArray() // <- uses names now
         };
     }
-
-
 }
