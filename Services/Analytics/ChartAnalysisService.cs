@@ -9,9 +9,8 @@ namespace BlazorTest.Services.Analytics
         public ChartAnalysisService(
             IDbContextFactory<YourDbContext> dbContextFactory,
             IMemoryCache cache
-        ) : base(dbContextFactory, cache)
-        {
-        }
+        )
+            : base(dbContextFactory, cache) { }
 
         public async Task<List<ChartDataPoint>> GetRevenueForLaundromatsFromStats(
             List<string> laundromatIds,
@@ -142,6 +141,30 @@ namespace BlazorTest.Services.Analytics
             DateTime? endDate
         )
         {
+            // Validate required parameters
+            if (laundromatIds == null || !laundromatIds.Any())
+            {
+                throw new ArgumentException(
+                    "At least one laundromat ID must be specified",
+                    nameof(laundromatIds)
+                );
+            }
+
+            if (startDate == null)
+            {
+                throw new ArgumentNullException(nameof(startDate), "Start date is required");
+            }
+
+            if (endDate == null)
+            {
+                throw new ArgumentNullException(nameof(endDate), "End date is required");
+            }
+
+            if (startDate > endDate)
+            {
+                throw new ArgumentException("Start date must be before or equal to end date");
+            }
+
             using var dbContext = _dbContextFactory.CreateDbContext();
 
             // Fetch laundromats
@@ -150,6 +173,14 @@ namespace BlazorTest.Services.Analytics
                 .Where(l => laundromatIds.Contains(l.kId))
                 .Select(l => new { l.kId, l.name })
                 .ToListAsync();
+
+            if (!laundromats.Any())
+            {
+                throw new ArgumentException(
+                    "None of the provided laundromat IDs were found",
+                    nameof(laundromatIds)
+                );
+            }
 
             var laundromatIdList = laundromats.Select(l => l.kId).ToList();
 

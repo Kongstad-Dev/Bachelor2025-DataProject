@@ -36,7 +36,7 @@ public class YourDbContext : DbContext
             .WithMany()
             .HasForeignKey(s => s.LaundromatId);
 
-        // Specify existing table names (match your database exactly)
+        // Configure the table names
         modelBuilder.Entity<BankEntity>().ToTable("bank");
         modelBuilder.Entity<Laundromat>().ToTable("laundromat");
         modelBuilder.Entity<TransactionEntity>().ToTable("transaction");
@@ -67,7 +67,6 @@ public class YourDbContext : DbContext
             .HasDatabaseName("IX_Transaction_LaundromatId");
 
         // Combined index for date-based filtering by laundromat
-        // This is crucial for your date range queries
         modelBuilder.Entity<TransactionEntity>()
             .HasIndex(t => new { t.LaundromatId, t.date })
             .HasDatabaseName("IX_Transaction_LaundromatId_Date");
@@ -150,7 +149,6 @@ public class YourDbContextFactory : IDesignTimeDbContextFactory<YourDbContext>
             $"Server={Env.GetString("DATABASE_HOST")};Database={Env.GetString("DATABASE_NAME")};User={Env.GetString("DATABASE_USERNAME")};Password={Env.GetString("DATABASE_PASSWORD")};";
         optionsBuilder.UseMySQL(connectionString);
 
-        // Add performance configurations here too
         optionsBuilder.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
         optionsBuilder.UseMySQL(connectionString, mysqlOptions =>
         {
