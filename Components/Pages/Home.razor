@@ -31,8 +31,6 @@
                     <ChartComponent CanvasId="revenueOverTime" Labels="@chartLabelsTime" SingleValues="@chartValuesTime"
                                     Title="Revenue Over Time" Type="line" Stacked=false />
                 </div>
-                
-                <ChartDataExporter Data="chartDataPoints" />
 
                 <div class="main-graph-container">
                     <ChartComponent CanvasId="TransactionsOverTime" Labels="@chartLabelsTimeTrans"
@@ -303,7 +301,10 @@
             var resultTime = await revenueTimeTask;
             chartLabelsTime = resultTime.Select(r => r.Label).ToArray();
             chartValuesTime = resultTime.Select(r => r.Value).ToArray();
+
+            // Update the RevenueOverTimeDataPoints data points in the state
             chartDataPoints = DataConverter.ToChartDataPoints(chartLabelsTime, chartValuesTime);
+            LaundryState.UpdateRevenueOverTimeDataPoints(chartDataPoints);
 
            // Console.WriteLine($"Loaded time chart data: {chartLabelsTime.Length} items");
 

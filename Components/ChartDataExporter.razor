@@ -2,15 +2,10 @@
 @using BlazorTest.Services.Analytics.Util
 @inject IJSRuntime JS
 
-<h4>Export CSV</h4>
-
-<button @onclick="GenerateCsv">Generate CSV</button>
 @if (!string.IsNullOrEmpty(CsvText))
 {
-    <button @onclick="DownloadCsv" style="margin-left: 10px;">Download CSV</button>
-
-
-    <textarea rows="10" style="width:100%; margin-top: 10px;" readonly>@CsvText</textarea>
+    <div class="csv-icon" @onclick="DownloadCsv">
+    </div>
 }
 
 @code {
@@ -19,8 +14,14 @@
 
     private string CsvText;
 
-    private void GenerateCsv()
+    protected override void OnParametersSet()
     {
+        if (Data == null || Data.Count == 0)
+        {
+            CsvText = string.Empty;
+            return;
+        }
+
         CsvText = CsvExporter.ExportChartDataToCsv(Data);
     }
 
