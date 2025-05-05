@@ -98,8 +98,7 @@ public class CompareAnalysisServices : BaseAnalysisService
             .Where(t =>
                 laundromatIds.Contains(t.LaundromatId) &&
                 t.date >= startDate &&
-                t.date <= endDate &&
-                t.amount != 0)
+                t.date <= endDate)
             .ToListAsync();
 
         var grouped = transactions
@@ -119,6 +118,9 @@ public class CompareAnalysisServices : BaseAnalysisService
 
         return grouped;
     }
+    
+    
+    
 
     public async Task<MultiLineChartResult> GetTransactionChartData(
         List<string> laundromatIds,

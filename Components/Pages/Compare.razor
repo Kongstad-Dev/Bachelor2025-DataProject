@@ -1,6 +1,6 @@
 ﻿@page "/compare"
-@using BlazorTest.Services.Analytics
 @using BlazorTest.Services
+@using BlazorTest.Services.Analytics
 @inject CompareAnalysisServices CompareService
 @inject LaundryStateService LaundryState
 @rendermode InteractiveServer
@@ -27,13 +27,7 @@
                                     DatasetLabels="@chartDatasetLabelsCompare"
                                     Title="Transactions Over Time"
                                     Type="line"
-                                    Stacked="false"
-                                    BackgroundColors='new[] {
-                                        "rgba(255, 99, 132, 0.7)",
-                                        "rgba(54, 162, 235, 0.7)",
-                                        "rgba(255, 206, 86, 0.7)",
-                                        "rgba(75, 192, 192, 0.7)"
-                                    }' />
+                                    Stacked="false" />
                 </div>
             }
             else
@@ -48,6 +42,8 @@
 
 @code {
     private bool isLoading = true;
+    private bool isDataLoading = false;
+    private CancellationTokenSource cts = new();
 
     private string[] chartLabelsCompare = Array.Empty<string>();
     private decimal[][] chartValuesCompare = Array.Empty<decimal[]>();
@@ -60,15 +56,49 @@
     protected override async Task OnInitializedAsync()
     {
         LaundryState.OnStateChanged += OnStateChanged;
-        await LoadData();
+        await LoadCompareData(cts.Token);
     }
 
-    private async Task LoadData()
+    private void OnStateChanged()
+    {
+        InvokeAsync(HandleStateChanged);
+    }
+
+    private async Task HandleStateChanged()
     {
         try
         {
             isLoading = true;
             StateHasChanged();
+
+            cts.Cancel();
+            cts.Dispose();
+            cts = new CancellationTokenSource();
+
+            laundromatIds = LaundryState.GetEffectiveSelectedLaundromatsIds();
+            startDate = LaundryState.GetStartDate();
+            endDate = LaundryState.GetEndDate();
+
+            await LoadCompareData(cts.Token);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error handling state change: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadCompareData(CancellationToken token)
+    {
+        if (isDataLoading) return;
+
+        try
+        {
+            isDataLoading = true;
 
             laundromatIds = LaundryState.GetEffectiveSelectedLaundromatsIds();
             startDate = LaundryState.GetStartDate();
@@ -77,17 +107,23 @@
             var safeStart = startDate ?? DateTime.Today.AddMonths(-6);
             var safeEnd = endDate ?? DateTime.Today;
 
-            // Step 1: Get raw dictionary data per laundromat and month
-            var raw = await CompareService.CalcTransactionOverTimeCompare(laundromatIds, safeStart, safeEnd);
+            var compareTask = CompareService.CalcTransactionOverTimeCompare(
+                laundromatIds,
+                safeStart,
+                safeEnd
+            );
 
-            // Step 2: Extract all months (like labels in Home.razor)
+            await Task.WhenAll(compareTask);
+            token.ThrowIfCancellationRequested();
+
+            var raw = await compareTask;
+
             chartLabelsCompare = raw.Values
                 .SelectMany(dict => dict.Keys)
                 .Distinct()
                 .OrderBy(label => label)
                 .ToArray();
 
-            // Step 3: One decimal[] per laundromat (like chartValuesTimeTrans, but per dataset)
             chartDatasetLabelsCompare = raw.Keys.ToArray();
             chartValuesCompare = raw.Select(kvp =>
             {
@@ -99,26 +135,26 @@
 
             Console.WriteLine("Compare chart loaded with labels: " + string.Join(", ", chartLabelsCompare));
         }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine("Compare data load canceled.");
+        }
         catch (Exception ex)
         {
             Console.WriteLine($"ComparePage error: {ex.Message}");
         }
         finally
         {
+            isDataLoading = false;
             isLoading = false;
             StateHasChanged();
         }
     }
 
-
-
-    private void OnStateChanged()
-    {
-        InvokeAsync(LoadData);
-    }
-
     public void Dispose()
     {
         LaundryState.OnStateChanged -= OnStateChanged;
+        cts.Cancel();
+        cts.Dispose();
     }
 }

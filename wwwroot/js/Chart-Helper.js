@@ -83,11 +83,24 @@
 
         // Use custom colors if provided
         if (config.backgroundColors && config.backgroundColors.length > 0) {
-            datasetColors = Array.from({ length: config.values[0].length },
+            datasetColors = Array.from({ length: config.values.length },
                 (_, i) => config.backgroundColors[i % config.backgroundColors.length]);
         } else {
-            datasetColors = generateColors(config.values[0].length, config.type);
+            datasetColors = generateColors(config.values.length, config.type);
         }
+
+        if (config.type === 'line') {
+            datasets = config.values.map((datasetValues, datasetIndex) => ({
+                label: config.datasetLabels && config.datasetLabels.length > datasetIndex
+                    ? config.datasetLabels[datasetIndex]
+                    : `Dataset ${datasetIndex + 1}`,
+                data: datasetValues,
+                backgroundColor: 'transparent',
+                borderColor: datasetColors[datasetIndex],
+                borderWidth: 2,
+                fill: false
+            }));
+        }else {
 
         datasets = config.values[0].map((_, colIndex) => ({
             label: config.datasetLabels && config.datasetLabels.length > colIndex
@@ -99,6 +112,7 @@
             borderWidth: 1,
             stack: config.stacked ? 'stack1' : undefined
         }));
+    }
     }
 
     // Create a new chart instance and store it in the chartInstances object
