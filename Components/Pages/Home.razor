@@ -39,7 +39,7 @@
                 <ChartComponent CanvasId="revenueDistribution" Labels="@chartLabelsSum" SingleValues="@chartValuesSum"
                 Title="Revenue Distribution" Type="pie" />
                 </div>
-                
+                */
                 <div class="main-graph-container">
                     <ChartComponent CanvasId="stackedBarChart" Labels='@chartLabelsSumMachine'
                                     MultiValues="@chartValuesSumMachine" Title='Machine Starts' Type="bar" Stacked="true"
@@ -52,7 +52,6 @@
                                     BackgroundColors='new[] { "rgba(255, 99, 132, 0.7)", "rgba(54, 162, 235, 0.7)", "rgba(75, 192, 192, 0.7)" }'
                                     DatasetLabels="@chartLabelsMachineRev" />
                 </div>
-                */
             }
             else if (isLoading)
             {
@@ -246,32 +245,34 @@
     }
 
 
-    private async Task LoadDashboardData(CancellationToken token)
-{
-    if (isDataLoading) return;
-
-    try
+private async Task LoadDashboardData(CancellationToken token)
     {
-        isDataLoading = true;
+        if (isDataLoading) return;
 
-        // Create tasks for parallel execution
-        var keyValuesTask = AnalysisService.GetKeyValuesFromStats(
+        try
+        {
+            isDataLoading = true;
+
+            // Create tasks for parallel execution
+            var keyValuesTask = AnalysisService.GetKeyValuesFromStats(
             effectiveLaundromats,
             startDate,
             endDate);
 
-        var revenueTimeTask = AnalysisService.GetRevenueForLaundromatsOverTimeFromStats(
+            var revenueSumTask = AnalysisService.GetRevenueForLaundromatsFromStats(
             effectiveLaundromats,
             startDate ?? DateTime.MinValue,
             endDate ?? DateTime.MaxValue);
 
-        var transactionTimeTask = AnalysisService.CalculateTransactionOverTimeFromStats(
+            var revenueTimeTask = AnalysisService.GetRevenueForLaundromatsOverTime(
             effectiveLaundromats,
             startDate ?? DateTime.MinValue,
             endDate ?? DateTime.MaxValue);
 
-        // Wait for ALL tasks to complete (not just the first three)
-        await Task.WhenAll(keyValuesTask, revenueTimeTask, transactionTimeTask);
+            var transactionTimeTask = AnalysisService.CalculateTransactionOverTime(
+            effectiveLaundromats,
+            startDate ?? DateTime.MinValue,
+            endDate ?? DateTime.MaxValue);
 
             var stackedMachineTask = AnalysisService.getStackedMachineStarts(
             effectiveLaundromats,
@@ -328,11 +329,6 @@
             isDataLoading = false;
         }
     }
-    finally
-    {
-        isDataLoading = false;
-    }
-}
 
     private async Task HandleStateChanged()
     {
