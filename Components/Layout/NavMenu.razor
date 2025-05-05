@@ -1,13 +1,12 @@
 ﻿@using BlazorTest.Models
 @using BlazorTest.Database
 @using Microsoft.EntityFrameworkCore
-@using System.Net.Http
-@using System.Net.Http.Json
 @using BlazorTest.Components
 @using BlazorTest.Services
-@inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager NavigationManager
 @inject LaundryStateService LaundryState
+@inject BankService BankService
+@inject LaundromatService LaundromatService
 @rendermode InteractiveServer
 
 <div class="nav-container" style="position: relative; z-index: 10;">
@@ -36,8 +35,6 @@
 </div>
 
 @code {
-    private HttpClient? client;
-
     private List<SearchItem> bankItems = new();
     private List<BankEntity> selectedBanks = new();
 
@@ -54,10 +51,6 @@
 
     protected override void OnInitialized()
     {
-        client = HttpClientFactory.CreateClient("API");
-        client.BaseAddress ??= new Uri(NavigationManager.BaseUri);
-
-        // Subscribe to state changes from the service
         LaundryState.OnStateChanged += HandleStateChanged;
     }
 
@@ -120,33 +113,25 @@
     {
         try
         {
-            if (client == null)
+            var banks = await BankService.GetAllBanksAsync();
+
+            bankItems = banks.Select(b => new SearchItem
             {
-                throw new InvalidOperationException("HttpClient is not initialized.");
-            }
+                Id = b.bankId.ToString(),
+                DisplayText = string.IsNullOrEmpty(b.name) ? "Unnamed Bank" : b.name,
+                Data = b
+            }).OrderBy(b => b.DisplayText).ToList();
 
-            var response = await client.GetFromJsonAsync<BankApiResponse>("api/bank?all=true");
-
-            if (response?.Banks != null)
+            bankIdItems = banks.Select(b => new SearchItem
             {
-                bankItems = response.Banks.Select(b => new SearchItem
-                {
-                    Id = b.bankId.ToString(),
-                    DisplayText = string.IsNullOrEmpty(b.name) ? "Unnamed Bank" : b.name,
-                    Data = b
-                }).OrderBy(b => b.DisplayText).ToList();
+                Id = b.bankId.ToString(),
+                DisplayText = b.bankId.ToString(),
+                Data = b
+            }).OrderBy(b => b.DisplayText).ToList();
 
-                bankIdItems = response.Banks.Select(b => new SearchItem
-                {
-                    Id = b.bankId.ToString(),
-                    DisplayText = b.bankId.ToString(),
-                    Data = b
-                }).OrderBy(b => b.DisplayText).ToList();
-
-                LaundryState.UpdateBankItems(bankItems);
-                LaundryState.UpdateBankIdItems(bankIdItems);
-                LaundryState.UpdateSelectedBanks(selectedBanks);
-            }
+            LaundryState.UpdateBankItems(bankItems);
+            LaundryState.UpdateBankIdItems(bankIdItems);
+            LaundryState.UpdateSelectedBanks(selectedBanks);
         }
         catch (Exception ex)
         {
@@ -158,39 +143,31 @@
     {
         try
         {
-            if (client == null)
+            var laundromats = await LaundromatService.GetAllLaundromatsAsync();
+
+            laundromatItems = laundromats.Select(l => new SearchItem
             {
-                throw new InvalidOperationException("HttpClient is not initialized.");
-            }
+                Id = l.kId,
+                DisplayText = l.name ?? "Unnamed Laundromat",
+                Data = l
+            }).OrderBy(l => l.DisplayText).ToList();
 
-            var response = await client.GetFromJsonAsync<LaundromatApiResponse>("api/laundromat?all=true");
-
-            if (response?.Laundromats != null)
+            erpIdItems = laundromats.Select(l => new SearchItem
             {
-                laundromatItems = response.Laundromats.Select(l => new SearchItem
-                {
-                    Id = l.kId,
-                    DisplayText = l.name ?? "Unnamed Laundromat",
-                    Data = l
-                }).OrderBy(l => l.DisplayText).ToList();
+                Id = l.kId,
+                DisplayText = string.IsNullOrEmpty(l.externalId) ? "No ERP ID" : l.externalId,
+                Data = l
+            }).OrderBy(l => l.DisplayText).ToList();
 
-                erpIdItems = response.Laundromats.Select(l => new SearchItem
-                {
-                    Id = l.kId,
-                    DisplayText = string.IsNullOrEmpty(l.externalId) ? "No ERP ID" : l.externalId,
-                    Data = l
-                }).OrderBy(l => l.DisplayText).ToList();
+            laundromatItemsOriginal = new List<SearchItem>(laundromatItems);
+            selectedLaundromats = new List<Laundromat>();
 
-                laundromatItemsOriginal = new List<SearchItem>(laundromatItems);
-                selectedLaundromats = new List<Laundromat>();
+            LaundryState.UpdateLaundromatItems(laundromatItems);
+            LaundryState.UpdateErpIdItems(erpIdItems);
+            LaundryState.UpdateOriginalLaundromats(laundromatItemsOriginal);
+            LaundryState.UpdateSelectedLaundromats(selectedLaundromats);
 
-                LaundryState.UpdateLaundromatItems(laundromatItems);
-                LaundryState.UpdateErpIdItems(erpIdItems);
-                LaundryState.UpdateOriginalLaundromats(laundromatItemsOriginal);
-                LaundryState.UpdateSelectedLaundromats(selectedLaundromats);
-
-                StateHasChanged();
-            }
+            StateHasChanged();
         }
         catch (Exception ex)
         {
@@ -352,26 +329,5 @@
         LaundryState.UpdateErpIdItems(erpIdItems);
 
         StateHasChanged();
-    }
-
-    private class BankApiResponse
-    {
-        public PageInfo? PageInfo { get; set; }
-        public List<BankEntity>? Banks { get; set; }
-    }
-
-    private class LaundromatApiResponse
-    {
-        public PageInfo? PageInfo { get; set; }
-        public List<Laundromat>? Laundromats { get; set; }
-    }
-
-    private class PageInfo
-    {
-        public int CurrentPage { get; set; }
-        public int PageSize { get; set; }
-        public int TotalCount { get; set; }
-        public int TotalPages { get; set; }
-        public bool AllRecordsReturned { get; set; }
     }
 }

@@ -1,63 +1,135 @@
+using BlazorTest.Database;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using BlazorTest.Database;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
-namespace BlazorTest.Database.Controllers
+namespace BlazorTest.Services
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class LaundromatStatsController : ControllerBase
+    public class LaundromatStatsService
     {
         private readonly IDbContextFactory<YourDbContext> _dbContextFactory;
-        private readonly ILogger<LaundromatStatsController> _logger;
+        private readonly ILogger<LaundromatStatsService> _logger;
 
-        public LaundromatStatsController(
+        public LaundromatStatsService(
             IDbContextFactory<YourDbContext> dbContextFactory,
-            ILogger<LaundromatStatsController> logger
-        )
+            ILogger<LaundromatStatsService> logger)
         {
             _dbContextFactory = dbContextFactory;
             _logger = logger;
         }
 
-        [HttpPost("update/{laundromatId}")]
-        public async Task<IActionResult> UpdateStats(string laundromatId)
+        public async Task<List<LaundromatStats>> GetLaundromatStatsAsync(
+            List<string> laundromatIds, 
+            DateTime? startDate = null, 
+            DateTime? endDate = null)
+        {
+            using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+            var query = dbContext.LaundromatStats.AsNoTracking();
+
+            if (laundromatIds != null && laundromatIds.Any())
+            {
+                query = query.Where(s => laundromatIds.Contains(s.LaundromatId));
+            }
+
+            if (startDate != null)
+            {
+                query = query.Where(s => s.StartDate >= startDate);
+            }
+
+            if (endDate != null)
+            {
+                query = query.Where(s => s.EndDate <= endDate);
+            }
+
+            return await query.ToListAsync();
+        }
+
+        public async Task<LaundromatStats> GetLaundromatStatsByIdAsync(
+            string laundromatId, 
+            DateTime date)
+        {
+            using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+            return await dbContext.LaundromatStats.AsNoTracking()
+                .FirstOrDefaultAsync(s => s.LaundromatId == laundromatId && 
+                                         (s.StartDate <= date && s.EndDate >= date));
+        }
+
+        public async Task<List<LaundromatStats>> GetAggregatedLaundromatStatsAsync(
+            List<string> laundromatIds,
+            DateTime? startDate = null,
+            DateTime? endDate = null)
+        {
+            using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+            var query = dbContext.LaundromatStats.AsNoTracking();
+
+            if (laundromatIds != null && laundromatIds.Any())
+            {
+                query = query.Where(s => laundromatIds.Contains(s.LaundromatId));
+            }
+
+            if (startDate != null)
+            {
+                query = query.Where(s => s.StartDate >= startDate);
+            }
+
+            if (endDate != null)
+            {
+                query = query.Where(s => s.EndDate <= endDate);
+            }
+
+            // Group by laundromat and aggregate stats
+            var result = await query
+                .GroupBy(s => s.LaundromatId)
+                .Select(g => new LaundromatStats
+                {
+                    LaundromatId = g.Key,
+                    LaundromatName = g.First().LaundromatName,
+                    TotalRevenue = g.Sum(s => s.TotalRevenue),
+                    TotalTransactions = g.Sum(s => s.TotalTransactions),
+                    DryerTransactions = g.Sum(s => s.DryerTransactions),
+                    WashingMachineTransactions = g.Sum(s => s.WashingMachineTransactions),
+                    StartDate = startDate ?? g.Min(s => s.StartDate),
+                    EndDate = endDate ?? g.Max(s => s.EndDate),
+                    CalculatedAt = DateTime.Now
+                })
+                .ToListAsync();
+
+            return result;
+        }
+        
+        public async Task UpdateStatsForLaundromatAsync(string laundromatId)
         {
             if (string.IsNullOrEmpty(laundromatId))
             {
-                return BadRequest("Laundromat ID is required");
+                throw new ArgumentException("Laundromat ID is required", nameof(laundromatId));
             }
 
             try
             {
-                using var dbContext = _dbContextFactory.CreateDbContext();
+                using var dbContext = await _dbContextFactory.CreateDbContextAsync();
                 bool exists = await dbContext.Laundromat.AnyAsync(l => l.kId == laundromatId);
                 if (!exists)
                 {
-                    return NotFound($"Laundromat with ID {laundromatId} not found");
+                    throw new KeyNotFoundException($"Laundromat with ID {laundromatId} not found");
                 }
 
                 await CalculateStatsForLaundromat(laundromatId);
-                return Ok(new { message = $"Stats updated for laundromat {laundromatId}" });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error updating stats for laundromat {laundromatId}");
-                return StatusCode(500, $"Error updating stats: {ex.Message}");
+                throw;
             }
         }
 
-        [HttpPost("update-all")]
-        public async Task<IActionResult> UpdateAllStats()
+        public async Task UpdateAllStatsAsync()
         {
             try
             {
-                using var dbContext = _dbContextFactory.CreateDbContext();
+                using var dbContext = await _dbContextFactory.CreateDbContextAsync();
                 var laundromatIds = await dbContext.Laundromat.Select(l => l.kId).ToListAsync();
                 int count = 0;
 
@@ -67,12 +139,12 @@ namespace BlazorTest.Database.Controllers
                     count++;
                 }
 
-                return Ok(new { message = $"Stats updated for {count} laundromats" });
+                _logger.LogInformation($"Stats updated for {count} laundromats");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating stats for all laundromats");
-                return StatusCode(500, $"Error updating stats: {ex.Message}");
+                throw;
             }
         }
 
@@ -83,7 +155,7 @@ namespace BlazorTest.Database.Controllers
             var startOfToday = now.Date; // 00:00:00.000
 
             // Use a single context for all operations
-            using var dbContext = _dbContextFactory.CreateDbContext();
+            using var dbContext = await _dbContextFactory.CreateDbContextAsync();
 
             // Get the laundromat name once for all operations
             var laundromat = await dbContext.Laundromat.FindAsync(laundromatId);

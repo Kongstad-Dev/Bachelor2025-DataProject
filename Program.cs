@@ -2,9 +2,7 @@ using BlazorTest.Components;
 using Microsoft.EntityFrameworkCore;
 using MySql.EntityFrameworkCore.Extensions;
 using DotNetEnv;
-using System.Net.Http;
 using BlazorTest.Services;
-using BlazorTest.Database.Controllers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,31 +14,25 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddScoped<DataAnalysisService>();
+builder.Services.AddScoped<BankService>();
+builder.Services.AddScoped<LaundromatService>();
+builder.Services.AddScoped<LaundromatStatsService>();
+builder.Services.AddScoped<TransactionService>();
+builder.Services.AddScoped<LaundryStateService>();
 
+// Register ExternalApiService
+builder.Services.AddHttpClient<ExternalApiService>();
+
+// Register background service for daily updates
+builder.Services.AddHostedService<DailyUpdateBackgroundService>();
 
 // Configure MySQL
 var connectionString = $"Server={Env.GetString("DATABASE_HOST")};Database={Env.GetString("DATABASE_NAME")};User={Env.GetString("DATABASE_USERNAME")};Password={Env.GetString("DATABASE_PASSWORD")};";
 builder.Services.AddDbContextFactory<YourDbContext>(options =>
     options.UseMySQL(connectionString));
-    
-// Register HttpClient and ExternalApiService
-builder.Services.AddHttpClient<ExternalApiService>();
-
-// Configure the named HttpClient - MOVED HERE BEFORE builder.Build()
-builder.Services.AddHttpClient("API", client => 
-{
-    client.BaseAddress = new Uri("http://localhost:5171/");
-});
-
-// Add controllers
-builder.Services.AddControllers();
-
-builder.Services.AddScoped<LaundryStateService>();
-builder.Services.AddScoped<LaundromatStatsController>();
 
 // Add antiforgery services
 builder.Services.AddAntiforgery();
-
 builder.Services.AddMemoryCache();
 
 var app = builder.Build();
@@ -55,14 +47,9 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 app.UseRouting();
-app.UseAuthentication();
-app.UseAuthorization();
 app.UseAntiforgery();
 
-// Use MapGroup to separate API controllers from Razor components
-app.MapControllers();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
