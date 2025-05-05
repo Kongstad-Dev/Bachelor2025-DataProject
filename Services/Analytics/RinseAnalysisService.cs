@@ -3,16 +3,17 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace BlazorTest.Services.Analytics;
-public class TempAnalysisService : BaseAnalysisService
+
+public class RinseAnalysisService : BaseAnalysisService
 {
-    public TempAnalysisService(
+        public RinseAnalysisService(
         IDbContextFactory<YourDbContext> dbContextFactory,
         IMemoryCache cache
     ) : base(dbContextFactory, cache)
     {
     }
 
-    public async Task<List<ChartDataPoint>> TempProgramFromTransactions(
+    public async Task<List<ChartDataPoint>> RinseFromTransactions(
         List<string> laundromatIds,
         DateTime? startDate,
         DateTime? endDate
@@ -25,24 +26,24 @@ public class TempAnalysisService : BaseAnalysisService
                 laundromatIds.Contains(t.LaundromatId) &&
                 t.date >= startDate &&
                 t.date <= endDate &&
-                t.temperature != 0
+                t.amount != 0
             )
             .ToListAsync();
         // Group by temperature and count occurrences
-        var groupedByTemp = transactions
-            .GroupBy(t => t.temperature)
+        var groupedByProgramType = transactions
+            .GroupBy(t => t.rinse)
             .OrderBy(g => g.Key)
             .Select(g => new ChartDataPoint
             {
-                Label = $"{g.Key}°C",
+                Label = $"{g.Key}",
                 Value = g.Count(),
             })
             .ToList();
-        Console.WriteLine($"Grouped Data: {string.Join(", ", groupedByTemp.Select(g => $"{g.Label}: {g.Value}"))}");
-        return groupedByTemp;
+        Console.WriteLine($"Grouped Data: {string.Join(", ", groupedByProgramType.Select(g => $"{g.Label}: {g.Value}"))}");
+        return groupedByProgramType;
     }
     
-    public async Task<List<ChartDataPoint>> TempProgramProcentageFromTransactions(
+    public async Task<List<ChartDataPoint>> RinseProcentageFromTransactions(
         List<string> laundromatIds,
         DateTime? startDate,
         DateTime? endDate
@@ -58,7 +59,7 @@ public class TempAnalysisService : BaseAnalysisService
                 laundromatIds.Contains(t.LaundromatId) &&
                 t.date >= startDate &&
                 t.date <= endDate &&
-                t.temperature != 0
+                t.amount != 0
             )
             .ToListAsync();
 
@@ -71,16 +72,15 @@ public class TempAnalysisService : BaseAnalysisService
         }
 
         // Group by temperature and calculate percentages
-        var groupedByTemp = transactions
-            .GroupBy(t => t.temperature)
+        var groupedByProgramType = transactions
+            .GroupBy(t => t.rinse)
             .Select(g => new ChartDataPoint
             {
-                Label = $"{g.Key}°C",
+                Label = $"{g.Key}",
                 Value = Math.Round((decimal)g.Count() / totalTransactions * 100, 2) // Calculate percentage
             })
             .ToList();
-
-        Console.WriteLine($"Grouped Data with Percentages: {string.Join(", ", groupedByTemp.Select(g => $"{g.Label}: {g.Value}%"))}");
-        return groupedByTemp;
+        
+        return groupedByProgramType;
     }
 }

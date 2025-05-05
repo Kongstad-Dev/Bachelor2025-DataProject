@@ -9,9 +9,8 @@ namespace BlazorTest.Services.Analytics
         public RevenueAnalysisService(
             IDbContextFactory<YourDbContext> dbContextFactory,
             IMemoryCache cache
-        ) : base(dbContextFactory, cache)
-        {
-        }
+        )
+            : base(dbContextFactory, cache) { }
 
         public decimal CalculateRevenueFromTransactions(List<TransactionEntity> transactions)
         {
@@ -24,25 +23,16 @@ namespace BlazorTest.Services.Analytics
             DateTime? endDate
         )
         {
-            if (
-                laundromatIds == null
-                || !laundromatIds.Any()
-                || startDate == null
-                || endDate == null
-            )
+            if (laundromatIds == null || !laundromatIds.Any())
             {
-                // Fall back to direct transaction calculation if any required parameters are missing
-                using var localDbContext = _dbContextFactory.CreateDbContext();
+                // No laundromats specified, return zero
+                return 0;
+            }
 
-                var transactions = await localDbContext
-                    .Transactions.Where(t =>
-                        laundromatIds.Contains(t.LaundromatId)
-                        && t.date >= startDate
-                        && t.date <= endDate
-                    )
-                    .ToListAsync();
-
-                return transactions.Sum(t => Math.Abs(t.amount)) / 100m;
+            if (startDate == null || endDate == null)
+            {
+                // Missing date range, return zero or an appropriate default
+                return 0;
             }
 
             // Create cache key for the request
@@ -58,8 +48,8 @@ namespace BlazorTest.Services.Analytics
             }
 
             StatsPeriodType? periodType = GetMatchingStatsPeriodType(startDate, endDate);
-            string periodKey = periodType == StatsPeriodType.Quarter ?
-                GetQuarterPeriodKey(startDate) : null;
+            string periodKey =
+                periodType == StatsPeriodType.Quarter ? GetQuarterPeriodKey(startDate) : null;
 
             // If we identified a matching period, get stats for all requested laundromats
             if (periodType.HasValue)
@@ -94,6 +84,7 @@ namespace BlazorTest.Services.Analytics
                             laundromatIds.Contains(t.LaundromatId)
                             && t.date >= startDate
                             && t.date <= endDate
+                            && t.amount != 0
                         )
                         .ToListAsync();
 
@@ -122,6 +113,7 @@ namespace BlazorTest.Services.Analytics
                     laundromatIds.Contains(t.LaundromatId)
                     && t.date >= startDate
                     && t.date <= endDate
+                    && t.amount != 0
                 )
                 .ToListAsync();
 

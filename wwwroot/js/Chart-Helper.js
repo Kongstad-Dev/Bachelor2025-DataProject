@@ -1,6 +1,4 @@
-﻿let chartInstances = {};
-
-window.renderChart = function (config) {
+﻿window.renderChart = function (config) {
     // Validate required parameters
     if (!config.canvasId) {
         console.error("Missing required 'canvasId' parameter");
@@ -49,34 +47,57 @@ window.renderChart = function (config) {
     const isSingleValueChart = config.values.length === 1 && !config.stacked;
 
     if (isSingleValueChart) {
-        // Handle SingleValues chart (simple dataset without transposition)
+        // For SingleValues chart
+        let bgColors;
+
+        // Check for custom colors first
+        if (config.backgroundColors && config.backgroundColors.length > 0) {
+            if (config.type === 'pie' || config.type === 'doughnut') {
+                // For pie/doughnut, repeat the colors to match data points
+                bgColors = Array.from({ length: config.values[0].length },
+                    (_, i) => config.backgroundColors[i % config.backgroundColors.length]);
+            } else {
+                // For other charts, use the first color
+                bgColors = config.backgroundColors[0];
+            }
+        } else {
+            // Use generated colors as fallback
+            if (config.type === 'pie' || config.type === 'doughnut') {
+                bgColors = generateColors(config.values[0].length, config.type);
+            } else {
+                bgColors = generateColors(1, config.type)[0];
+            }
+        }
+
         datasets = [{
             label: config.title || 'Dataset',
             data: config.values[0],
-            backgroundColor: config.backgroundColors && config.backgroundColors.length > 0
-                ? config.backgroundColors[0]
-                : generateColors(1, config.type)[0],
-            borderColor: config.type === 'line'
-                ? (config.backgroundColors && config.backgroundColors.length > 0
-                    ? config.backgroundColors[0]
-                    : generateBorderColors(1)[0])
-                : generateBorderColors(1)[0],
+            backgroundColor: bgColors,
+            borderColor: config.type === 'line' ? bgColors : generateBorderColors(1)[0],
             borderWidth: config.type === 'line' ? 2 : 1,
             fill: config.type === 'line' ? false : true
         }];
     } else {
-        // Handle MultiValues chart (stacked datasets with transposition)
+        // For MultiValues chart
+        let datasetColors;
+
+        // Use custom colors if provided
+        if (config.backgroundColors && config.backgroundColors.length > 0) {
+            datasetColors = Array.from({ length: config.values[0].length },
+                (_, i) => config.backgroundColors[i % config.backgroundColors.length]);
+        } else {
+            datasetColors = generateColors(config.values[0].length, config.type);
+        }
+
         datasets = config.values[0].map((_, colIndex) => ({
             label: config.datasetLabels && config.datasetLabels.length > colIndex
                 ? config.datasetLabels[colIndex]
                 : `Dataset ${colIndex + 1}`,
-            data: config.values.map(row => row[colIndex]), // Extract the column for each dataset
-            backgroundColor: (config.backgroundColors && config.backgroundColors.length > colIndex)
-                ? config.backgroundColors[colIndex]
-                : generateColors(1, config.type)[0],
-            borderColor: generateBorderColors(1)[0],
+            data: config.values.map(row => row[colIndex]),
+            backgroundColor: datasetColors[colIndex],
+            borderColor: generateBorderColors(config.values[0].length)[colIndex],
             borderWidth: 1,
-            stack: config.stacked ? 'stack1' : undefined // Only use stack if stacked is true
+            stack: config.stacked ? 'stack1' : undefined
         }));
     }
 
@@ -145,12 +166,12 @@ window.renderChart = function (config) {
 
 function generateColors(count, type) {
     const baseColors = [
-        'rgba(255, 105, 180, 0.7)',  // vibrant pastel pink
-        'rgba(255, 160, 122, 0.7)',  // soft coral
-        'rgba(255, 220, 105, 0.7)',  // warm pastel yellow
-        'rgba(144, 238, 144, 0.7)',  // light lime green
+        'rgba(102, 221, 102, 1)', // light lime green
+        'rgba(255, 160, 122, 0.7)',  // soft coral (orange) - changed to first position
         'rgba(135, 206, 250, 0.7)',  // sky blue
-        'rgba(173, 216, 230, 0.7)',  // pastel cyan-blue
+        'rgba(255, 220, 105, 0.7)',  // warm pastel yellow
+        'rgba(255, 105, 180, 0.7)',  // vibrant pastel pink
+        'rgba(173, 216, 230, 0.7)',  // pastel cyan-blue - moved down
         'rgba(216, 191, 216, 0.7)',  // rich lavender
         'rgba(255, 182, 193, 0.7)',  // bright blush
         'rgba(255, 204, 153, 0.7)',  // peachy orange
@@ -162,11 +183,11 @@ function generateColors(count, type) {
 
 function generateBorderColors(count) {
     const baseColors = [
-        'rgba(255, 105, 180, 1)',  // vibrant pastel pink
-        'rgba(255, 160, 122, 1)',  // soft coral
-        'rgba(255, 220, 105, 1)',  // warm pastel yellow
+        'rgba(255, 160, 122, 1)',  // soft coral (orange) - matched to first position
         'rgba(144, 238, 144, 1)',  // light lime green
         'rgba(135, 206, 250, 1)',  // sky blue
+        'rgba(255, 220, 105, 1)',  // warm pastel yellow
+        'rgba(255, 105, 180, 1)',  // vibrant pastel pink
         'rgba(173, 216, 230, 1)',  // pastel cyan-blue
         'rgba(216, 191, 216, 1)',  // rich lavender
         'rgba(255, 182, 193, 1)',  // bright blush

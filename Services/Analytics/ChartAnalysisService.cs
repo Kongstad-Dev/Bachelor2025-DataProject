@@ -497,6 +497,28 @@ namespace BlazorTest.Services.Analytics
             DateTime? endDate
         )
         {
+            // Validate required parameters
+            if (laundromatIds == null || !laundromatIds.Any())
+            {
+            // Return empty result instead of throwing
+            return new List<ChartDataPoint>();
+            }
+
+            if (startDate == null)
+            {
+                throw new ArgumentNullException(nameof(startDate), "Start date is required");
+            }
+
+            if (endDate == null)
+            {
+                throw new ArgumentNullException(nameof(endDate), "End date is required");
+            }
+
+            if (startDate > endDate)
+            {
+                throw new ArgumentException("Start date must be before or equal to end date");
+            }
+
             using var dbContext = _dbContextFactory.CreateDbContext();
 
             // Fetch laundromats
@@ -505,6 +527,14 @@ namespace BlazorTest.Services.Analytics
                 .Where(l => laundromatIds.Contains(l.kId))
                 .Select(l => new { l.kId, l.name })
                 .ToListAsync();
+
+            if (!laundromats.Any())
+            {
+                throw new ArgumentException(
+                    "None of the provided laundromat IDs were found",
+                    nameof(laundromatIds)
+                );
+            }
 
             var laundromatIdList = laundromats.Select(l => l.kId).ToList();
 

@@ -42,9 +42,15 @@
                 
                 <div class="main-graph-container">
                     <ChartComponent CanvasId="stackedBarChart" Labels='@chartLabelsSumMachine'
-                        MultiValues="@chartValuesSumMachine" Title='Stacked Bar Chart' Type="bar" Stacked="true"
-                        BackgroundColors='new[] { "rgba(255, 99, 132, 0.7)", "rgba(54, 162, 235, 0.7)", "rgba(75, 192, 192, 0.7)" }'
-                        DatasetLabels="@chartLabelsMachine" />
+                                    MultiValues="@chartValuesSumMachine" Title='Machine Starts' Type="bar" Stacked="true"
+                                    BackgroundColors='new[] { "rgba(255, 99, 132, 0.7)", "rgba(54, 162, 235, 0.7)", "rgba(75, 192, 192, 0.7)" }'
+                                    DatasetLabels="@chartLabelsMachine" />
+                </div>
+                <div class="main-graph-container">
+                    <ChartComponent CanvasId="stackedBarChartRev" Labels='@chartLabelsSumMachineRev'
+                                    MultiValues="@chartValuesSumMachineRev" Title='Revenue pr Machine' Type="bar" Stacked="true"
+                                    BackgroundColors='new[] { "rgba(255, 99, 132, 0.7)", "rgba(54, 162, 235, 0.7)", "rgba(75, 192, 192, 0.7)" }'
+                                    DatasetLabels="@chartLabelsMachineRev" />
                 </div>
                 */
             }
@@ -105,7 +111,14 @@
                 }
                 else if (selectedSpecialContent == "Rinse Statistics")
                 {
-                    <p>Rinse cycle data would appear here.</p>
+                    <div class="main-graph-container small">
+                        <ChartComponent CanvasId="RinseUsage" Labels="@chartLabelsRinse" SingleValues="@chartValuesRinse"
+                                        Title="Rinse Usage" Type="bar" />
+                    </div>
+                    <div class="main-graph-container small">
+                        <ChartComponent CanvasId="RinseDataProcentage" Labels="@chartLabelsRinseProcentage"
+                                        SingleValues="@chartValuesRinseProcentage" Title="Rinse Usage Procent" Type="pie" />
+                    </div>
                 }
             </div>
         }
@@ -131,9 +144,15 @@
     private decimal[] chartValuesProcentageSoap = Array.Empty<decimal>();
     private string[] chartLabelsTimeTrans = Array.Empty<string>();
     private decimal[] chartValuesTimeTrans = Array.Empty<decimal>();
+    
     private string[] chartLabelsSumMachine = Array.Empty<string>();
     private decimal[][] chartValuesSumMachine = Array.Empty<decimal[]>();
     private string[] chartLabelsMachine = Array.Empty<string>();
+    
+    private string[] chartLabelsSumMachineRev = Array.Empty<string>();
+    private decimal[][] chartValuesSumMachineRev = Array.Empty<decimal[]>();
+    private string[] chartLabelsMachineRev = Array.Empty<string>();
+    
     private decimal[] chartValuesTemp = Array.Empty<decimal>();
     private string[] chartLabelsTemp= Array.Empty<string>();
     private string[] chartLabelsTempProcentage = Array.Empty<string>();
@@ -142,6 +161,12 @@
     private decimal[] chartValuesPT= Array.Empty<decimal>();
     private string[] chartLabelsPTProcentage = Array.Empty<string>();
     private decimal[] chartValuesPTProcentage= Array.Empty<decimal>();
+    
+    
+    private string[] chartLabelsRinse = Array.Empty<string>();
+    private decimal[] chartValuesRinse= Array.Empty<decimal>();
+    private string[] chartLabelsRinseProcentage = Array.Empty<string>();
+    private decimal[] chartValuesRinseProcentage= Array.Empty<decimal>();
 
     
     
@@ -248,21 +273,60 @@
         // Wait for ALL tasks to complete (not just the first three)
         await Task.WhenAll(keyValuesTask, revenueTimeTask, transactionTimeTask);
 
-        // Process results
-        token.ThrowIfCancellationRequested();
+            var stackedMachineTask = AnalysisService.getStackedMachineStarts(
+            effectiveLaundromats,
+            startDate ?? DateTime.MinValue,
+            endDate ?? DateTime.MaxValue);
+            
+            var stackedMachineTaskRev = AnalysisService.getStackedMachineRevenue(
+                effectiveLaundromats,
+                startDate ?? DateTime.MinValue,
+                endDate ?? DateTime.MaxValue);
+            
+           
 
-        keyValuePairs = await keyValuesTask;
-        
-        var resultTime = await revenueTimeTask;
-        chartLabelsTime = resultTime.Select(r => r.Label).ToArray();
-        chartValuesTime = resultTime.Select(r => r.Value).ToArray();
-        
-        var resultTimeTrans = await transactionTimeTask;
-        chartLabelsTimeTrans = resultTimeTrans.Select(r => r.Label).ToArray();
-        chartValuesTimeTrans = resultTimeTrans.Select(r => r.Value).ToArray();
-        
-        // Update UI after all data is loaded
-        StateHasChanged();
+
+            // Wait for all tasks to complete
+            await Task.WhenAll(keyValuesTask, revenueSumTask, revenueTimeTask);
+
+            // Process results (only if not canceled)
+            token.ThrowIfCancellationRequested();
+
+            keyValuePairs = await keyValuesTask;
+           // Console.WriteLine($"Loaded key values: {keyValuePairs.Count}");
+
+            var resultSum = await revenueSumTask;
+            chartLabelsSum = resultSum.Select(r => r.Label).ToArray();
+            chartValuesSum = resultSum.Select(r => r.Value).ToArray();
+           // Console.WriteLine($"Loaded sum chart data: {chartLabelsSum.Length} items");
+
+            var resultTime = await revenueTimeTask;
+            chartLabelsTime = resultTime.Select(r => r.Label).ToArray();
+            chartValuesTime = resultTime.Select(r => r.Value).ToArray();
+           // Console.WriteLine($"Loaded time chart data: {chartLabelsTime.Length} items");
+
+            var resultTimeTrans = await transactionTimeTask;
+            chartLabelsTimeTrans = resultTimeTrans.Select(r => r.Label).ToArray();
+            chartValuesTimeTrans = resultTimeTrans.Select(r => r.Value).ToArray();
+            //Console.WriteLine($"Loaded time chart data: {chartLabelsTime.Length} items");
+
+            var resultStackedMachine = await stackedMachineTask;
+            chartLabelsSumMachine = resultStackedMachine.Labels.ToArray();
+            chartValuesSumMachine = resultStackedMachine.Values.Select(r => r).ToArray();
+            chartLabelsMachine = resultStackedMachine.unitNames.ToArray();
+           // Console.WriteLine($"Loaded stacked machine chart data: {chartLabelsSumMachine.Length} items");
+
+           var resultStackedMachineRev = await stackedMachineTaskRev;
+           chartLabelsSumMachineRev = resultStackedMachineRev.Labels.ToArray();
+           chartValuesSumMachineRev = resultStackedMachineRev.Values.Select(r => r).ToArray();
+           chartLabelsMachineRev = resultStackedMachineRev.unitNames.ToArray();
+           
+            await UpdateChartData(selectedSpecialContent);
+        }
+        finally
+        {
+            isDataLoading = false;
+        }
     }
     finally
     {
@@ -449,8 +513,32 @@ else if (content == "Temperature Statistics" &&
             else if (content == "Rinse Statistics" &&
             (chartLabelsProcentageSoap.Length == 0 || _lastRinseDataParams != GetCurrentParams()))
             {
+                isLoading = true;
+                StateHasChanged();
+
+                var RinseTask = AnalysisService.RinseFromTransactions(
+                    effectiveLaundromats,
+                    startDate ?? DateTime.MinValue,
+                    endDate ?? DateTime.MaxValue);
+    
+                var RinseTaskProcentage = AnalysisService.RinseProcentageFromTransactions(
+                    effectiveLaundromats,
+                    startDate ?? DateTime.MinValue,
+                    endDate ?? DateTime.MaxValue);
+
+                await Task.WhenAll(RinseTask, RinseTaskProcentage);
+                // Process temperature data
+                var RinseData = await RinseTask;
+                chartLabelsRinse = RinseData.Select(d => d.Label).ToArray();
+                chartValuesRinse = RinseData.Select(d => d.Value).ToArray();
+    
+                var RinseDataProcentage = await RinseTaskProcentage;
+                chartLabelsRinseProcentage = RinseDataProcentage.Select(d => d.Label).ToArray();
+                chartValuesRinseProcentage = RinseDataProcentage.Select(d => d.Value).ToArray();
                 // Rinse data loading would go here
                 _lastRinseDataParams = GetCurrentParams();
+                // Remove loading indicator
+                isLoading = false;
             }
         }
         catch (Exception ex)

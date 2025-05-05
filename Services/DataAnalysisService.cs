@@ -185,6 +185,28 @@ namespace BlazorTest.Services
                 endDate
             );
         }
+        
+        public async Task<List<ChartDataPoint>> RinseFromTransactions(
+            List<string> laundromatIds,
+            DateTime? startDate,
+            DateTime? endDate
+        )
+        {
+            var RinseAnalysisService = new RinseAnalysisService(_dbContextFactory, _cache);
+            return await RinseAnalysisService.RinseFromTransactions(laundromatIds, startDate,
+                endDate);
+        }
+        
+        public async Task<List<ChartDataPoint>> RinseProcentageFromTransactions(
+            List<string> laundromatIds,
+            DateTime? startDate,
+            DateTime? endDate
+        )
+        {
+            var RinseProcentageAnalysisService = new RinseAnalysisService(_dbContextFactory, _cache);
+            return await RinseProcentageAnalysisService.RinseProcentageFromTransactions(laundromatIds, startDate,
+                endDate);
+        }
 
         public async Task<List<ChartDataPoint>> CalculateTransactionOverTimeFromStats(
             List<string> laundromatIds,
@@ -246,6 +268,20 @@ namespace BlazorTest.Services
         {
             var machineService = new MachineAnalysisService(_dbContextFactory, _cache);
             return await machineService.getStackedMachineStarts(laundromatIds, startDate, endDate);
+        }
+        
+        public async Task<(
+            string[] Labels,
+            decimal[][] Values,
+            string[] unitNames
+            )> getStackedMachineRevenue(
+            List<string> laundromatIds,
+            DateTime? startDate,
+            DateTime? endDate
+        )
+        {
+            var machineService = new MachineAnalysisService(_dbContextFactory, _cache);
+            return await machineService.getStackedMachineRevenue(laundromatIds, startDate, endDate);
         }
 
         // Legacy methods that operate on transaction lists directly
