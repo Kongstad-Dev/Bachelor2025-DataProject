@@ -22,8 +22,6 @@
     flex-direction: column;
     width: 79%;
     height: 100%;
-    overflow-y: scroll;
-    overflow-x: hidden;
 }
 
 .compare-graph {

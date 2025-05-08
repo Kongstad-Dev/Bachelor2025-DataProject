@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using MySql.EntityFrameworkCore.Extensions;
 using DotNetEnv;
 using BlazorTest.Services;
+using BlazorTest.Services.Analytics;
 
 var builder = WebApplication.CreateBuilder(args);
 

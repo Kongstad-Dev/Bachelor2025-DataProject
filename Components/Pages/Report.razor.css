@@ -23,15 +23,15 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    width: 25%;
-    height: 70vh;
+    width: 20%;
+    height: 78vh;
 }
 
 .report-settings-container {
     display: flex;
     flex-direction: column;
-    width: 70%;
-    height: 70vh;
+    width: 79%;
+    height: 78vh;
 }
 
 .report-header {
