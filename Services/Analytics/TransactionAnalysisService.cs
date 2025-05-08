@@ -267,7 +267,6 @@ namespace BlazorTest.Services.Analytics
             return fallbackResult;
         }
 
-        // OPTIMIZATION: New method for direct SQL calculation for large datasets
         private async Task<List<ChartDataPoint>> CalculateTransactionOverTimeOptimized(
             List<string> laundromatIds,
             DateTime startDate,
@@ -287,23 +286,25 @@ namespace BlazorTest.Services.Analytics
 
             if (interval == "month")
             {
-                // Use direct SQL for monthly aggregation
-                string sql =
-                    @$"
-            SELECT 
-                CONCAT(YEAR(t.date), '-', LPAD(MONTH(t.date), 2, '0')) AS Label,
-                COUNT(*) AS Value
-            FROM 
-                transaction t
-            WHERE 
-                t.LaundromatId IN ('{idList}')
-                AND t.date >= '{startDate:yyyy-MM-dd}'
-                AND t.date <= '{endDate:yyyy-MM-dd}'
-                AND t.amount != 0
-            GROUP BY 
-                YEAR(t.date), MONTH(t.date)
-            ORDER BY
-                YEAR(t.date), MONTH(t.date)";
+                string sql = @$"
+                SELECT 
+                    formatted_date AS Label,
+                    COUNT(*) AS Value
+                FROM (
+                    SELECT 
+                        CONCAT(YEAR(date), '-', LPAD(MONTH(date), 2, '0')) AS formatted_date
+                    FROM 
+                        transaction
+                    WHERE 
+                        LaundromatId IN ('{idList}')
+                        AND date >= '{startDate:yyyy-MM-dd}'
+                        AND date <= '{endDate:yyyy-MM-dd}'
+                        AND amount != 0
+                ) AS subquery
+                GROUP BY 
+                    formatted_date
+                ORDER BY
+                    formatted_date";
 
                 result = await ExecuteSqlForChartData(dbContext, sql);
 
@@ -336,22 +337,25 @@ namespace BlazorTest.Services.Analytics
             }
             else if (interval == "day")
             {
-                string sql =
-                    @$"
-        SELECT 
-            DATE_FORMAT(t.date, '%Y-%m-%d') AS Label,
-            COUNT(*) AS Value
-        FROM 
-            transaction t
-        WHERE 
-            t.LaundromatId IN ('{idList}')
-            AND t.date >= '{startDate:yyyy-MM-dd}'
-            AND t.date <= '{endDate:yyyy-MM-dd}'
-            AND t.amount != 0
-        GROUP BY 
-            DATE_FORMAT(t.date, '%Y-%m-%d')
-        ORDER BY
-            DATE_FORMAT(t.date, '%Y-%m-%d')";
+                string sql = @$"
+                SELECT 
+                    formatted_date AS Label,
+                    COUNT(*) AS Value
+                FROM (
+                    SELECT 
+                        DATE_FORMAT(date, '%Y-%m-%d') AS formatted_date
+                    FROM 
+                        transaction
+                    WHERE 
+                        LaundromatId IN ('{idList}')
+                        AND date >= '{startDate:yyyy-MM-dd}'
+                        AND date <= '{endDate:yyyy-MM-dd}'
+                        AND amount != 0
+                ) AS subquery
+                GROUP BY 
+                    formatted_date
+                ORDER BY
+                    formatted_date";
 
                 result = await ExecuteSqlForChartData(dbContext, sql);
 
@@ -371,9 +375,33 @@ namespace BlazorTest.Services.Analytics
                     })
                     .ToList();
             }
+            else if (interval == "week")
+            {
+                string sql = @$"
+                SELECT 
+                    week_key AS Label,
+                    COUNT(*) AS Value
+                FROM (
+                    SELECT 
+                        CONCAT(YEARWEEK(date, 1), '') AS week_key
+                    FROM 
+                        transaction
+                    WHERE 
+                        LaundromatId IN ('{idList}')
+                        AND date >= '{startDate:yyyy-MM-dd}'
+                        AND date <= '{endDate:yyyy-MM-dd}'
+                        AND amount != 0
+                ) AS subquery
+                GROUP BY 
+                    week_key
+                ORDER BY
+                    week_key";
 
-            // For week, use the original implementation as MySQL week calculations can be complex
-            return new List<ChartDataPoint>();
+                result = await ExecuteSqlForChartData(dbContext, sql);
+            }
+
+            // For weeks or empty results, return whatever we got
+            return result;
         }
 
         // Add helper method for SQL execution
