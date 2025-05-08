@@ -53,7 +53,11 @@ namespace BlazorTest.Services
         )
         {
             var revenueService = new RevenueAnalysisService(_dbContextFactory, _cache);
-            return await revenueService.CalculateLaundromatsRevenue(laundromatIds, startDate, endDate);
+            return await revenueService.CalculateLaundromatsRevenue(
+                laundromatIds,
+                startDate,
+                endDate
+            );
         }
 
         public async Task<List<ChartDataPoint>> GetRevenueForLaundromatsFromStats(
@@ -63,7 +67,11 @@ namespace BlazorTest.Services
         )
         {
             var chartService = new ChartAnalysisService(_dbContextFactory, _cache);
-            return await chartService.GetRevenueForLaundromatsFromStats(laundromatIds, startDate, endDate);
+            return await chartService.GetRevenueForLaundromatsFromStats(
+                laundromatIds,
+                startDate,
+                endDate
+            );
         }
 
         public async Task<List<ChartDataPoint>> GetRevenueForLaundromats(
@@ -76,6 +84,20 @@ namespace BlazorTest.Services
             return await chartService.GetRevenueForLaundromats(laundromatIds, startDate, endDate);
         }
 
+        public async Task<List<ChartDataPoint>> GetRevenueForLaundromatsOverTimeFromStats(
+            List<string> laundromatIds,
+            DateTime? startDate,
+            DateTime? endDate
+        )
+        {
+            var chartService = new ChartAnalysisService(_dbContextFactory, _cache);
+            return await chartService.GetRevenueForLaundromatsOverTimeFromStats(
+                laundromatIds,
+                startDate,
+                endDate
+            );
+        }
+
         public async Task<List<ChartDataPoint>> GetRevenueForLaundromatsOverTime(
             List<string> laundromatIds,
             DateTime? startDate,
@@ -83,7 +105,11 @@ namespace BlazorTest.Services
         )
         {
             var chartService = new ChartAnalysisService(_dbContextFactory, _cache);
-            return await chartService.GetRevenueForLaundromatsOverTime(laundromatIds, startDate, endDate);
+            return await chartService.GetRevenueForLaundromatsOverTime(
+                laundromatIds,
+                startDate,
+                endDate
+            );
         }
 
         public async Task<List<ChartDataPoint>> CalculateTotalSoapProgramFromTransactions(
@@ -93,7 +119,11 @@ namespace BlazorTest.Services
         )
         {
             var soapService = new SoapAnalysisService(_dbContextFactory, _cache);
-            return await soapService.CalculateTotalSoapProgramFromTransactions(laundromatIds, startDate, endDate);
+            return await soapService.CalculateTotalSoapProgramFromTransactions(
+                laundromatIds,
+                startDate,
+                endDate
+            );
         }
 
         //Temp Total Calculation
@@ -103,10 +133,8 @@ namespace BlazorTest.Services
             DateTime? endDate
         )
         {
-
             var tempService = new TempAnalysisService(_dbContextFactory, _cache);
             return await tempService.TempProgramFromTransactions(laundromatIds, startDate, endDate);
-
         }
 
         //Temp Procentage
@@ -116,10 +144,12 @@ namespace BlazorTest.Services
             DateTime? endDate
         )
         {
-
             var tempService = new TempAnalysisService(_dbContextFactory, _cache);
-            return await tempService.TempProgramProcentageFromTransactions(laundromatIds, startDate, endDate);
-
+            return await tempService.TempProgramProcentageFromTransactions(
+                laundromatIds,
+                startDate,
+                endDate
+            );
         }
 
         public async Task<List<ChartDataPoint>> ProgramTypeProgramFromTransactions(
@@ -128,9 +158,15 @@ namespace BlazorTest.Services
             DateTime? endDate
         )
         {
-            var ProgramTypeAnalysisService = new ProgramTypeAnalysisService(_dbContextFactory, _cache);
-            return await ProgramTypeAnalysisService.ProgramTypeProgramFromTransactions(laundromatIds, startDate,
-                endDate);
+            var ProgramTypeAnalysisService = new ProgramTypeAnalysisService(
+                _dbContextFactory,
+                _cache
+            );
+            return await ProgramTypeAnalysisService.ProgramTypeProgramFromTransactions(
+                laundromatIds,
+                startDate,
+                endDate
+            );
         }
 
         public async Task<List<ChartDataPoint>> ProgramTypeProcentageFromTransactions(
@@ -139,9 +175,15 @@ namespace BlazorTest.Services
             DateTime? endDate
         )
         {
-            var ProgramTypeAnalysisService = new ProgramTypeAnalysisService(_dbContextFactory, _cache);
-            return await ProgramTypeAnalysisService.ProgramTypeProcentageFromTransactions(laundromatIds, startDate,
-                endDate);
+            var ProgramTypeAnalysisService = new ProgramTypeAnalysisService(
+                _dbContextFactory,
+                _cache
+            );
+            return await ProgramTypeAnalysisService.ProgramTypeProcentageFromTransactions(
+                laundromatIds,
+                startDate,
+                endDate
+            );
         }
         
         public async Task<List<ChartDataPoint>> RinseFromTransactions(
@@ -166,15 +208,32 @@ namespace BlazorTest.Services
                 endDate);
         }
 
-
-    public async Task<List<ChartDataPoint>> CalculateTransactionOverTime(
+        public async Task<List<ChartDataPoint>> CalculateTransactionOverTimeFromStats(
             List<string> laundromatIds,
             DateTime? startDate,
             DateTime? endDate
         )
         {
             var transactionService = new TransactionAnalysisService(_dbContextFactory, _cache);
-            return await transactionService.CalculateTransactionOverTime(laundromatIds, startDate, endDate);
+            return await transactionService.CalculateTransactionOverTimeFromStats(
+                laundromatIds,
+                startDate,
+                endDate
+            );
+        }
+
+        public async Task<List<ChartDataPoint>> CalculateTransactionOverTime(
+            List<string> laundromatIds,
+            DateTime? startDate,
+            DateTime? endDate
+        )
+        {
+            var transactionService = new TransactionAnalysisService(_dbContextFactory, _cache);
+            return await transactionService.CalculateTransactionOverTime(
+                laundromatIds,
+                startDate,
+                endDate
+            );
         }
 
         public async Task<List<ChartDataPoint>> CalculateTotalSoapProgramProcentageFromTransactions(
@@ -184,7 +243,11 @@ namespace BlazorTest.Services
         )
         {
             var soapService = new SoapAnalysisService(_dbContextFactory, _cache);
-            return await soapService.CalculateTotalSoapProgramProcentageFromTransactions(laundromatIds, startDate, endDate);
+            return await soapService.CalculateTotalSoapProgramProcentageFromTransactions(
+                laundromatIds,
+                startDate,
+                endDate
+            );
         }
 
         public async Task<List<ChartDataPoint>> CalculateAvgSecoundsFromTransactions(int bankId)
@@ -222,7 +285,9 @@ namespace BlazorTest.Services
         }
 
         // Legacy methods that operate on transaction lists directly
-        public decimal CalculateTotalSoapProgramFromTransactions(List<TransactionEntity> transactions)
+        public decimal CalculateTotalSoapProgramFromTransactions(
+            List<TransactionEntity> transactions
+        )
         {
             var soapService = new SoapAnalysisService(_dbContextFactory, _cache);
             return soapService.CalculateTotalSoapProgramFromTransactions(transactions);

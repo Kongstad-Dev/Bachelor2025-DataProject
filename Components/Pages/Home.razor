@@ -3,9 +3,11 @@
 @using BlazorTest.Services
 @using BlazorTest.Components
 @using BlazorTest.Database
+@using Microsoft.JSInterop
 @using BlazorTest.Services.Analytics
 @inject DataAnalysisService AnalysisService
 @inject LaundryStateService LaundryState
+@inject IJSRuntime JSRuntime
 @rendermode InteractiveServer
 
 <PageTitle>Home</PageTitle>
@@ -13,7 +15,9 @@
 <div class="main-container">
     <div class="main-content">
         <div class="main-content-tabels">
-            <SelectedLaudromats />
+            <div class="main-selected-laundromats">
+                <SelectedLaudromats />
+            </div>
             @if (isLoading)
             {
                 <div>Loading data...</div>
@@ -25,7 +29,7 @@
         </div>
 
         <div class="main-content-graphs">
-            @if (!isLoading && chartLabelsSum.Length > 0)
+            @if (!isLoading)
             {
                 <div class="main-graph-container">
                     <ChartComponent CanvasId="revenueOverTime" Labels="@chartLabelsTime" SingleValues="@chartValuesTime"
@@ -64,11 +68,9 @@
             @option
         </button>
     }
-
-    <div class="main-special-content">
-        @if (!string.IsNullOrEmpty(selectedSpecialContent))
+       @if (!string.IsNullOrEmpty(selectedSpecialContent))
         {
-
+        <div class="main-special-content">
             <h2>@selectedSpecialContent</h2>
             <div class="main-special-content-graphs">
                 @if (selectedSpecialContent == "Soap Statistics")
@@ -116,8 +118,8 @@
                     </div>
                 }
             </div>
-        }
     </div>
+    }
 </div>
 
 @code {
@@ -242,7 +244,7 @@
     }
 
 
-    private async Task LoadDashboardData(CancellationToken token)
+private async Task LoadDashboardData(CancellationToken token)
     {
         if (isDataLoading) return;
 
@@ -402,6 +404,12 @@
     {
         selectedSpecialContent = content;
         await UpdateChartData(content);
+        
+        // Add a small delay to ensure content is rendered before scrolling
+        await Task.Delay(100);
+        
+        // Scroll to the special content section
+        await JSRuntime.InvokeVoidAsync("scrollToElement", "main-special-content");
     }
 
     private async Task UpdateChartData(string content)

@@ -1,6 +1,222 @@
 ﻿@page "/report"
 @attribute [StreamRendering]
+@using BlazorTest.Services
+@using BlazorTest.Components
+@inject LaundryStateService LaundryState
+@rendermode InteractiveServer
 
 <PageTitle>Report</PageTitle>
+<div class="report-main-container"
+    <div class="report-content-container">
+        <div class="report-selected-laundromats">
+            <SelectedLaudromats />
+        </div>
+        <div class="report-settings-container">
+            <div class="report-header">
+                <h2 class="report-title">Report Options</h2>
+                <button class="report-select-all-button" @onclick="ToggleAllOptions">
+                    @(AreAllOptionsSelected() ? "Deselect All" : "Select All")
+                </button>
+            </div>
+            <div class="report-settings-content">
+                @foreach (var section in reportSections)
+                {
+                    <div class="report-settings-section">
+                        <h3>@(section.Title)</h3>
+                        <div class="checkbox-group">
+                            @foreach (var option in section.Options)
+                            {
+                                <div class="checkbox-item @(option.IsSelected ? "selected" : "")"
+                                    @onclick="() => ToggleOption(section.Id, option)">
+                                    <div class="search-checkbox">
+                                        @if (option.IsSelected)
+                                        {
+                                            <span class="search-checkbox-checked">✓</span>
+                                        }
+                                    </div>
+                                    <span class="checkbox-item-text">@option.Label</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+    
+    <div class="report-generate-button-container">
+        <button class="report-generate-button" @onclick="GenerateReport">Generate Report</button>
+    </div>
+</div>
 
-<h1>Report</h1>
+@code {
+    private List<ReportSection> reportSections = new();
+    private List<string> effectiveLaundromats = new();
+    private DateTime? startDate;
+    private DateTime? endDate;
+
+    protected override void OnInitialized()
+    {
+                    // Set up state changed handler
+            LaundryState.OnStateChanged += HandleStateChanged;
+
+            // Get initial filter values
+            effectiveLaundromats = LaundryState.GetEffectiveSelectedLaundromatsIds();
+            startDate = LaundryState.GetStartDate();
+            endDate = LaundryState.GetEndDate();
+
+
+        // Initialize all report sections
+        reportSections = new List<ReportSection>
+        {
+            new ReportSection
+            {
+                Id = "base",
+                Title = "Base",
+                Options = new List<CheckboxOption>
+                {
+                    new CheckboxOption { Id = "revenue_graph", Label = "Revenue Graph", IsSelected = false },
+                    new CheckboxOption { Id = "transaction_graph", Label = "Transaction Graph", IsSelected = false },
+                }
+            },
+            new ReportSection
+            {
+                Id = "machines",
+                Title = "Machine Statistics",
+                Options = new List<CheckboxOption>
+                {
+                    new CheckboxOption { Id = "machine_usage", Label = "Machine Usage", IsSelected = false },
+                    new CheckboxOption { Id = "machine_revenue", Label = "Machine Revenue", IsSelected = false },                }
+            },
+            new ReportSection
+            {
+                Id = "soap",
+                Title = "Soap Statistics",
+                Options = new List<CheckboxOption>
+                {
+                    new CheckboxOption { Id = "soap_usage", Label = "Soap Usage", IsSelected = false },
+                    new CheckboxOption { Id = "soap_revenue", Label = "Soap Revenue", IsSelected = false },
+                    new CheckboxOption { Id = "soap_breakdown", Label = "Breakdown by Machine", IsSelected = false }
+                }
+            },
+            new ReportSection
+            {
+                Id = "temperature",
+                Title = "Temperature Statistics",
+                Options = new List<CheckboxOption>
+                {
+                    new CheckboxOption { Id = "temperature_usage", Label = "Temperature Usage", IsSelected = false },
+                    new CheckboxOption { Id = "temperature_revenue", Label = "Temperature Revenue", IsSelected = false },
+                    new CheckboxOption { Id = "temperature_breakdown", Label = "Breakdown by Machine", IsSelected = false }
+                }
+            },
+            new ReportSection
+            {
+                Id = "program",
+                Title = "Program Statistics",
+                Options = new List<CheckboxOption>
+                {
+                    new CheckboxOption { Id = "program_usage", Label = "Program Usage", IsSelected = false },
+                    new CheckboxOption { Id = "program_revenue", Label = "Program Revenue", IsSelected = false },
+                    new CheckboxOption { Id = "program_breakdown", Label = "Breakdown by Machine", IsSelected = false }
+                }
+            },
+            new ReportSection
+            {
+                Id = "rinse",
+                Title = "Rinse Statistics",
+                Options = new List<CheckboxOption>
+                {
+                    new CheckboxOption { Id = "rinse_usage", Label = "Rinse Usage", IsSelected = false },
+                    new CheckboxOption { Id = "rinse_revenue", Label = "Rinse Revenue", IsSelected = false },
+                    new CheckboxOption { Id = "rinse_breakdown", Label = "Breakdown by Machine", IsSelected = false }
+                }
+            },
+        };
+    }
+
+    private void HandleStateChanged()
+    {
+        try
+        {
+            StateHasChanged();
+
+            Task.Delay(100).Wait(); // Wait for 100ms to allow state to update
+                                     // Get updated filter values
+            var newLaundromats = LaundryState.GetEffectiveSelectedLaundromatsIds();
+            var newStartDate = LaundryState.GetStartDate();
+            var newEndDate = LaundryState.GetEndDate();
+
+            // Update field values
+            effectiveLaundromats = newLaundromats;
+            startDate = newStartDate;
+            endDate = newEndDate;
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error refreshing dashboard: {ex.Message}");
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private void ToggleOption(string sectionId, CheckboxOption option)
+    {
+        option.IsSelected = !option.IsSelected;
+    }
+
+    private bool AreAllOptionsSelected()
+    {
+        return reportSections.SelectMany(s => s.Options).All(o => o.IsSelected);
+    }
+
+    private void ToggleAllOptions()
+    {
+        bool selectAll = !AreAllOptionsSelected();
+        
+        foreach (var section in reportSections)
+        {
+            foreach (var option in section.Options)
+            {
+                option.IsSelected = selectAll;
+            }
+        }
+    }
+
+    private void GenerateReport()
+    {
+        // Get all selected laundromats
+        var selectedLaundromats = LaundryState.GetEffectiveSelectedLaundromatsIds();
+        Console.WriteLine($"Generating report for {selectedLaundromats.Count} laundromats");
+
+        // Get all selected options across all sections
+        var selectedOptions = reportSections
+            .SelectMany(section => section.Options.Where(option => option.IsSelected)
+                .Select(option => new { SectionId = section.Id, OptionId = option.Id }))
+            .ToList();
+
+        Console.WriteLine($"Generating report with {selectedOptions.Count} selected options");
+
+        foreach (var item in selectedOptions)
+        {
+            Console.WriteLine($"Adding {item.SectionId}.{item.OptionId} to report");
+        }
+    }
+
+    private class ReportSection
+    {
+        public string Id { get; set; } = "";
+        public string Title { get; set; } = "";
+        public List<CheckboxOption> Options { get; set; } = new();
+    }
+
+    private class CheckboxOption
+    {
+        public string Id { get; set; } = "";
+        public string Label { get; set; } = "";
+        public bool IsSelected { get; set; }
+    }
+}

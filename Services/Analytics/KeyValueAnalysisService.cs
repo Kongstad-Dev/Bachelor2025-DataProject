@@ -19,15 +19,55 @@ namespace BlazorTest.Services.Analytics
             DateTime? endDate
         )
         {
-            if (
-                laundromatIds == null
-                || !laundromatIds.Any()
-                || startDate == null
-                || endDate == null
-            )
+            // Validate required parameters
+            if (laundromatIds == null || !laundromatIds.Any())
             {
-                // Fall back to regular calculation if any required parameters are missing
-                return await GetKeyValues(laundromatIds, startDate, endDate);
+                    var result = new List<KeyValuePair<string, decimal>>
+                    {
+                        new KeyValuePair<string, decimal>(
+                            "Total Revenue",
+                            0
+                        ),
+                        new KeyValuePair<string, decimal>(
+                            "Average Revenue",
+                            0
+                        ),
+                        new KeyValuePair<string, decimal>("Total Transactions", 0),
+                        new KeyValuePair<string, decimal>(
+                            "Average Transactions",
+                            0
+                        ),
+                        new KeyValuePair<string, decimal>(
+                            "Washer Start",
+                            0
+                        ),
+                        new KeyValuePair<string, decimal>(
+                            "Washer Start Price",
+                            0
+                        ),
+                        new KeyValuePair<string, decimal>("Dryer Start", 0),
+                        new KeyValuePair<string, decimal>(
+                            "Dryer Start Price",
+                            0
+                        ),
+                    };
+
+                    return result;
+            }
+
+            if (startDate == null)
+            {
+                throw new ArgumentNullException(nameof(startDate), "Start date is required");
+            }
+
+            if (endDate == null)
+            {
+                throw new ArgumentNullException(nameof(endDate), "End date is required");
+            }
+
+            if (startDate > endDate)
+            {
+                throw new ArgumentException("Start date must be before or equal to end date");
             }
 
             // Create cache key for the request

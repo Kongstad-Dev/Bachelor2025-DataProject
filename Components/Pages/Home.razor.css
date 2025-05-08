@@ -27,6 +27,10 @@
     gap: 1vw;
 }
 
+.main-selected-laundromats {
+    height: 50vh;
+}
+
 .main-content-graphs {
     display: flex;
     flex-direction: row;

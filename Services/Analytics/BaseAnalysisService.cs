@@ -23,7 +23,10 @@ namespace BlazorTest.Services.Analytics
             return date1.Date == date2.Date;
         }
 
-        protected StatsPeriodType? GetMatchingStatsPeriodType(DateTime? startDate, DateTime? endDate)
+        protected StatsPeriodType? GetMatchingStatsPeriodType(
+            DateTime? startDate,
+            DateTime? endDate
+        )
         {
             if (startDate == null || endDate == null)
                 return null;
@@ -106,7 +109,13 @@ namespace BlazorTest.Services.Analytics
 
                 // Calculate end date (last day of the last completed quarter)
                 int lastQuarterLastMonth = lastCompletedQuarter * 3;
-                var completedQuartersEndDate = new DateTime(lastCompletedYear, lastQuarterLastMonth, 1).AddMonths(1).AddDays(-1);
+                var completedQuartersEndDate = new DateTime(
+                    lastCompletedYear,
+                    lastQuarterLastMonth,
+                    1
+                )
+                    .AddMonths(1)
+                    .AddDays(-1);
 
                 // Calculate start date (first day 4 quarters back from the last completed quarter)
                 int startQuarter = lastCompletedQuarter - 3;
@@ -119,7 +128,11 @@ namespace BlazorTest.Services.Analytics
                 }
 
                 int completedQuartersStartMonth = (startQuarter - 1) * 3 + 1;
-                var completedQuartersStartDate = new DateTime(startYear, completedQuartersStartMonth, 1);
+                var completedQuartersStartDate = new DateTime(
+                    startYear,
+                    completedQuartersStartMonth,
+                    1
+                );
                 // Check if exact match for past 4 completed quarters
                 if (
                     DateEquals(startDate.Value, completedQuartersStartDate)
@@ -152,8 +165,27 @@ namespace BlazorTest.Services.Analytics
                 StatsPeriodType.Year => "Last Year",
                 StatsPeriodType.Quarter when periodKey != null => periodKey.Replace("-Q", " Q"),
                 StatsPeriodType.CompletedQuarters => "Past 4 Completed Quarters",
-                _ => "Custom"
+                _ => "Custom",
             };
+        }
+
+        protected string GetPeriodKeyForStats(StatsPeriodType periodType, DateTime date)
+        {
+            switch (periodType)
+            {
+                case StatsPeriodType.Month:
+                    return "last-month";
+                case StatsPeriodType.HalfYear:
+                    return "last-6-months";
+                case StatsPeriodType.Year:
+                    return "last-year";
+                case StatsPeriodType.Quarter:
+                    return GetQuarterPeriodKey(date);
+                case StatsPeriodType.CompletedQuarters:
+                    return "past-4-completed-quarters";
+                default:
+                    return null;
+            }
         }
     }
 }

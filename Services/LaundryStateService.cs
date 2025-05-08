@@ -82,49 +82,17 @@ namespace BlazorTest.Services
 
         public List<Laundromat> GetEffectiveSelectedLaundromats()
         {
-            // If user has made explicit selections, use those
-            if (SelectedLaundromats.Any())
-            {
-                return SelectedLaundromats;
-            }
-
-            // Otherwise use ALL available laundromats as selected
-            return LaundromatItems.Select(item => item.Data).OfType<Laundromat>().ToList();
+            return SelectedLaundromats;
         }
 
         public List<string> GetEffectiveSelectedLaundromatsIds()
         {
-            // If user has made explicit selections, use those
-            if (SelectedLaundromats.Any())
-            {
-                return SelectedLaundromats.Select(l => l.kId).ToList();
-            }
-
-            // Otherwise use ALL available laundromats as selected
-            return LaundromatItems
-                .Select(item => item.Data)
-                .OfType<Laundromat>()
-                .Select(l => l.kId)
-                .ToList();
+            return SelectedLaundromats.Select(l => l.kId).ToList();
         }
         public void RemoveSelectedLaundromat(Laundromat laundromat)
         {
-            if (SelectedLaundromats.Count == 0)
-            {
-                SelectedLaundromats = LaundromatItems
-                    .Select(item => item.Data as Laundromat)
-                    .Where(l => l != null && l.kId != laundromat.kId)
-                    .Cast<Laundromat>()
-                    .ToList();
-
-                Console.WriteLine($"Selected all ({SelectedLaundromats.Count}) except one");
-                NotifyStateChanged();
-            }
-            else
-            {
                 SelectedLaundromats.Remove(laundromat);
                 NotifyStateChanged();
-            }
         }
 
         public void ClearSelectedLaundromatsAndBanks()
