@@ -1,0 +1,35 @@
+.compare-container {
+    display: flex;
+    position: relative;
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.compare-selected-laundromats {
+    display: flex;
+    position: relative;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 20%;
+    height: 157vh;
+}
+
+.compare-content {
+    display: flex;
+    position: relative;
+    flex-direction: column;
+    width: 79%;
+    height: 100%;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
+.compare-graph {
+    display: flex;
+    position: relative;
+    width: 100%;
+    flex-direction: column;
+    padding: 0;
+}

@@ -1,33 +1,115 @@
-﻿@using BlazorTest.Services.Analytics
+﻿@using BlazorTest.Services
+@using BlazorTest.Services.Analytics
 @using BlazorTest.Services.Analytics.Util
-@inject IJSRuntime JS
+@using BlazorTest.Database
+@using Microsoft.JSInterop
+@using Microsoft.EntityFrameworkCore
+@inject IJSRuntime JSRuntime
+@inject LaundryStateService LaundryState
+@inject IDbContextFactory<YourDbContext> DbContextFactory
 
-@if (!string.IsNullOrEmpty(CsvText))
-{
-    <div class="csv-icon" @onclick="DownloadCsv">
-    </div>
-}
+    <div class="csv-icon" @onclick="ExportDataToExcel"></div>
 
 @code {
     [Parameter]
-    public List<ChartDataPoint> Data { get; set; }
+    public List<ChartDataPoint> Data { get; set; } = new();
 
-    private string CsvText;
+    private readonly int[] dryerUnitTypes = new[] { 1, 18, 5, 10, 14, 19, 27, 29, 41 };
 
-    protected override void OnParametersSet()
+    private async Task ExportDataToCsv()
     {
-        if (Data == null || Data.Count == 0)
+        if (Data == null || !Data.Any())
         {
-            CsvText = string.Empty;
             return;
         }
 
-        CsvText = CsvExporter.ExportChartDataToCsv(Data);
+        var laundromats = LaundryState.GetEffectiveSelectedLaundromats();
+
+        // Get the per-machine data
+        var machineData = await GetMachineDataForLaundromats(laundromats);
+
+        // Export in the detailed machine format
+        string csvContent = CsvExporter.ExportMachineDetailsPerLaundromatToCsv(machineData);
+
+        var fileName = $"laundromat_machine_details_{DateTime.Now:yyyy-MM-dd}.csv";
+
+        // Use the downloadCsvWithEncoding function instead
+        await JSRuntime.InvokeVoidAsync("downloadCsvWithEncoding", fileName, csvContent);
     }
 
-    private async Task DownloadCsv()
+    private async Task<Dictionary<string, List<MachineDetailRow>>> GetMachineDataForLaundromats(List<Laundromat>
+    laundromats)
     {
-        await JS.InvokeVoidAsync("downloadCsv", "laundromat-data.csv", CsvText);
+        var result = new Dictionary<string, List<MachineDetailRow>>();
 
+        using var dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        foreach (var laundromat in laundromats)
+        {
+            var laundromatName = laundromat.name ?? $"ID {laundromat.kId}";
+            var machineRows = new List<MachineDetailRow>();
+
+            // Get start and end dates from LaundryState
+            var startDate = LaundryState.GetStartDate();
+            var endDate = LaundryState.GetEndDate();
+
+            // Get all transactions for this laundromat within date range
+            var transactions = await dbContext.Transactions
+            .Where(t => t.LaundromatId == laundromat.kId)
+            .Where(t => startDate == null || t.date >= startDate)
+            .Where(t => endDate == null || t.date <= endDate)
+            .Where(t => t.amount != 0)
+            .ToListAsync();
+
+            // Group transactions by unit name
+            var groupedTransactions = transactions
+            .GroupBy(t => t.unitName ?? "Unknown")
+            .Select(g => new
+            {
+                MachineName = g.Key,
+                Starts = g.Count(),
+                Revenue = g.Sum(t => Math.Abs(t.amount)) / 100m,
+                IsWasher = !g.Any(t => dryerUnitTypes.Contains(t.unitType))
+            })
+            .ToList();
+
+            // Convert to MachineDetailRow objects
+            foreach (var group in groupedTransactions)
+            {
+                machineRows.Add(new MachineDetailRow
+                {
+                    MachineName = group.MachineName,
+                    Starts = group.Starts,
+                    Revenue = group.Revenue,
+                    IsWasher = group.IsWasher
+                });
+            }
+
+            // Add to results
+            result.Add(laundromatName, machineRows);
+        }
+
+        return result;
+    }
+
+        private async Task ExportDataToExcel()
+    {
+        if (Data == null || !Data.Any())
+        {
+            return;
+        }
+
+        var laundromats = LaundryState.GetEffectiveSelectedLaundromats();
+
+        // Get the per-machine data
+        var machineData = await GetMachineDataForLaundromats(laundromats);
+        
+        // Generate Excel bytes
+        byte[] excelBytes = ExcelExporter.ExportMachineDetailsToExcel(machineData);
+        
+        var fileName = $"laundromat_data_{DateTime.Now:yyyy-MM-dd}.xlsx";
+        
+        // Use JS interop to download the Excel file
+        await JSRuntime.InvokeVoidAsync("downloadFileFromBytes", fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", Convert.ToBase64String(excelBytes));
     }
 }

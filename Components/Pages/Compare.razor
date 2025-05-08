@@ -7,21 +7,29 @@
 
 <PageTitle>Compare</PageTitle>
 
-<div class="main-container">
-    <div class="main-content">
-        <div class="main-content-tabels">
+<div class="compare-container">
+        <div class="compare-selected-laundromats">
             <SelectedLaudromats />
         </div>
 
-        <div class="main-content-graphs">
+        <div class="compare-content">
             @if (isLoading)
             {
                 <div>Loading comparison charts...</div>
             }
             else if (chartLabelsCompare.Length > 0)
             {
-                <div class="main-graph-container">
+                <div class="compare-graph">
                     <ChartComponent CanvasId="compareTransactions"
+                                    Labels="@chartLabelsCompare"
+                                    MultiValues="@chartValuesCompare"
+                                    DatasetLabels="@chartDatasetLabelsCompare"
+                                    Title="Transactions Over Time"
+                                    Type="line"
+                                    Stacked="false" />
+                </div>
+                <div class="compare-graph">
+                    <ChartComponent CanvasId="compareTransactionss"
                                     Labels="@chartLabelsCompare"
                                     MultiValues="@chartValuesCompare"
                                     DatasetLabels="@chartDatasetLabelsCompare"
@@ -37,7 +45,6 @@
                 <div>Labels: @string.Join(", ", chartLabelsCompare)</div>
             }
         </div>
-    </div>
 </div>
 
 @code {
