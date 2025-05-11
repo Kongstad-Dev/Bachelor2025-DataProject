@@ -82,7 +82,189 @@
     font-style: italic;
 }
 
-/* Hover effect */
 .key-values-table tr:hover td {
     background-color: var(--main-transparent);
+}
+
+.popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.popup-content {
+    background-color: white;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 1000px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.popup-header h3 {
+    margin: 0;
+    font-size: 2.1vw;
+}
+
+.popup-close-btn {
+    background: none;
+    border: none;
+    font-size: 2vw;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+}
+
+.popup-close-btn:hover {
+    color: var(--main-red);
+    box-shadow: none;
+}
+
+.popup-body {
+    padding: 20px;
+}
+
+.popup-loading {
+    text-align: center;
+    padding: 40px;
+}
+
+.detail-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.detail-table th, 
+.detail-table td {
+    padding: 8px;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+
+.detail-table th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
+
+.detail-table th:first-child {
+    border-top-left-radius: 8px;
+}
+
+.detail-table th:last-child {
+    border-top-right-radius: 8px;
+}
+
+.detail-table tfoot tr:last-child td:first-child {
+    border-bottom-left-radius: 8px;
+}
+
+.detail-table tfoot tr:last-child td:last-child {
+    border-bottom-right-radius: 8px;
+}
+
+.detail-table tfoot td {
+    background-color: #e6f7ff;
+    font-weight: bold;
+}
+
+.popup-actions {
+    display: flex;
+    align-items: center;
+    align-content: center;
+}
+
+.key-values-table tr {
+    transition: background-color 0.2s;
+}
+
+.key-values-table tr:hover {
+    background-color: var(--main-transparent);
+    cursor: pointer;
+}
+
+/* Collapsible laundromat styles */
+.laundromat-name {
+    display: flex;
+    align-items: center;
+}
+
+.toggle-button {
+    background: none;
+    border: none;
+    padding: 0;
+    margin-right: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+}
+
+.toggle-icon {
+    display: inline-block;
+    width: 0; 
+    height: 0;
+    transition: transform 0.2s;
+}
+
+.toggle-button.expanded .toggle-icon {
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid var(--main);
+}
+
+.toggle-button.collapsed .toggle-icon {
+    border-top: 6px solid transparent;
+    border-bottom: 6px solid transparent;
+    border-left: 8px solid var(--main);
+}
+
+.detail-table .laundromat-row {
+    background-color: #f0f0f0;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.detail-table .laundromat-row:hover {
+    background-color: #e0e0e0;
+}
+
+.detail-table .machine-row {
+    background-color: #ffffff;
+}
+
+.detail-table .machine-row .machine-name {
+    padding-left: 24px;
+}
+
+.detail-table tfoot tr {
+    background-color: #e0e8f0;
+    font-size: 1.05em;
+}
+
+.detail-table .empty-cell {
+    color: #aaa;
+    font-style: italic;
+    background-color: #f8f8f8;
 }

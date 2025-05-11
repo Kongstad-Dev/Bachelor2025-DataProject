@@ -23,4 +23,13 @@ namespace BlazorTest.Services.Analytics
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
     }
+
+    public class MachineDetailRow
+    {
+        public string MachineName { get; set; } = string.Empty;
+        public int Starts { get; set; }
+        public decimal Revenue { get; set; }
+        public bool IsWasher { get; set; }
+        public decimal PricePerStart { get; set; }
+    }
 }

@@ -284,6 +284,20 @@ namespace BlazorTest.Services
             return await machineService.getStackedMachineRevenue(laundromatIds, startDate, endDate);
         }
 
+        public async Task<Dictionary<string, List<MachineDetailRow>>> GetMachineDetailsByLaundromat(
+            List<string> laundromatIds,
+            DateTime? startDate,
+            DateTime? endDate,
+            string metricKey)
+        {
+            var machineService = new MachineAnalysisService(_dbContextFactory, _cache);
+            return await machineService.GetMachineDetailsByLaundromat(
+                laundromatIds, 
+                startDate, 
+                endDate,
+                metricKey);
+        }
+
         // Legacy methods that operate on transaction lists directly
         public decimal CalculateTotalSoapProgramFromTransactions(
             List<TransactionEntity> transactions

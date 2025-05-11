@@ -1,4 +1,13 @@
 @rendermode InteractiveServer
+@using BlazorTest.Services.Analytics
+@using BlazorTest.Services.Analytics.Util
+@using BlazorTest.Services
+@using BlazorTest.Database
+@inject IJSRuntime JS
+@inject LaundryStateService LaundryState
+@inject IDbContextFactory<YourDbContext> DbContextFactory
+@inject DataAnalysisService AnalysisService
+@using Microsoft.EntityFrameworkCore
 
 <div class="key-values-table-container">
     <h2>@Title</h2>
@@ -7,7 +16,7 @@
         <tbody>
             @foreach (var item in Values.Take(8))
             {
-                <tr>
+                <tr @onclick="() => ShowDetailPopup(item.Key)" style="cursor: pointer;">
                     <td class="key-column"><span>@item.Key</span></td>
                     <td class="value-column">@(item.Value.ToString("N2"))</td>
                 </tr>
@@ -26,6 +35,103 @@
     </table>
 </div>
 
+@if (showPopup && detailData != null)
+{
+    <div class="popup-overlay" @onclick="ClosePopup">
+        <div class="popup-content" @onclick:stopPropagation="true">
+            <div class="popup-header">
+                    <div class="popup-actions">
+                        <h3>Advanced Details</h3>
+                        <div class="csv-icon" @onclick="ExportToExcel"></div>
+                    </div>
+                <button class="popup-close-btn" @onclick="ClosePopup">×</button>
+            </div>
+            <div class="popup-body">
+                @if (isLoading)
+                {
+                    <div class="loader"></div>
+                }
+                else
+                {
+                    <table class="detail-table">
+                        <thead>
+                            <tr>
+                                <th>Machine</th>
+                                <th>VM Starter</th>
+                                <th>TT Starter</th>
+                                <th>Omsætning</th>
+                                <th>VM StartPris</th>
+                                <th>TT StartPris</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var laundromatEntry in detailData)
+                            {
+                                var laundromatName = laundromatEntry.Key;
+                                var machines = laundromatEntry.Value;
+                                
+                                // Calculate laundromat subtotals
+                                var washerStarts = machines.Sum(m => m.IsWasher ? m.Starts : 0);
+                                var dryerStarts = machines.Sum(m => !m.IsWasher ? m.Starts : 0);
+                                var totalRevenue = machines.Sum(m => m.Revenue);
+                                var washerRevenue = machines.Where(m => m.IsWasher).Sum(m => m.Revenue);
+                                var dryerRevenue = machines.Where(m => !m.IsWasher).Sum(m => m.Revenue);
+                                var washerAvgPrice = washerStarts > 0 ? washerRevenue / washerStarts : 0;
+                                var dryerAvgPrice = dryerStarts > 0 ? dryerRevenue / dryerStarts : 0;
+                                
+                                bool isCollapsed = collapsedLaundromats.Contains(laundromatName);
+                                
+                                <tr class="laundromat-row" @onclick="() => ToggleLaundromat(laundromatName)">
+                                    <td class="laundromat-name">
+                                        <button class="toggle-button @(isCollapsed ? "collapsed" : "expanded")">
+                                            <span class="toggle-icon"></span>
+                                        </button>
+                                        <strong>@laundromatName</strong>
+                                    </td>
+                                    <td><strong>@washerStarts</strong></td>
+                                    <td><strong>@dryerStarts</strong></td>
+                                    <td><strong>@totalRevenue.ToString("N2")</strong></td>
+                                    <td><strong>@washerAvgPrice.ToString("N2")</strong></td>
+                                    <td><strong>@dryerAvgPrice.ToString("N2")</strong></td>
+                                </tr>
+                                
+                                @if (!isCollapsed)
+                                {
+                                    @foreach (var machine in machines)
+                                    {
+                                        <tr class="machine-row">
+                                            <td class="machine-name">@machine.MachineName</td>
+                                            <td class="@(!machine.IsWasher ? "empty-cell" : "")">@(machine.IsWasher ? machine.Starts.ToString() : "-")</td>
+                                            <td class="@(machine.IsWasher ? "empty-cell" : "")">@(!machine.IsWasher ? machine.Starts.ToString() : "-")</td>
+                                            <td>@machine.Revenue.ToString("N2")</td>
+                                            <td class="@(!machine.IsWasher || machine.Starts == 0 ? "empty-cell" : "")">
+                                                @(machine.IsWasher && machine.Starts > 0 ? (machine.Revenue / machine.Starts).ToString("N2") : "-")
+                                            </td>
+                                            <td class="@(machine.IsWasher || machine.Starts == 0 ? "empty-cell" : "")">
+                                                @(!machine.IsWasher && machine.Starts > 0 ? (machine.Revenue / machine.Starts).ToString("N2") : "-")
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            }
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td><strong>Total</strong></td>
+                                <td><strong>@totalWasherStarts</strong></td>
+                                <td><strong>@totalDryerStarts</strong></td>
+                                <td><strong>@totalRevenue.ToString("N2")</strong></td>
+                                <td><strong>@(washerAvgPrice.ToString("N2"))</strong></td>
+                                <td><strong>@(dryerAvgPrice.ToString("N2"))</strong></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                }
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     [Parameter]
     public string Title { get; set; } = "Key Values";
@@ -33,16 +139,122 @@
     [Parameter]
     public List<KeyValuePair<string, decimal>> Values { get; set; } = new List<KeyValuePair<string, decimal>>();
 
+    [Parameter]
+    public EventCallback<string> OnDetailRequest { get; set; }
+        
+    [Parameter]
+    public string DataType { get; set; } = "Revenue"; // Default to revenue, can be "Starts", "Revenue", etc.
+
+    private bool showPopup = false;
+    private bool isLoading = false;
+    private string selectedKey = "";
+    private Dictionary<string, List<MachineDetailRow>> detailData;
+
+    // Summary statistics
+    private int totalWasherStarts;
+    private int totalDryerStarts;
+    private decimal totalRevenue;
+    private decimal washerAvgPrice;
+    private decimal dryerAvgPrice;
+
+    // Track which laundromats are collapsed
+    private HashSet<string> collapsedLaundromats = new HashSet<string>();
+
+    private async Task ShowDetailPopup(string key)
+    {
+        selectedKey = key;
+        showPopup = true;
+        isLoading = true;
+        StateHasChanged();
+
+        await FetchDetailData(key);
+
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private void ClosePopup()
+    {
+        showPopup = false;
+        detailData = null;
+    }
+
+    private async Task FetchDetailData(string key)
+    {
+        collapsedLaundromats.Clear(); // Reset collapsed state when loading new data
+        await Task.Delay(100); // Small delay for UI responsiveness
+
+        // Use the analysis service instead of direct DB access
+        var laundromatIds = LaundryState.GetEffectiveSelectedLaundromatsIds();
+        var startDate = LaundryState.GetStartDate();
+        var endDate = LaundryState.GetEndDate();
+        
+        detailData = await AnalysisService.GetMachineDetailsByLaundromat(
+            laundromatIds, 
+            startDate, 
+            endDate, 
+            key);
+
+        // Calculate totals
+        CalculateTotals();
+    }
+
+    private void CalculateTotals()
+    {
+        if (detailData == null || !detailData.Any())
+        {
+            totalWasherStarts = 0;
+            totalDryerStarts = 0;
+            totalRevenue = 0;
+            washerAvgPrice = 0;
+            dryerAvgPrice = 0;
+            return;
+        }
+
+        // Calculate grand totals across all laundromats
+        totalWasherStarts = detailData.Sum(l => l.Value.Sum(m => m.IsWasher ? m.Starts : 0));
+        totalDryerStarts = detailData.Sum(l => l.Value.Sum(m => !m.IsWasher ? m.Starts : 0));
+        totalRevenue = detailData.Sum(l => l.Value.Sum(m => m.Revenue));
+
+        decimal washerRevenue = detailData.Sum(l => l.Value.Where(m => m.IsWasher).Sum(m => m.Revenue));
+        decimal dryerRevenue = detailData.Sum(l => l.Value.Where(m => !m.IsWasher).Sum(m => m.Revenue));
+
+        washerAvgPrice = totalWasherStarts > 0 ? washerRevenue / totalWasherStarts : 0;
+        dryerAvgPrice = totalDryerStarts > 0 ? dryerRevenue / totalDryerStarts : 0;
+    }
+
+    private async Task ExportToExcel()
+    {
+        if (detailData == null || detailData.Count == 0)
+            return;
+
+        var data = new Dictionary<string, List<MachineDetailRow>>(detailData);
+        var excelBytes = ExcelExporter.ExportMachineDetailsToExcel(data);
+        var fileName = $"laundromat_data_{DateTime.Now:yyyy-MM-dd}.xlsx";
+        await JS.InvokeVoidAsync("downloadFileFromBytes", fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", Convert.ToBase64String(excelBytes));
+    }
+
+    private async Task DownloadFile(byte[] fileContent, string fileName, string contentType)
+    {
+        await JS.InvokeVoidAsync("ExportMachineDetailsToExcel", fileContent, fileName, contentType);
+    }
+
+    private void ToggleLaundromat(string laundromatName)
+    {
+        if (collapsedLaundromats.Contains(laundromatName))
+        {
+            collapsedLaundromats.Remove(laundromatName);
+        }
+        else
+        {
+            collapsedLaundromats.Add(laundromatName);
+        }
+    }
+
     protected override void OnParametersSet()
     {
         // Ensure component is properly re-rendered when parameters change
         base.OnParametersSet();
         Console.WriteLine($"KeyValuesTable parameters set: Title={Title}, Values.Count={Values.Count}");
-    }
-
-    protected override void OnInitialized()
-    {
-        // Log initial parameters
-        Console.WriteLine($"KeyValuesTable initialized: Title={Title}, Values.Count={Values.Count}");
     }
 }

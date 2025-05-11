@@ -1,4 +1,5 @@
 using BlazorTest.Database;
+using BlazorTest.Services.Analytics.Util;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
@@ -46,7 +47,7 @@ namespace BlazorTest.Services.Analytics
                 )
                 .ToListAsync();
 
-// Get all unique unitNames
+            // Get all unique unitNames
             var uniqueUnitNames = transactions
                 .Select(t => t.unitName)
                 .Distinct()
@@ -158,6 +159,112 @@ namespace BlazorTest.Services.Analytics
             var unitNames = uniqueUnitNames.ToArray();
 
             return (labels, values, unitNames);
+        }
+
+        public async Task<Dictionary<string, List<MachineDetailRow>>> GetMachineDetailsByLaundromat(
+            List<string> laundromatIds,
+            DateTime? startDate,
+            DateTime? endDate,
+            string metricKey)
+        {
+            // Create cache key for the request
+            string cacheKey = $"machine_details_{string.Join("_", laundromatIds.OrderBy(id => id))}_{startDate?.ToString("yyyyMMdd")}_{endDate?.ToString("yyyyMMdd")}_{metricKey}";
+
+            // Try to get from cache
+            if (_cache.TryGetValue(cacheKey, out Dictionary<string, List<MachineDetailRow>> cachedResult))
+            {
+                return cachedResult;
+            }
+            
+            var result = new Dictionary<string, List<MachineDetailRow>>();
+            
+            try
+            {
+                using var dbContext = _dbContextFactory.CreateDbContext();
+                
+                // Fetch laundromats for names
+                var laundromats = await dbContext.Laundromat.AsNoTracking()
+                    .Where(l => laundromatIds.Contains(l.kId))
+                    .ToListAsync();
+                
+                if (laundromats == null || !laundromats.Any())
+                    return result;
+                
+                // Define dryer unit types for filtering
+                var dryerUnitTypes = new[] { 1, 18, 5, 10, 14, 19, 27, 29, 41 };
+                
+                // Get transactions for these laundromats in the date range
+                var transactions = await dbContext.Transactions
+                    .Where(t => laundromatIds.Contains(t.LaundromatId))
+                    .Where(t => startDate == null || t.date >= startDate)
+                    .Where(t => endDate == null || t.date <= endDate)
+                    .Where(t => t.amount != 0)  // Skip zero-amount transactions
+                    .AsNoTracking()
+                    .ToListAsync();
+                
+                // Process each laundromat (including ones with no transactions)
+                foreach (var laundromat in laundromats)
+                {
+                    var laundromatName = laundromat.name ?? laundromat.kId;
+                    var laundromatTransactions = transactions.Where(t => t.LaundromatId == laundromat.kId).ToList();
+                    
+                    var machineRows = new List<MachineDetailRow>();
+                    
+                    if (laundromatTransactions.Any())
+                    {
+                        var groupedTransactions = laundromatTransactions
+                            .GroupBy(t => t.unitName ?? "Unknown")
+                            .Select(g => new {
+                                MachineName = g.Key,
+                                Starts = g.Count(),
+                                Revenue = g.Sum(t => Math.Abs(t.amount)) / 100m,
+                                IsWasher = !g.Any(t => dryerUnitTypes.Contains(t.unitType))
+                            })
+                            .ToList();
+                            
+                        foreach (var group in groupedTransactions)
+                        {
+                            // Calculate price per start correctly
+                            decimal pricePerStart = group.Starts > 0 ? group.Revenue / group.Starts : 0;
+                            
+                            machineRows.Add(new MachineDetailRow
+                            {
+                                MachineName = group.MachineName,
+                                Starts = group.Starts,
+                                Revenue = group.Revenue,
+                                IsWasher = group.IsWasher,
+                                PricePerStart = pricePerStart
+                            });
+                        }
+                        
+                        // Sort the machines based on the metric key
+                        if (metricKey.Contains("Revenue", StringComparison.OrdinalIgnoreCase))
+                            machineRows = machineRows.OrderByDescending(r => r.Revenue).ToList();
+                        else if (metricKey.Contains("Starts", StringComparison.OrdinalIgnoreCase) || metricKey.Contains("Count", StringComparison.OrdinalIgnoreCase))
+                            machineRows = machineRows.OrderByDescending(r => r.Starts).ToList();
+                        else
+                            machineRows = machineRows.OrderByDescending(r => r.Revenue).ToList();
+                    }
+                    
+                    // Always add the laundromat, even if it has no machines/transactions
+                    result.Add(laundromatName, machineRows);
+                }
+                
+                // Sort laundromats by total revenue (highest first)
+                result = result
+                    .OrderByDescending(kvp => kvp.Value.Sum(m => m.Revenue))
+                    .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+                    
+                // Cache the result for 5 minutes
+                _cache.Set(cacheKey, result, TimeSpan.FromMinutes(5));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error retrieving machine data: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            }
+            
+            return result;
         }
     }
 }

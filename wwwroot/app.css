@@ -1,13 +1,20 @@
 :root {
-    --main: #66dd66;       /* Vibrant green base color */
-    --main-light: #82e782;   /* Lighter green for hover states */
-    --main-dark: #4bb54b;    /* Deeper green for active states */
-    --main-transparent: #66dd6657; /* Transparent version of the green */
+    --main: #66dd66;
+    /* Vibrant green base color */
+    --main-light: #82e782;
+    /* Lighter green for hover states */
+    --main-dark: #4bb54b;
+    /* Deeper green for active states */
+    --main-transparent: #66dd6657;
+    /* Transparent version of the green */
 
     /* Complementary Red Palette (adjusted to pair with green) */
-    --main-red: #dd6666;     /* Complementary red to pair with green */
-    --main-red-light: #e78282; /* Lighter red for hover states */
-    --main-red-dark: #b54b4b;   /* Deeper red for active states */
+    --main-red: #dd6666;
+    /* Complementary red to pair with green */
+    --main-red-light: #e78282;
+    /* Lighter red for hover states */
+    --main-red-dark: #b54b4b;
+    /* Deeper red for active states */
 
 }
 
@@ -120,6 +127,28 @@ h1:focus {
     box-shadow: inset 0 0.5vw 1vw rgba(0, 0, 0, 0.3);
 }
 
+.csv-icon {
+    width: 5vh;
+    height: 5vh;
+    margin-left: 1vw;
+    margin-right: 1vw;
+    background-image: url("/icons/csv-icon.png");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    cursor: pointer;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.csv-icon:hover {
+    transform: scale(1.1);
+}
+
+.csv-icon:active {
+    transform: scale(0.9);
+}
+
 .loader {
     justify-self: center;
     align-self: center;
@@ -131,12 +160,12 @@ h1:focus {
     background-color: #fff;
     background-repeat: no-repeat;
     background-image:
-    linear-gradient(#ddd 50%, #bbb 51%),
-    linear-gradient(#ddd, #ddd),
-    linear-gradient(#ddd, #ddd),
-    radial-gradient(ellipse at center, #aaa 25%, #eee 26%, #eee 50%, #0000 55%),
-    radial-gradient(ellipse at center, #aaa 25%, #eee 26%, #eee 50%, #0000 55%),
-    radial-gradient(ellipse at center, #aaa 25%, #eee 26%, #eee 50%, #0000 55%);
+        linear-gradient(#ddd 50%, #bbb 51%),
+        linear-gradient(#ddd, #ddd),
+        linear-gradient(#ddd, #ddd),
+        radial-gradient(ellipse at center, #aaa 25%, #eee 26%, #eee 50%, #0000 55%),
+        radial-gradient(ellipse at center, #aaa 25%, #eee 26%, #eee 50%, #0000 55%),
+        radial-gradient(ellipse at center, #aaa 25%, #eee 26%, #eee 50%, #0000 55%);
     background-position: 0 20px, 45px 0, 8px 6px, 55px 3px, 75px 3px, 95px 3px;
     background-size: 100% 4px, 1px 23px, 30px 8px, 15px 15px, 15px 15px, 15px 15px;
     position: relative;
@@ -168,8 +197,8 @@ h1:focus {
     bottom: 20px;
     background-color: #bbdefb;
     background-image:
-    linear-gradient(to right, #0004 0%, #0004 49%, #0000 50%, #0000 100%),
-    linear-gradient(135deg, #64b5f6 50%, #607d8b 51%);
+        linear-gradient(to right, #0004 0%, #0004 49%, #0000 50%, #0000 100%),
+        linear-gradient(135deg, #64b5f6 50%, #607d8b 51%);
     background-size: 30px 100%, 90px 80px;
     border-radius: 50%;
     background-repeat: repeat, no-repeat;
@@ -184,18 +213,22 @@ h1:focus {
     0% {
         transform: rotate(0deg);
     }
+
     50% {
         transform: rotate(360deg);
     }
+
     75% {
         transform: rotate(750deg);
     }
+
     100% {
         transform: rotate(1800deg);
     }
 }
 
 @keyframes shake {
+
     0%,
     50%,
     100% {

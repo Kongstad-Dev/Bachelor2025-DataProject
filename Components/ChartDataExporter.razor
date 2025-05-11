@@ -7,14 +7,13 @@
 @inject IJSRuntime JSRuntime
 @inject LaundryStateService LaundryState
 @inject IDbContextFactory<YourDbContext> DbContextFactory
+@inject DataAnalysisService AnalysisService
 
     <div class="csv-icon" @onclick="ExportDataToExcel"></div>
 
 @code {
     [Parameter]
     public List<ChartDataPoint> Data { get; set; } = new();
-
-    private readonly int[] dryerUnitTypes = new[] { 1, 18, 5, 10, 14, 19, 27, 29, 41 };
 
     private async Task ExportDataToCsv()
     {
@@ -23,10 +22,17 @@
             return;
         }
 
-        var laundromats = LaundryState.GetEffectiveSelectedLaundromats();
-
-        // Get the per-machine data
-        var machineData = await GetMachineDataForLaundromats(laundromats);
+        // Get machine data using the service
+        var laundromatIds = LaundryState.GetEffectiveSelectedLaundromatsIds();
+        var startDate = LaundryState.GetStartDate();
+        var endDate = LaundryState.GetEndDate();
+        
+        // Use "Revenue" as default metric key
+        var machineData = await AnalysisService.GetMachineDetailsByLaundromat(
+            laundromatIds, 
+            startDate, 
+            endDate, 
+            "Revenue");
 
         // Export in the detailed machine format
         string csvContent = CsvExporter.ExportMachineDetailsPerLaundromatToCsv(machineData);
@@ -37,72 +43,24 @@
         await JSRuntime.InvokeVoidAsync("downloadCsvWithEncoding", fileName, csvContent);
     }
 
-    private async Task<Dictionary<string, List<MachineDetailRow>>> GetMachineDataForLaundromats(List<Laundromat>
-    laundromats)
-    {
-        var result = new Dictionary<string, List<MachineDetailRow>>();
-
-        using var dbContext = await DbContextFactory.CreateDbContextAsync();
-
-        foreach (var laundromat in laundromats)
-        {
-            var laundromatName = laundromat.name ?? $"ID {laundromat.kId}";
-            var machineRows = new List<MachineDetailRow>();
-
-            // Get start and end dates from LaundryState
-            var startDate = LaundryState.GetStartDate();
-            var endDate = LaundryState.GetEndDate();
-
-            // Get all transactions for this laundromat within date range
-            var transactions = await dbContext.Transactions
-            .Where(t => t.LaundromatId == laundromat.kId)
-            .Where(t => startDate == null || t.date >= startDate)
-            .Where(t => endDate == null || t.date <= endDate)
-            .Where(t => t.amount != 0)
-            .ToListAsync();
-
-            // Group transactions by unit name
-            var groupedTransactions = transactions
-            .GroupBy(t => t.unitName ?? "Unknown")
-            .Select(g => new
-            {
-                MachineName = g.Key,
-                Starts = g.Count(),
-                Revenue = g.Sum(t => Math.Abs(t.amount)) / 100m,
-                IsWasher = !g.Any(t => dryerUnitTypes.Contains(t.unitType))
-            })
-            .ToList();
-
-            // Convert to MachineDetailRow objects
-            foreach (var group in groupedTransactions)
-            {
-                machineRows.Add(new MachineDetailRow
-                {
-                    MachineName = group.MachineName,
-                    Starts = group.Starts,
-                    Revenue = group.Revenue,
-                    IsWasher = group.IsWasher
-                });
-            }
-
-            // Add to results
-            result.Add(laundromatName, machineRows);
-        }
-
-        return result;
-    }
-
-        private async Task ExportDataToExcel()
+    private async Task ExportDataToExcel()
     {
         if (Data == null || !Data.Any())
         {
             return;
         }
 
-        var laundromats = LaundryState.GetEffectiveSelectedLaundromats();
-
-        // Get the per-machine data
-        var machineData = await GetMachineDataForLaundromats(laundromats);
+        // Get machine data using the service
+        var laundromatIds = LaundryState.GetEffectiveSelectedLaundromatsIds();
+        var startDate = LaundryState.GetStartDate();
+        var endDate = LaundryState.GetEndDate();
+        
+        // Use "Revenue" as default metric key  
+        var machineData = await AnalysisService.GetMachineDetailsByLaundromat(
+            laundromatIds, 
+            startDate, 
+            endDate, 
+            "Revenue");
         
         // Generate Excel bytes
         byte[] excelBytes = ExcelExporter.ExportMachineDetailsToExcel(machineData);

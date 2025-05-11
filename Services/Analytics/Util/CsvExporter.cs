@@ -103,13 +103,3 @@ public static class CsvExporter
             return result;
         }
 }
-
-// Data model for machine detail rows
-public class MachineDetailRow
-{
-    public string MachineName { get; set; }
-    public int Starts { get; set; }
-    public decimal Revenue { get; set; }
-    public decimal PricePerStart => Starts > 0 ? Revenue / Starts : 0;
-    public bool IsWasher { get; set; }
-}
