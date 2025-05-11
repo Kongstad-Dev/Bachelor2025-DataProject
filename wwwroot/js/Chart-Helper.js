@@ -41,6 +41,14 @@
     const titleFontSize = config.titleFontSize || (fontSize + 4);
     const axisLabelSize = config.axisLabelSize || fontSize;
 
+    // Set default border width or use provided value
+    // For stacked charts, use thin borders by default to reduce overlap issues
+    let defaultBorderWidth = config.type === 'line' ? 2 : 1;
+    if (config.stacked && config.borderWidth === undefined) {
+        defaultBorderWidth = 2;  // Thin borders for stacked charts by default
+    }
+    const borderWidth = config.borderWidth !== undefined ? config.borderWidth : defaultBorderWidth;
+
     let datasets = [];
 
     // Check if this is likely a SingleValues chart (one row in the 2D array)
@@ -73,8 +81,8 @@
             label: config.title || 'Dataset',
             data: config.values[0],
             backgroundColor: bgColors,
-            borderColor: config.type === 'line' ? bgColors : generateBorderColors(1)[0],
-            borderWidth: config.type === 'line' ? 2 : 1,
+            borderColor: config.type === 'line' ? bgColors : '#000000',
+            borderWidth: config.type === 'line' ? borderWidth : borderWidth,
             fill: config.type === 'line' ? false : true
         }];
     } else {
@@ -85,6 +93,18 @@
         if (config.backgroundColors && config.backgroundColors.length > 0) {
             datasetColors = Array.from({ length: config.values.length },
                 (_, i) => config.backgroundColors[i % config.backgroundColors.length]);
+        } else if (config.type === 'bar') {
+            // Check if we have dataset labels to determine colors based on content
+            if (config.datasetLabels && config.datasetLabels.length > 0) {
+                // Assign colors based on whether label contains "vaskemaskine"
+                datasetColors = config.datasetLabels.map(label =>
+                    label.toLowerCase().includes('vaskemaskine') ?
+                        '#66dd66' :  // Blue for washing machines
+                        '#dd6666'    // Red for others
+                );
+            } else {
+                datasetColors = generateColors(config.values.length, config.type);
+            }
         } else {
             datasetColors = generateColors(config.values.length, config.type);
         }
@@ -97,22 +117,21 @@
                 data: datasetValues,
                 backgroundColor: 'transparent',
                 borderColor: datasetColors[datasetIndex],
-                borderWidth: 2,
+                borderWidth: borderWidth,
                 fill: false
             }));
-        }else {
-
-        datasets = config.values[0].map((_, colIndex) => ({
-            label: config.datasetLabels && config.datasetLabels.length > colIndex
-                ? config.datasetLabels[colIndex]
-                : `Dataset ${colIndex + 1}`,
-            data: config.values.map(row => row[colIndex]),
-            backgroundColor: datasetColors[colIndex],
-            borderColor: generateBorderColors(config.values[0].length)[colIndex],
-            borderWidth: 1,
-            stack: config.stacked ? 'stack1' : undefined
-        }));
-    }
+        } else {
+            datasets = config.values[0].map((_, colIndex) => ({
+                label: config.datasetLabels && config.datasetLabels.length > colIndex
+                    ? config.datasetLabels[colIndex]
+                    : `Dataset ${colIndex + 1}`,
+                data: config.values.map(row => row[colIndex]),
+                backgroundColor: datasetColors[colIndex],
+                borderColor: '#000000', // Restore visible borders
+                borderWidth: borderWidth,
+                stack: config.stacked ? 'stack1' : undefined
+            }));
+        }
     }
 
     // Create a new chart instance and store it in the chartInstances object
@@ -168,8 +187,8 @@
                     ticks: {
                         font: {
                             size: axisLabelSize// Set y-axis label font size
-                            
-                            
+
+
                         }
                     }
                 }
@@ -180,33 +199,17 @@
 
 function generateColors(count, type) {
     const baseColors = [
-        'rgba(102, 221, 102, 1)', // light lime green
-        'rgba(255, 160, 122, 0.7)',  // soft coral (orange) - changed to first position
-        'rgba(135, 206, 250, 0.7)',  // sky blue
-        'rgba(255, 220, 105, 0.7)',  // warm pastel yellow
-        'rgba(255, 105, 180, 0.7)',  // vibrant pastel pink
-        'rgba(173, 216, 230, 0.7)',  // pastel cyan-blue - moved down
-        'rgba(216, 191, 216, 0.7)',  // rich lavender
-        'rgba(255, 182, 193, 0.7)',  // bright blush
-        'rgba(255, 204, 153, 0.7)',  // peachy orange
-        'rgba(186, 85, 211, 0.7)'    // punchy orchid
+        '#66dd66',  // Pastel green
+        '#dd6666',  // Pastel red
+        '#66aadd',  // Pastel blue
+        '#cc66cc',  // Pastel purple
+        '#dddd66',  // Pastel yellow
+        '#ffaa66',  // Pastel orange
+        '#ff99cc',  // Pastel pink
+        '#66cccc',  // Pastel teal
+        '#aa99dd',  // Pastel lavender
+        '#99ddbb',  // Pastel mint
     ];
 
-    return Array.from({ length: count }, (_, i) => baseColors[i % baseColors.length]);
-}
-
-function generateBorderColors(count) {
-    const baseColors = [
-        'rgba(102, 221, 102, 1)', // light lime green
-        'rgba(255, 160, 122, 0.7)',  // soft coral (orange) - changed to first position
-        'rgba(135, 206, 250, 1)',  // sky blue
-        'rgba(255, 220, 105, 1)',  // warm pastel yellow
-        'rgba(255, 105, 180, 1)',  // vibrant pastel pink
-        'rgba(173, 216, 230, 1)',  // pastel cyan-blue
-        'rgba(216, 191, 216, 1)',  // rich lavender
-        'rgba(255, 182, 193, 1)',  // bright blush
-        'rgba(255, 204, 153, 1)',  // peachy orange
-        'rgba(186, 85, 211, 1)'    // punchy orchid
-    ];
     return Array.from({ length: count }, (_, i) => baseColors[i % baseColors.length]);
 }
