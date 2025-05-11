@@ -12,44 +12,8 @@
     <div class="csv-icon" @onclick="ExportDataToExcel"></div>
 
 @code {
-    [Parameter]
-    public List<ChartDataPoint> Data { get; set; } = new();
-
-    private async Task ExportDataToCsv()
-    {
-        if (Data == null || !Data.Any())
-        {
-            return;
-        }
-
-        // Get machine data using the service
-        var laundromatIds = LaundryState.GetEffectiveSelectedLaundromatsIds();
-        var startDate = LaundryState.GetStartDate();
-        var endDate = LaundryState.GetEndDate();
-        
-        // Use "Revenue" as default metric key
-        var machineData = await AnalysisService.GetMachineDetailsByLaundromat(
-            laundromatIds, 
-            startDate, 
-            endDate, 
-            "Revenue");
-
-        // Export in the detailed machine format
-        string csvContent = CsvExporter.ExportMachineDetailsPerLaundromatToCsv(machineData);
-
-        var fileName = $"laundromat_machine_details_{DateTime.Now:yyyy-MM-dd}.csv";
-
-        // Use the downloadCsvWithEncoding function instead
-        await JSRuntime.InvokeVoidAsync("downloadCsvWithEncoding", fileName, csvContent);
-    }
-
     private async Task ExportDataToExcel()
     {
-        if (Data == null || !Data.Any())
-        {
-            return;
-        }
-
         // Get machine data using the service
         var laundromatIds = LaundryState.GetEffectiveSelectedLaundromatsIds();
         var startDate = LaundryState.GetStartDate();

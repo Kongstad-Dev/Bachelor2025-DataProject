@@ -3,6 +3,7 @@
 @using BlazorTest.Services.Analytics.Util
 @using BlazorTest.Services
 @using BlazorTest.Database
+@using BlazorTest.Components
 @inject IJSRuntime JS
 @inject LaundryStateService LaundryState
 @inject IDbContextFactory<YourDbContext> DbContextFactory
@@ -42,7 +43,7 @@
             <div class="popup-header">
                     <div class="popup-actions">
                         <h3>Advanced Details</h3>
-                        <div class="csv-icon" @onclick="ExportToExcel"></div>
+                         <ChartDataExporter/>
                     </div>
                 <button class="popup-close-btn" @onclick="ClosePopup">×</button>
             </div>
@@ -221,22 +222,6 @@
 
         washerAvgPrice = totalWasherStarts > 0 ? washerRevenue / totalWasherStarts : 0;
         dryerAvgPrice = totalDryerStarts > 0 ? dryerRevenue / totalDryerStarts : 0;
-    }
-
-    private async Task ExportToExcel()
-    {
-        if (detailData == null || detailData.Count == 0)
-            return;
-
-        var data = new Dictionary<string, List<MachineDetailRow>>(detailData);
-        var excelBytes = ExcelExporter.ExportMachineDetailsToExcel(data);
-        var fileName = $"laundromat_data_{DateTime.Now:yyyy-MM-dd}.xlsx";
-        await JS.InvokeVoidAsync("downloadFileFromBytes", fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", Convert.ToBase64String(excelBytes));
-    }
-
-    private async Task DownloadFile(byte[] fileContent, string fileName, string contentType)
-    {
-        await JS.InvokeVoidAsync("ExportMachineDetailsToExcel", fileContent, fileName, contentType);
     }
 
     private void ToggleLaundromat(string laundromatName)

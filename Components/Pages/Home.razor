@@ -300,12 +300,6 @@
             chartLabelsTime = resultTime.Select(r => r.Label).ToArray();
             chartValuesTime = resultTime.Select(r => r.Value).ToArray();
 
-            // Update the RevenueOverTimeDataPoints data points in the state
-            chartDataPoints = DataConverter.ToChartDataPoints(chartLabelsTime, chartValuesTime);
-            LaundryState.UpdateRevenueOverTimeDataPoints(chartDataPoints);
-
-            // Console.WriteLine($"Loaded time chart data: {chartLabelsTime.Length} items");
-
             var resultTimeTrans = await transactionTimeTask;
             chartLabelsTimeTrans = resultTimeTrans.Select(r => r.Label).ToArray();
             chartValuesTimeTrans = resultTimeTrans.Select(r => r.Value).ToArray();

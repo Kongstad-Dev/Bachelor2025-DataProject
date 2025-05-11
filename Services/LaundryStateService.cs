@@ -20,13 +20,10 @@ namespace BlazorTest.Services
         public List<SearchItem> ErpIdItems { get; private set; } = new List<SearchItem>();
         public List<SearchItem> BankIdItems { get; private set; } = new();
 
-        public List<ChartDataPoint> RevenueOverTimeDataPoints { get; private set; } = new List<ChartDataPoint>();
-
 
 
         // State change event
         public event Action? OnStateChanged;
-        public event Action? OnRevenueOverTimeDataPointsChanged;
 
         // Updates collections with external values
         public void UpdateBankItems(List<SearchItem> items)
@@ -70,15 +67,6 @@ namespace BlazorTest.Services
             ErpIdItems = items;
             NotifyStateChanged();
         }
-
-        public void UpdateRevenueOverTimeDataPoints(List<ChartDataPoint> dataPoints)
-        {
-            RevenueOverTimeDataPoints = dataPoints;
-            OnRevenueOverTimeDataPointsChanged?.Invoke();
-            NotifyStateChanged();
-        }
-
-        public List<ChartDataPoint> GetRevenueOverTimeDataPoints() => RevenueOverTimeDataPoints;
 
         public List<Laundromat> GetEffectiveSelectedLaundromats()
         {
