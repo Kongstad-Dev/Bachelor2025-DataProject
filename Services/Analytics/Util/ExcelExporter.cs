@@ -151,9 +151,6 @@ namespace BlazorTest.Services.Analytics.Util
                     }
                 }
                 
-                // Add separator before grand total
-                row += 2;
-                
                 // Calculate overall average prices using the same formula as KeyValueAnalysisService
                 decimal grandTotalWasherAvgPrice = grandTotalWasherStarts > 0
                     ? grandTotalWasherRevenue / grandTotalWasherStarts
