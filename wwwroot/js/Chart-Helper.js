@@ -195,6 +195,11 @@
             }
         }
     });
+
+    // Notify Blazor that the chart has rendered (for loader)
+    if (config.dotNetRef) {
+        config.dotNetRef.invokeMethodAsync('ChartRendered');
+    }
 };
 
 function generateColors(count, type) {

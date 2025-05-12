@@ -1,20 +1,4 @@
-﻿window.downloadCsv = function (filename, csvText) {
-    const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.setAttribute('href', url);
-    a.setAttribute('download', filename);
-    a.style.display = 'none';
-
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-};
-
-// Add the downloadFile function with the expected parameters
-window.downloadFile = function (fileName, fileType, content) {
+﻿window.downloadFile = function (fileName, fileType, content) {
     const blob = new Blob([content], { type: fileType });
     const url = URL.createObjectURL(blob);
 
@@ -23,21 +7,6 @@ window.downloadFile = function (fileName, fileType, content) {
     a.setAttribute('download', fileName);
     a.style.display = 'none';
 
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-};
-
-window.downloadCsvWithEncoding = function(filename, csvText) {
-    // Add UTF-8 BOM for Excel to recognize special characters
-    const BOM = "\uFEFF";
-    const blob = new Blob([BOM + csvText], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

@@ -36,7 +36,7 @@
     </table>
 </div>
 
-@if (showPopup && detailData != null)
+@if (showPopup)
 {
     <div class="popup-overlay" @onclick="ClosePopup">
         <div class="popup-content" @onclick:stopPropagation="true">
@@ -151,6 +151,8 @@
     private string selectedKey = "";
     private Dictionary<string, List<MachineDetailRow>> detailData;
 
+    private string _lastValuesHash;
+
     // Summary statistics
     private int totalWasherStarts;
     private int totalDryerStarts;
@@ -238,8 +240,12 @@
 
     protected override void OnParametersSet()
     {
-        // Ensure component is properly re-rendered when parameters change
-        base.OnParametersSet();
-        Console.WriteLine($"KeyValuesTable parameters set: Title={Title}, Values.Count={Values.Count}");
+        string currentHash = string.Join("|", Values.Select(v => $"{v.Key}:{v.Value}"));
+        
+        if (_lastValuesHash != currentHash)
+        {
+            _lastValuesHash = currentHash;
+            Console.WriteLine($"KeyValuesTable parameters set: Title={Title}, Values.Count={Values.Count}");
+        }
     }
 }
