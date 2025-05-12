@@ -40,6 +40,8 @@ namespace BlazorTest.Services
 
         public void UpdateSelectedBanks(List<BankEntity> banks)
         {
+            // Remove laundromats whose bankId is not in the new selected banks
+            SelectedLaundromats.RemoveAll(l => !banks.Any(b => b.bankId == l.bankId));
             SelectedBanks = banks;
             NotifyStateChanged();
         }
