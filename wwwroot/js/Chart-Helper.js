@@ -145,7 +145,7 @@
             responsive: true,
             maintainAspectRatio: false,
             animation: {
-                duration: 0
+                duration: 300
             },
             plugins: {
                 legend: {
@@ -195,11 +195,6 @@
             }
         }
     });
-
-    // Notify Blazor that the chart has rendered (for loader)
-    if (config.dotNetRef) {
-        config.dotNetRef.invokeMethodAsync('ChartRendered');
-    }
 };
 
 function generateColors(count, type) {

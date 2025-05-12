@@ -14,6 +14,12 @@
     <h2>@Title</h2>
 
     <table class="key-values-table">
+            @if (isValuesLoading)
+            {
+        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; background: rgba(255,255,255, 0.7); display: flex; align-items: center; justify-content: center;">
+                    <div class="loader"></div>
+                </div>
+            }
         <tbody>
             @foreach (var item in Values.Take(8))
             {
@@ -145,6 +151,9 @@
         
     [Parameter]
     public string DataType { get; set; } = "Revenue"; // Default to revenue, can be "Starts", "Revenue", etc.
+        
+    [Parameter]
+    public bool isValuesLoading { get; set; }
 
     private bool showPopup = false;
     private bool isLoading = false;

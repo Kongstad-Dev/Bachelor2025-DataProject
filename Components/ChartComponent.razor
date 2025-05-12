@@ -1,11 +1,5 @@
 ﻿@inject IJSRuntime JS
 
-    @if (isLoading)
-    {
-        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; background: rgba(255,255,255, 0.7); display: flex; align-items: center; justify-content: center;">
-            <div class="loader"></div>
-        </div>
-    }
     <canvas id="@CanvasId" style="width: 100%;"></canvas>
 
 @code {
@@ -19,16 +13,39 @@
     [Parameter] public string[] BackgroundColors { get; set; } = Array.Empty<string>();
     [Parameter] public string[] DatasetLabels { get; set; } = Array.Empty<string>();
 
-    private bool isLoading = true;
     private DotNetObjectReference<ChartComponent>? selfRef;
+
+    // Hashes to track parameter changes
+    private string? _prevLabelsHash;
+    private string? _prevValuesHash;
+    private string? _prevDatasetLabelsHash;
+    private bool _hasRenderedOnce = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             selfRef = DotNetObjectReference.Create(this);
-            isLoading = true;
             StateHasChanged();
+        }
+    }
+
+protected override void OnParametersSet()
+{
+    Console.WriteLine("ON PARAMETERS SET");
+    var labelsHash = Labels != null ? string.Join(",", Labels) : "";
+    var valuesHash = SingleValues != null
+        ? string.Join(",", SingleValues)
+        : MultiValues != null
+            ? string.Join("|", MultiValues.Select(row => string.Join(",", row)))
+            : "";
+    var datasetLabelsHash = DatasetLabels != null ? string.Join(",", DatasetLabels) : "";
+
+    if (!_hasRenderedOnce || labelsHash != _prevLabelsHash || valuesHash != _prevValuesHash || datasetLabelsHash != _prevDatasetLabelsHash)
+    {
+        _ = InvokeAsync(async () =>
+        {
+            await Task.Yield(); // Let Blazor render loader
             await JS.InvokeVoidAsync("renderChart", new
             {
                 canvasId = CanvasId,
@@ -41,33 +58,14 @@
                 backgroundColors = BackgroundColors,
                 dotNetRef = selfRef
             });
-        }
-    }
-
-    protected override void OnParametersSet()
-    {
-        isLoading = true;
-        StateHasChanged();
-        JS.InvokeVoidAsync("renderChart", new
-        {
-            canvasId = CanvasId,
-            labels = Labels,
-            values = NormalizeValues(),
-            datasetLabels = DatasetLabels,
-            title = Title,
-            type = Type,
-            stacked = Stacked,
-            backgroundColors = BackgroundColors,
-            dotNetRef = selfRef
         });
-    }
 
-    [JSInvokable]
-    public void ChartRendered()
-    {
-        isLoading = false;
-        StateHasChanged();
-    }
+        _prevLabelsHash = labelsHash;
+        _prevValuesHash = valuesHash;
+        _prevDatasetLabelsHash = datasetLabelsHash;
+        _hasRenderedOnce = true;
+    } 
+}
 
     private decimal[][] NormalizeValues()
     {

@@ -18,15 +18,16 @@
             <div class="main-selected-laundromats">
                 <SelectedLaudromats />
             </div>
-            @if (!isLoading)
-            {
-                <KeyValuesTable Title="Key Values" Values="@keyValuePairs" />
-            }
+            <KeyValuesTable Title="Key Values" Values="@keyValuePairs" isValuesLoading="@isLoading" />
         </div>
 
         <div class="main-content-graphs">
-            @if (!isLoading)
-            {
+                @if (isLoading || isDataLoading)
+                {
+                    <div class="loading-overlay">
+                        <div class="loader"></div>
+                    </div>
+                }
                 <div class="main-graph-container">
                     <ChartComponent CanvasId="revenueOverTime" Labels="@chartLabelsTime" SingleValues="@chartValuesTime"
                         Title="Revenue Over Time" Type="line" Stacked=false />
@@ -46,8 +47,6 @@
                         MultiValues="@chartValuesSumMachineRev" Title='Revenue pr Machine' Type="bar" Stacked="true"
                         DatasetLabels="@chartLabelsMachineRev" />
                 </div>
-            }
-
         </div>
     </div>
 </div>
@@ -64,6 +63,12 @@
         <div class="main-special-content">
             <h2>@selectedSpecialContent</h2>
             <div class="main-special-content-graphs">
+                @if (isSpecialDataLoading)
+                {
+                    <div class="loading-overlay">
+                        <div class="loader"></div>
+                    </div>
+                }
                 @if (selectedSpecialContent == "Soap Statistics")
                 {
                     <div class="main-graph-container small">
@@ -114,7 +119,6 @@
 </div>
 
 @code {
-    private bool hasInitializedChartExportData = false;
     private List<ChartDataPoint> chartDataPoints = new();
 
     private string selectedSpecialContent = "";
@@ -173,6 +177,7 @@
 
     // Track if data is already loading
     private bool isDataLoading = false;
+    private bool isSpecialDataLoading = false;
 
     // Cancel data loading operations if component is disposed
     private CancellationTokenSource cts = new();
@@ -242,6 +247,7 @@
         try
         {
             isDataLoading = true;
+            isSpecialDataLoading = true;
 
             // Create tasks for parallel execution
             var keyValuesTask = AnalysisService.GetKeyValuesFromStats(
@@ -284,12 +290,10 @@
             token.ThrowIfCancellationRequested();
 
             keyValuePairs = await keyValuesTask;
-            // Console.WriteLine($"Loaded key values: {keyValuePairs.Count}");
 
             var resultSum = await revenueSumTask;
             chartLabelsSum = resultSum.Select(r => r.Label).ToArray();
             chartValuesSum = resultSum.Select(r => r.Value).ToArray();
-            // Console.WriteLine($"Loaded sum chart data: {chartLabelsSum.Length} items");
 
             var resultTime = await revenueTimeTask;
             chartLabelsTime = resultTime.Select(r => r.Label).ToArray();
@@ -298,13 +302,11 @@
             var resultTimeTrans = await transactionTimeTask;
             chartLabelsTimeTrans = resultTimeTrans.Select(r => r.Label).ToArray();
             chartValuesTimeTrans = resultTimeTrans.Select(r => r.Value).ToArray();
-            //Console.WriteLine($"Loaded time chart data: {chartLabelsTime.Length} items");
 
             var resultStackedMachine = await stackedMachineTask;
             chartLabelsSumMachine = resultStackedMachine.Labels.ToArray();
             chartValuesSumMachine = resultStackedMachine.Values.Select(r => r).ToArray();
             chartLabelsMachine = resultStackedMachine.unitNames.ToArray();
-            // Console.WriteLine($"Loaded stacked machine chart data: {chartLabelsSumMachine.Length} items");
 
             var resultStackedMachineRev = await stackedMachineTaskRev;
             chartLabelsSumMachineRev = resultStackedMachineRev.Labels.ToArray();
@@ -401,6 +403,9 @@
     {
         try
         {
+            isSpecialDataLoading = true;
+            StateHasChanged();
+            
             if (content == "Soap Statistics" &&
         (chartLabelsSumSoap.Length == 0 || _lastSoapDataParams != GetCurrentParams()))
             {
@@ -514,25 +519,10 @@
         }
         finally
         {
+            isSpecialDataLoading = false;
             StateHasChanged();
         }
     }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        // Wait until data is loaded and we haven’t done this yet
-        if (!isLoading && !hasInitializedChartExportData && chartLabelsTime.Length > 0 && chartValuesTime.Length > 0)
-        {
-
-            hasInitializedChartExportData = true;
-
-
-
-            // Tell Blazor to refresh the UI so your <ChartDataExporter> will now work
-            StateHasChanged();
-        }
-    }
-
 
     public void Dispose()
     {
