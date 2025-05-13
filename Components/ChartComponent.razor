@@ -32,7 +32,6 @@
 
 protected override void OnParametersSet()
 {
-    Console.WriteLine("ON PARAMETERS SET");
     var labelsHash = Labels != null ? string.Join(",", Labels) : "";
     var valuesHash = SingleValues != null
         ? string.Join(",", SingleValues)

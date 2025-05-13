@@ -301,9 +301,14 @@ namespace BlazorTest.Services
 
         private async Task<int> ProcessTransactions(List<TransactionEntity> transactions, string laundromatId)
         {
-            // Filter out door transactions
             var filteredTransactions = transactions
-                .Where(t => string.IsNullOrEmpty(t.unitName) || !t.unitName.Contains("Dør", StringComparison.OrdinalIgnoreCase))
+                .Where(t => 
+                    t.seconds != 0 || 
+                    (t.seconds == 0 && 
+                    t.debug != null && 
+                    t.debug.Contains(" ") && 
+                    t.debug.Substring(t.debug.IndexOf(' ') + 1).StartsWith("Start", StringComparison.OrdinalIgnoreCase))
+                )
                 .ToList();
 
             if (!filteredTransactions.Any())
