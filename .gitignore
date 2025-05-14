@@ -12,3 +12,29 @@ bin/
 /obj/
 .env
 /BlazorTest.sln.DotSettings.user
+
+BlazorTest_Test.Tests\obj
+BlazorTest_Test.Tests\bin
+
+
+# Test project build output
+BlazorTest_Test.Tests/bin/
+BlazorTest_Test.Tests/obj/
+
+# Test results
+TestResults/
+*.trx
+
+# Code coverage (if using coverlet)
+coverage.*
+coverage/
+
+# VS Test explorer metadata
+.vstest/
+
+# FluentAssertions license warning suppressor (optional)
+FluentAssertions.lic
+
+# Ignore build artifacts
+**/bin/
+**/obj/
