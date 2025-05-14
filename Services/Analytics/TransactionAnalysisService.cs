@@ -1,5 +1,5 @@
 using System.Collections.Concurrent;
-using BlazorTest.Database;
+using BlazorTest.Database.entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 

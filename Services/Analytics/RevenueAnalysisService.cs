@@ -1,4 +1,4 @@
-using BlazorTest.Database;
+using BlazorTest.Database.entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
@@ -14,7 +14,7 @@ namespace BlazorTest.Services.Analytics
 
         public decimal CalculateRevenueFromTransactions(List<TransactionEntity> transactions)
         {
-            return transactions.Sum(t => Math.Abs(t.amount)) / 100;
+            return transactions.Sum(t => Math.Abs(t.amount)) / 100m;
         }
 
         public async Task<decimal> CalculateLaundromatsRevenue(

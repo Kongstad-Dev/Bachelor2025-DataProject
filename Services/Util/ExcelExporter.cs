@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using OfficeOpenXml;
-using BlazorTest.Database;
+using BlazorTest.Database.entities;
 
 namespace BlazorTest.Services.Analytics.Util
 {

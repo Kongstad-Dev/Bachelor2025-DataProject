@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
-using BlazorTest.Database;
+using BlazorTest.Database.entities;
 using BlazorTest.Models;
 using BlazorTest.Services.Analytics;
 

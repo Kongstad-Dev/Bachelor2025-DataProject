@@ -1,4 +1,4 @@
-using BlazorTest.Database;
+using BlazorTest.Database.entities;
 using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;

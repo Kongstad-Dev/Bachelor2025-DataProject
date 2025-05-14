@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using BlazorTest.Database;
+using BlazorTest.Database.entities;
 
-namespace BlazorTest.Database;
+namespace BlazorTest.Database.entities;
 
 public class BankEntity
 {

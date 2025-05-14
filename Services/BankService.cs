@@ -1,8 +1,9 @@
-using BlazorTest.Database;
+using BlazorTest.Database.entities;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using BlazorTest.Models; // Ensure BankEntity is defined in this namespace or update the using directive accordingly
 
 namespace BlazorTest.Services
 {

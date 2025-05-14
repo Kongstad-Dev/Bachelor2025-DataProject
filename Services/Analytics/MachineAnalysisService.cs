@@ -1,4 +1,4 @@
-using BlazorTest.Database;
+using BlazorTest.Database.entities;
 using BlazorTest.Services.Analytics.Util;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;

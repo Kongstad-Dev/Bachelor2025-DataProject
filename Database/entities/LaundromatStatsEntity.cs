@@ -1,8 +1,9 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using BlazorTest.Database.entities;
 
-namespace BlazorTest.Database
+namespace BlazorTest.Database.entities
 {
     [Table("laundromat_stats")]
     public class LaundromatStats
