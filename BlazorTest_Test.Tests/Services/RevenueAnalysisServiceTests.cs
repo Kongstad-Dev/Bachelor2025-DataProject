@@ -36,5 +36,43 @@ namespace BlazorTest_Test.Tests.Services
             result.Should().Be((Math.Abs(100) + Math.Abs(-200) + Math.Abs(50)) / 100m);
 
         }
+        [Fact]
+public void CalculateRevenueFromTransactions_EmptyList_ReturnsZero()
+{
+    // Arrange
+    var transactions = new List<TransactionEntity>(); // empty
+    var dbContextFactoryMock = new Mock<IDbContextFactory<YourDbContext>>();
+    var memoryCache = new MemoryCache(new MemoryCacheOptions());
+
+    var service = new RevenueAnalysisService(dbContextFactoryMock.Object, memoryCache);
+
+    // Act
+    var result = service.CalculateRevenueFromTransactions(transactions);
+
+    // Assert
+    result.Should().Be(0m);
+}
+
+[Fact]
+public void CalculateRevenueFromTransactions_SingleNegativeAmount_ReturnsPositiveDecimal()
+{
+    // Arrange
+    var transactions = new List<TransactionEntity>
+    {
+        new TransactionEntity { amount = -150 }
+    };
+    var dbContextFactoryMock = new Mock<IDbContextFactory<YourDbContext>>();
+    var memoryCache = new MemoryCache(new MemoryCacheOptions());
+
+    var service = new RevenueAnalysisService(dbContextFactoryMock.Object, memoryCache);
+
+    // Act
+    var result = service.CalculateRevenueFromTransactions(transactions);
+
+    // Assert
+    result.Should().Be(1.5m);
+}
+
     }
+    
 }
