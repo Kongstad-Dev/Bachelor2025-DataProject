@@ -8,13 +8,8 @@ namespace BlazorTest.Services.Analytics.Util
 {
     public static class ExcelExporter
     {
-        // Define the same dryer unit types as used in KeyValueAnalysisService for consistency
-        private static readonly int[] DryerUnitTypes = new[] { 1, 18, 5, 10, 14, 19, 27, 29, 41 };
-
-        // Static constructor to set the license - this runs once when the class is first used
         static ExcelExporter()
         {
-            // Set the license for EPPlus version 8+
             // For non-commercial projects
             OfficeOpenXml.ExcelPackage.License.SetNonCommercialOrganization("My Noncommercial organization");
         }

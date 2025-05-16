@@ -198,7 +198,7 @@ namespace BlazorTest.Services.Analytics
                     .Where(t => laundromatIds.Contains(t.LaundromatId))
                     .Where(t => startDate == null || t.date >= startDate)
                     .Where(t => endDate == null || t.date <= endDate)
-                    .Where(t => t.amount != 0)  // Skip zero-amount transactions
+                    .Where(t => t.amount != 0) 
                     .AsNoTracking()
                     .ToListAsync();
                 
