@@ -11,21 +11,24 @@ namespace BlazorTest.Services
 {
     public class TransactionService
     {
-        private readonly IDbContextFactory<YourDbContext> _dbContextFactory;
-        private readonly ExternalApiService _externalApiService;
-        private readonly ILogger<TransactionService> _logger;
-        private readonly string _transactionsApiUrl;
+    private readonly IDbContextFactory<YourDbContext> _dbContextFactory;
+    private readonly ExternalApiService _externalApiService;
+    private readonly ILogger<TransactionService> _logger;
+    private readonly string _transactionsApiUrl;
+    private readonly IServiceProvider _serviceProvider;
 
-        public TransactionService(
-            IDbContextFactory<YourDbContext> dbContextFactory,
-            ExternalApiService externalApiService,
-            ILogger<TransactionService> logger)
-        {
-            _dbContextFactory = dbContextFactory;
-            _externalApiService = externalApiService;
-            _logger = logger;
-            _transactionsApiUrl = Environment.GetEnvironmentVariable("API_TRANSACTIIONS");
-        }
+    public TransactionService(
+        IDbContextFactory<YourDbContext> dbContextFactory,
+        ExternalApiService externalApiService,
+        ILogger<TransactionService> logger,
+        IServiceProvider serviceProvider)
+    {
+        _dbContextFactory = dbContextFactory;
+        _externalApiService = externalApiService;
+        _logger = logger;
+        _transactionsApiUrl = Environment.GetEnvironmentVariable("API_TRANSACTIIONS");
+        _serviceProvider = serviceProvider;
+    }
 
         public async Task<List<TransactionEntity>> GetTransactionsAsync(
             List<string> laundromatIds = null,
@@ -240,13 +243,20 @@ namespace BlazorTest.Services
             {
                 try
                 {
-                    // Get LaundromatStatsService to update stats
-                    using var scope = _logger.BeginScope("UpdateStats");
-                    
                     // Update the laundromat's last fetch date
                     laundromatToUpdate.lastFetchDate = DateTime.Now;
                     updateContext.Entry(laundromatToUpdate).State = EntityState.Modified;
                     await updateContext.SaveChangesAsync();
+
+                    // Update precalculated stats in laundromatStats
+                    if (newTransactions > 0)
+                    {
+                        _logger.LogInformation($"Updating stats for laundromat {laundromatId}");
+                        using var scope = _serviceProvider.CreateScope();
+                        var statsService = scope.ServiceProvider.GetRequiredService<LaundromatStatsService>();
+                        await statsService.UpdateStatsForLaundromatAsync(laundromatId);
+                        _logger.LogInformation($"Stats updated for laundromat {laundromatId}");
+                    }
                 }
                 catch (Exception ex)
                 {

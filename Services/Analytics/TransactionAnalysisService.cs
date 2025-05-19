@@ -601,19 +601,35 @@ namespace BlazorTest.Services.Analytics
                 var calendar = System.Globalization.CultureInfo.InvariantCulture.Calendar;
 
                 // Generate all weeks between startDate and endDate
-                var allWeeks = Enumerable
-                    .Range(0, (int)totalDays / 7 + 1)
-                    .Select(i => startDate.Value.AddDays(i * 7))
-                    .Select(d => new
-                    {
-                        Year = d.Year,
-                        Week = calendar.GetWeekOfYear(
-                            d,
-                            System.Globalization.CalendarWeekRule.FirstDay,
-                            DayOfWeek.Monday
-                        ),
-                    })
-                    .ToList();
+            var allWeeks = Enumerable
+                .Range(0, (int)Math.Ceiling(totalDays / 7.0))
+                .Select(i => startDate.Value.AddDays(i * 7))
+                .Where(d => d <= endDate.Value)  // Ensure we don't go past endDate
+                .Select(d => new
+                {
+                    Year = d.Year,
+                    Week = calendar.GetWeekOfYear(
+                        d,
+                        System.Globalization.CalendarWeekRule.FirstDay,
+                        DayOfWeek.Monday
+                    ),
+                })
+                .ToList();
+
+            var lastWeek = new {
+                Year = endDate.Value.Year,
+                Week = calendar.GetWeekOfYear(
+                    endDate.Value,
+                    System.Globalization.CalendarWeekRule.FirstDay,
+                    DayOfWeek.Monday
+                )
+            };
+
+            // Add the week containing the endDate if it's not already included
+            if (!allWeeks.Any(w => w.Year == lastWeek.Year && w.Week == lastWeek.Week))
+            {
+                allWeeks.Add(lastWeek);
+            }
 
                 // Group transactions by week
                 var grouped = transactions

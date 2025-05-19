@@ -609,6 +609,21 @@ namespace BlazorTest.Services.Analytics
                     })
                     .ToList();
 
+                var lastWeek = new {
+                Year = endDate.Value.Year,
+                Week = calendar.GetWeekOfYear(
+                    endDate.Value,
+                    System.Globalization.CalendarWeekRule.FirstDay,
+                    DayOfWeek.Monday
+                )
+                };
+
+                // Add the week containing the endDate if it's not already included
+                if (!allWeeks.Any(w => w.Year == lastWeek.Year && w.Week == lastWeek.Week))
+                {
+                    allWeeks.Add(lastWeek);
+                }
+
                 // Group transactions by week
                 var grouped = transactions
                     .GroupBy(t => new

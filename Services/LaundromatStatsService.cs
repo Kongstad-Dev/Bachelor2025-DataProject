@@ -691,8 +691,8 @@ namespace BlazorTest.Services
         private async Task<TimeSeriesInfo> GenerateTimeSeriesData(
             YourDbContext dbContext,
             string laundromatId,
-            DateTime startDate,
-            DateTime endDate,
+            DateTime? startDate,
+            DateTime? endDate,
             StatsPeriodType periodType,
             TimeSeriesDataType dataType
         )
@@ -712,7 +712,7 @@ namespace BlazorTest.Services
                     interval = "month"; // Monthly data points for year view
                     break;
                 case StatsPeriodType.Quarter:
-                    interval = startDate.AddDays(90) < endDate ? "month" : "week"; // Use weeks for short quarters, months for longer periods
+                    interval = startDate.Value.AddDays(90) < endDate ? "month" : "week"; // Use weeks for short quarters, months for longer periods
                     break;
                 default:
                     return new TimeSeriesInfo
@@ -725,14 +725,14 @@ namespace BlazorTest.Services
             }
 
             var result = new List<ChartDataPoint>();
-            var totalDays = (endDate - startDate).TotalDays;
+            var totalDays = (endDate.Value - startDate.Value).TotalDays;
 
             if (interval == "day")
             {
                 // Generate all days between startDate and endDate
                 var allDays = Enumerable
                     .Range(0, (int)totalDays + 1)
-                    .Select(i => startDate.AddDays(i).Date)
+                    .Select(i => startDate.Value.AddDays(i).Date)
                     .ToList();
 
                 if (dataType == TimeSeriesDataType.Revenue)
@@ -791,20 +791,35 @@ namespace BlazorTest.Services
                 int totalWeeks = (int)(totalDays / 7) + 1;
 
                 // Generate all weeks between startDate and endDate
-                var allWeeks = Enumerable
-                    .Range(0, totalWeeks)
-                    .Select(i => startDate.AddDays(i * 7))
-                    .Select(d => new
-                    {
-                        Date = d,
-                        Year = d.Year,
-                        Week = calendar.GetWeekOfYear(
-                            d,
-                            System.Globalization.CalendarWeekRule.FirstDay,
-                            DayOfWeek.Monday
-                        ),
-                    })
-                    .ToList();
+            var allWeeks = Enumerable
+                .Range(0, (int)Math.Ceiling(totalDays / 7.0))
+                .Select(i => startDate.Value.AddDays(i * 7))
+                .Where(d => d <= endDate.Value)  // Ensure we don't go past endDate
+                .Select(d => new
+                {
+                    Year = d.Year,
+                    Week = calendar.GetWeekOfYear(
+                        d,
+                        System.Globalization.CalendarWeekRule.FirstDay,
+                        DayOfWeek.Monday
+                    ),
+                })
+                .ToList();
+
+                var lastWeek = new {
+                Year = endDate.Value.Year,
+                Week = calendar.GetWeekOfYear(
+                    endDate.Value,
+                    System.Globalization.CalendarWeekRule.FirstDay,
+                    DayOfWeek.Monday
+                )
+                };
+
+                // Add the week containing the endDate if it's not already included
+                if (!allWeeks.Any(w => w.Year == lastWeek.Year && w.Week == lastWeek.Week))
+                {
+                    allWeeks.Add(lastWeek);
+                }
 
                 if (dataType == TimeSeriesDataType.Revenue)
                 {
@@ -904,12 +919,12 @@ namespace BlazorTest.Services
             {
                 // Calculate total months
                 int totalMonths =
-                    (endDate.Year - startDate.Year) * 12 + endDate.Month - startDate.Month + 1;
+                    (endDate.Value.Year - startDate.Value.Year) * 12 + endDate.Value.Month - startDate.Value.Month + 1;
 
                 // Generate all months between startDate and endDate
                 var allMonths = Enumerable
                     .Range(0, totalMonths)
-                    .Select(i => startDate.AddMonths(i))
+                    .Select(i => startDate.Value.AddMonths(i))
                     .Select(d => new { Year = d.Year, Month = d.Month })
                     .ToList();
 

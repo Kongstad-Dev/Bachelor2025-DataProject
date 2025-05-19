@@ -20,8 +20,8 @@ namespace BlazorTest.Services.Analytics
     {
         public List<ChartDataPoint> DataPoints { get; set; }
         public string Interval { get; set; }
-        public DateTime StartDate { get; set; }
-        public DateTime EndDate { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
     }
 
     public class MachineDetailRow
