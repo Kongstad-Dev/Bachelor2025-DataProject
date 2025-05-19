@@ -36,15 +36,19 @@ namespace BlazorTest_Test.Tests.Chart
             JSInterop.SetupVoid("renderChart", _ => true);
 
             // Act
-            var cut = RenderComponent<ChartComponent>(parameters => parameters
-                .Add(p => p.CanvasId, "chartCanvas")
-                .Add(p => p.Labels, new[] { "Jan", "Feb" })
-                .Add(p => p.SingleValues, new decimal[] { 100, 200 })
-                .Add(p => p.Type, "bar")
-            );
+        var cut = RenderComponent<ChartComponent>(parameters => parameters
+    .Add(p => p.CanvasId, "chartCanvas")
+    .Add(p => p.Labels, new[] { "Jan", "Feb" })
+    .Add(p => p.SingleValues, new decimal[] { 100, 200 })
+    .Add(p => p.Type, "bar")
+    .Add(p => p.Title, "Test Chart")
+    .Add(p => p.DatasetLabels, new[] { "Data1" })
+    .Add(p => p.BackgroundColors, new[] { "#fff", "#000" })
+);
 
             // Assert
-            JSInterop.VerifyInvoke("renderChart");
+            cut.WaitForAssertion(() => JSInterop.VerifyInvoke("renderChart"));
+            //JSInterop.VerifyInvoke("renderChart");
         }
     }
 }
