@@ -78,7 +78,7 @@ namespace BlazorTest_Test.Tests.Analysis
             dbContext.Laundromat.Add(new Laundromat { kId = "L1", bankId = 1 });
             dbContext.Transactions.AddRange(
                 new TransactionEntity { kId = Guid.NewGuid().ToString(), LaundromatId = "L1", amount = 100, date = new DateTime(2024, 3, 2) },
-                new TransactionEntity { kId = Guid.NewGuid().ToString(), LaundromatId = "L1", amount = 200, date = new DateTime(2024, 3, 30) }
+                new TransactionEntity { kId = Guid.NewGuid().ToString(), LaundromatId = "L1", amount = 200, date = new DateTime(2024, 4, 1) }
             );
 
             await dbContext.SaveChangesAsync();

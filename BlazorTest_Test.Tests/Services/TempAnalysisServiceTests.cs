@@ -78,5 +78,65 @@ namespace BlazorTest_Test.Tests.Services
             result.First(d => d.Label == "60°C").Value.Should().BeApproximately(66.67m, 0.01m);
             result.First(d => d.Label == "90°C").Value.Should().BeApproximately(33.33m, 0.01m);
         }
+
+        [Fact]
+        public async Task TempProgramFromTransactions_ReturnsEmpty_WhenLaundromatIdsIsNull()
+        {
+            // Arrange
+            var dbContext = TestHelpers.CreateMockDbContextWithTransactions(new List<TransactionEntity>());
+            var factoryMock = TestHelpers.CreateFactoryMock(dbContext);
+            var service = new TempAnalysisService(factoryMock.Object, new MemoryCache(new MemoryCacheOptions()));
+
+            // Act
+            var result = await service.TempProgramFromTransactions(null, DateTime.Today, DateTime.Today);
+
+            // Assert
+            result.Should().BeEmpty();
+        }
+
+        [Fact]
+        public async Task TempProgramFromTransactions_ExcludesTemperatureZero()
+        {
+            // Arrange
+            var laundromatIds = new List<string> { "1" };
+            var transactions = new List<TransactionEntity>
+    {
+        new() { kId = Guid.NewGuid().ToString(), LaundromatId = "1", temperature = 0, date = DateTime.Today },
+        new() { kId = Guid.NewGuid().ToString(), LaundromatId = "1", temperature = 30, date = DateTime.Today }
+    };
+
+            var dbContext = TestHelpers.CreateMockDbContextWithTransactions(transactions);
+            var factoryMock = TestHelpers.CreateFactoryMock(dbContext);
+            var service = new TempAnalysisService(factoryMock.Object, new MemoryCache(new MemoryCacheOptions()));
+
+            // Act
+            var result = await service.TempProgramFromTransactions(laundromatIds, DateTime.Today, DateTime.Today);
+
+            // Assert
+            result.Should().ContainSingle(d => d.Label == "30°C" && d.Value == 1);
+            result.Should().NotContain(d => d.Label == "0°C");
+        }
+
+
+        [Fact]
+public async Task TempProgramProcentageFromTransactions_ReturnsEmpty_WhenAllTempsAreZero()
+{
+    // Arrange
+    var laundromatIds = new List<string> { "1" };
+    var transactions = new List<TransactionEntity>
+    {
+        new() { kId = Guid.NewGuid().ToString(), LaundromatId = "1", temperature = 0, date = DateTime.Today }
+    };
+
+    var dbContext = TestHelpers.CreateMockDbContextWithTransactions(transactions);
+    var factoryMock = TestHelpers.CreateFactoryMock(dbContext);
+    var service = new TempAnalysisService(factoryMock.Object, new MemoryCache(new MemoryCacheOptions()));
+
+    // Act
+    var result = await service.TempProgramProcentageFromTransactions(laundromatIds, DateTime.Today, DateTime.Today);
+
+    // Assert
+    result.Should().BeEmpty();
+        }
     }
 }
