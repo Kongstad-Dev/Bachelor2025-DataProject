@@ -1,7 +1,5 @@
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.InMemory;
 using BlazorTest.Database.entities;
 using Moq;
 
@@ -12,10 +10,26 @@ namespace BlazorTest_Test.Tests.Helpers
         public static YourDbContext CreateMockDbContextWithTransactions(List<TransactionEntity> transactions)
         {
             var options = new DbContextOptionsBuilder<YourDbContext>()
-                .UseInMemoryDatabase(databaseName: $"TestDb_{System.Guid.NewGuid()}")
+                .UseInMemoryDatabase($"TestDb_{System.Guid.NewGuid()}")
                 .Options;
 
             var dbContext = new YourDbContext(options);
+            dbContext.Transactions.AddRange(transactions);
+            dbContext.SaveChanges();
+
+            return dbContext;
+        }
+
+        public static YourDbContext CreateMockDbContextWithLaundromatsAndTransactions(
+            List<Laundromat> laundromats,
+            List<TransactionEntity> transactions)
+        {
+            var options = new DbContextOptionsBuilder<YourDbContext>()
+                .UseInMemoryDatabase($"TestDb_{System.Guid.NewGuid()}")
+                .Options;
+
+            var dbContext = new YourDbContext(options);
+            dbContext.Laundromat.AddRange(laundromats);
             dbContext.Transactions.AddRange(transactions);
             dbContext.SaveChanges();
 

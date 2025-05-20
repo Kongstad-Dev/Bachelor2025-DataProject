@@ -69,5 +69,35 @@ namespace BlazorTest_Test.Tests.Services
             // Assert
             result.Should().Be(0);
         }
+        [Fact]
+        public void CalculateAvgSeconds_IgnoresZeroValuesInCalculation()
+        {
+            // Arrange
+            var service = CreateService();
+            var transactions = new List<TransactionEntity>
+    {
+        new TransactionEntity { seconds = 0 },
+        new TransactionEntity { seconds = 60 },
+        new TransactionEntity { seconds = 0 },
+    };
+
+            // Act
+            var result = service.CalculateAvgSecoundsFromTransactions(transactions);
+
+            // Assert
+            result.Should().Be(1); // Only 60 / 60 = 1
+        }
+    [Fact]
+    public void CalculateAvgSeconds_ThrowsArgumentNullException_WhenTransactionsIsNull()
+        {
+    // Arrange
+    var service = CreateService();
+
+    // Act
+    Action act = () => service.CalculateAvgSecoundsFromTransactions(null!);
+
+    // Assert
+    act.Should().Throw<ArgumentNullException>();
+        }
     }
 }
