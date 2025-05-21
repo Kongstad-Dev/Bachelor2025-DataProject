@@ -188,4 +188,25 @@ namespace BlazorTest.Services.Analytics
             }
         }
     }
+
+    public static class StatsQueryExtensions
+    {
+        public static IQueryable<LaundromatStats> CheckDateMatchForLaundromatStats(
+            this IQueryable<LaundromatStats> query, 
+            DateTime startDate, 
+            DateTime endDate)
+        {
+            return query.Where(s =>
+                s.StartDate.Year == startDate.Year &&
+                s.StartDate.Month == startDate.Month &&
+                s.StartDate.Day == startDate.Day &&
+                s.StartDate.Hour == startDate.Hour &&
+                s.StartDate.Minute == startDate.Minute &&
+                s.EndDate.Year == endDate.Year &&
+                s.EndDate.Month == endDate.Month &&
+                s.EndDate.Day == endDate.Day &&
+                s.EndDate.Hour == endDate.Hour &&
+                s.EndDate.Minute == endDate.Minute);
+        }
+    }
 }

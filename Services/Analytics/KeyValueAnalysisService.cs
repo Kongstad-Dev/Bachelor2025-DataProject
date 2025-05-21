@@ -100,12 +100,14 @@ namespace BlazorTest.Services.Analytics
             {
                 using var dbContext = _dbContextFactory.CreateDbContext();
 
-                // Optimization: Get stats for all laundromats in a single query using compiled query
+                // Get stats for all laundromats in a single query using compiled query
                 var statsQuery = dbContext
                     .LaundromatStats.AsNoTracking()
-                    .Where(s =>
-                        laundromatIds.Contains(s.LaundromatId) && s.PeriodType == periodType.Value
-                    );
+                    .Where(s => laundromatIds.Contains(s.LaundromatId) && 
+                                s.PeriodType == periodType.Value);
+
+                // Filter for the date range
+                statsQuery = statsQuery.CheckDateMatchForLaundromatStats(startDate.Value, endDate.Value);
 
                 // For quarters, we need to filter by the period key
                 if (
@@ -125,27 +127,24 @@ namespace BlazorTest.Services.Analytics
                 var missingLaundromatIds = laundromatIds.Except(foundLaundromatIds).ToList();
 
                 // If any laundromats are missing stats, fall back to on-demand calculation for consistency
+                // Maybe we should just calculate the missing ones? and aggregate them with the found ones?
                 if (missingLaundromatIds.Any())
                 {
-                    // Fall back to on-demand calculation for all laundromats to ensure consistent results
                     var calculatedStats = await GetKeyValues(laundromatIds, startDate, endDate);
                     _cache.Set(cacheKey, calculatedStats, TimeSpan.FromMinutes(30));
                     return calculatedStats;
                 }
 
-                // If we have stats for all laundromats, aggregate them
                 if (stats.Any())
                 {
-                    // Aggregate the stats - optimized with LINQ
                     var aggregation = stats
-                        .GroupBy(s => 1) // Group all together
+                        .GroupBy(s => 1)
                         .Select(g => new
                         {
                             TotalTransactions = g.Sum(s => s.TotalTransactions),
                             TotalRevenue = g.Sum(s => s.TotalRevenue),
                             WashingMachineTransactions = g.Sum(s => s.WashingMachineTransactions),
                             DryerTransactions = g.Sum(s => s.DryerTransactions),
-                            // Include the start prices in the aggregation
                             WasherStartPriceTotal = g.Sum(s =>
                                 s.WasherStartPrice * s.WashingMachineTransactions
                             ),

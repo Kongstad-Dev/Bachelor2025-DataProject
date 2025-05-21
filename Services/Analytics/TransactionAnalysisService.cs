@@ -57,36 +57,29 @@ namespace BlazorTest.Services.Analytics
                 {
                     using var dbContext = _dbContextFactory.CreateDbContext();
 
-                    // OPTIMIZATION 2: Use compiled query for better database performance
-                    var statsQuery = EF.CompileQuery(
-                        (YourDbContext ctx, List<string> ids, StatsPeriodType pt, string pk) =>
-                            ctx
-                                .LaundromatStats.AsNoTracking()
-                                .Where(s =>
-                                    ids.Contains(s.LaundromatId)
-                                    && s.PeriodType == pt
-                                    && s.PeriodKey == pk
-                                    && (
-                                        s.AvailableTimeSeriesData
-                                        & TimeSeriesDataTypes.TransactionCount
-                                    ) == TimeSeriesDataTypes.TransactionCount
-                                    && !string.IsNullOrEmpty(s.TransactionCountTimeSeriesData)
-                                )
-                                .Select(s => new
-                                {
-                                    s.LaundromatId,
-                                    s.TransactionCountTimeSeriesData,
-                                })
-                    );
+                    var statsQuery = dbContext
+                        .LaundromatStats.AsNoTracking()
+                        .Where(s =>
+                            laundromatIds.Contains(s.LaundromatId)
+                            && s.PeriodType == periodType.Value
+                            && s.PeriodKey == periodKey
+                            && (s.AvailableTimeSeriesData & TimeSeriesDataTypes.TransactionCount) == TimeSeriesDataTypes.TransactionCount
+                            && !string.IsNullOrEmpty(s.TransactionCountTimeSeriesData)
+                        );
+
+                    // Filter for the date range
+                    statsQuery = statsQuery.CheckDateMatchForLaundromatStats(startDate.Value, endDate.Value);
+
 
                     // Execute the query with appropriate limiting
-                    var statsData =
-                        laundromatIds.Count == 1
-                            ? statsQuery(dbContext, laundromatIds, periodType.Value, periodKey)
-                                .Take(1)
-                                .ToList()
-                            : statsQuery(dbContext, laundromatIds, periodType.Value, periodKey)
-                                .ToList();
+                    var statsData = laundromatIds.Count == 1
+                        ? await statsQuery
+                            .Select(s => new { s.LaundromatId, s.TransactionCountTimeSeriesData })
+                            .Take(1)
+                            .ToListAsync()
+                        : await statsQuery
+                            .Select(s => new { s.LaundromatId, s.TransactionCountTimeSeriesData })
+                            .ToListAsync();
 
                     if (statsData.Count > 0)
                     {

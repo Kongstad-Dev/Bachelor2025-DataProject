@@ -24,6 +24,14 @@ namespace BlazorTest.Services.Analytics
             DateTime? endDate
         )
         {
+            // Create cache key for the request
+            string cacheKey = $"stacked_machine_starts_{string.Join("_", laundromatIds.OrderBy(id => id))}_{startDate?.ToString("yyyyMMdd")}_{endDate?.ToString("yyyyMMdd")}";
+
+            // Try to get from cache
+            if (_cache.TryGetValue(cacheKey, out (string[] Labels, decimal[][] Values, string[] unitNames) cachedResult))
+            {
+                return cachedResult;
+            }
             // Get first 10 laundromatids
             var firstLaundromatsIds = laundromatIds.Take(10).ToList();
 
@@ -89,7 +97,12 @@ namespace BlazorTest.Services.Analytics
                 .ToArray();
             var unitNames = uniqueUnitNames.ToArray();
 
-            return (labels, values, unitNames);
+            var result = (labels, values, unitNames);
+            
+            // Cache the result for 5 minutes
+            _cache.Set(cacheKey, result, TimeSpan.FromMinutes(5));
+            
+            return result;
         }
 
         public async Task<(
@@ -102,6 +115,14 @@ namespace BlazorTest.Services.Analytics
             DateTime? endDate
         )
         {
+            // Create cache key for the request
+            string cacheKey = $"stacked_machine_revenue_{string.Join("_", laundromatIds.OrderBy(id => id))}_{startDate?.ToString("yyyyMMdd")}_{endDate?.ToString("yyyyMMdd")}";
+
+            // Try to get from cache
+            if (_cache.TryGetValue(cacheKey, out (string[] Labels, decimal[][] Values, string[] unitNames) cachedResult))
+            {
+                return cachedResult;
+            }
              // Get first 10 laundromatids
             var firstLaundromatsIds = laundromatIds.Take(10).ToList();
 
@@ -158,7 +179,12 @@ namespace BlazorTest.Services.Analytics
                 .ToArray();
             var unitNames = uniqueUnitNames.ToArray();
 
-            return (labels, values, unitNames);
+            var result = (labels, values, unitNames);
+            
+            // Cache the result for 5 minutes
+            _cache.Set(cacheKey, result, TimeSpan.FromMinutes(5));
+            
+            return result;
         }
 
         public async Task<Dictionary<string, List<MachineDetailRow>>> GetMachineDetailsByLaundromat(

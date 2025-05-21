@@ -395,7 +395,7 @@ namespace BlazorTest.Services
         {
             int startMonth = (quarter - 1) * 3 + 1;
             DateTime startDate = new DateTime(year, startMonth, 1);
-            DateTime endDate = startDate.AddMonths(3).AddDays(-1);
+            DateTime endDate = startDate.AddMonths(3).AddTicks(-1);
 
             var existingStats = await dbContext.LaundromatStats.FirstOrDefaultAsync(s =>
                 s.LaundromatId == laundromatId
@@ -543,7 +543,7 @@ namespace BlazorTest.Services
             int lastQuarterLastMonth = lastCompletedQuarter * 3;
             DateTime endDate = new DateTime(lastCompletedYear, lastQuarterLastMonth, 1)
                 .AddMonths(1)
-                .AddDays(-1);
+                .AddTicks(-1);
 
             // Calculate start date (first day 4 quarters back from the last completed quarter)
             int startQuarter = lastCompletedQuarter - 3;

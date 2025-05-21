@@ -180,7 +180,7 @@
         {
             Console.WriteLine("Setting initial values");
             var today = DateTime.Today;
-            SelectedEndDate = today.Date;
+            SelectedEndDate = today.Date.AddDays(1).AddTicks(-1);
             SelectedStartDate = today.AddMonths(-1).Date;
         }
         

@@ -146,7 +146,6 @@ namespace BlazorTest.Services.Analytics
                 return new List<ChartDataPoint>();
             }
 
-            // OPTIMIZATION 1: Use string interpolation with format specifiers for cache key generation
             var orderedIds = string.Join("_", laundromatIds.OrderBy(id => id));
             string cacheKey =
                 $"revenue_timeseries_{orderedIds}_{startDate:yyyyMMdd}_{endDate:yyyyMMdd}";
@@ -171,7 +170,7 @@ namespace BlazorTest.Services.Analytics
                 {
                     using var dbContext = _dbContextFactory.CreateDbContext();
 
-                    // Create an optimized query using regular LINQ
+                    // Fetch laundromat stats
                     var query = dbContext
                         .LaundromatStats.AsNoTracking()
                         .Where(s =>
@@ -181,14 +180,14 @@ namespace BlazorTest.Services.Analytics
                             && (s.AvailableTimeSeriesData & TimeSeriesDataTypes.Revenue)
                                 == TimeSeriesDataTypes.Revenue
                             && !string.IsNullOrEmpty(s.RevenueTimeSeriesData)
-                        )
-                        .Select(s => new { s.LaundromatId, s.RevenueTimeSeriesData });
+                        );
+                        
+                    // Filter for the date range
+                    query = query.CheckDateMatchForLaundromatStats(startDate.Value, endDate.Value);
 
-                    // Execute the query properly with async support
-                    var statsData =
-                        laundromatIds.Count == 1
-                            ? await query.Take(1).ToListAsync()
-                            : await query.ToListAsync();
+                    var statsData = laundromatIds.Count == 1
+                        ? await query.Select(s => new { s.LaundromatId, s.RevenueTimeSeriesData }).Take(1).ToListAsync()
+                        : await query.Select(s => new { s.LaundromatId, s.RevenueTimeSeriesData }).ToListAsync();
 
                     if (statsData.Count > 0)
                     {
@@ -403,22 +402,26 @@ namespace BlazorTest.Services.Analytics
             if (interval == "month")
             {
                 // Use direct SQL for monthly aggregation
-                string sql =
-                    @$"
-            SELECT 
-                CONCAT(YEAR(t.date), '-', LPAD(MONTH(t.date), 2, '0')) AS Label,
-                SUM(ABS(t.amount)) / 100 AS Value
-            FROM 
-                transaction t
-            WHERE 
-                t.LaundromatId IN ('{idList}')
-                AND t.date >= '{startDate:yyyy-MM-dd}'
-                AND t.date <= '{endDate:yyyy-MM-dd}'
-                AND t.amount != 0
-            GROUP BY 
-                YEAR(t.date), MONTH(t.date)
-            ORDER BY
-                YEAR(t.date), MONTH(t.date)";
+                string sql = @$"
+                SELECT 
+                    formatted_date AS Label,
+                    SUM(amount_value) / 100 AS Value
+                FROM (
+                    SELECT 
+                        CONCAT(YEAR(t.date), '-', LPAD(MONTH(t.date), 2, '0')) AS formatted_date,
+                        ABS(t.amount) AS amount_value
+                    FROM 
+                        transaction t
+                    WHERE 
+                        t.LaundromatId IN ('{idList}')
+                        AND t.date >= '{startDate:yyyy-MM-dd}'
+                        AND t.date <= '{endDate:yyyy-MM-dd}'
+                        AND t.amount != 0
+                ) AS subquery
+                GROUP BY 
+                    formatted_date
+                ORDER BY
+                    formatted_date";
 
                 result = await ExecuteSqlForChartData(dbContext, sql);
 
@@ -451,22 +454,26 @@ namespace BlazorTest.Services.Analytics
             }
             else if (interval == "day")
             {
-                string sql =
-                    @$"
-        SELECT 
-            DATE_FORMAT(t.date, '%Y-%m-%d') AS Label,
-            SUM(ABS(t.amount)) / 100 AS Value
-        FROM 
-            transaction t
-        WHERE 
-            t.LaundromatId IN ('{idList}')
-            AND t.date >= '{startDate:yyyy-MM-dd}'
-            AND t.date <= '{endDate:yyyy-MM-dd}'
-            AND t.amount != 0
-        GROUP BY 
-            DATE_FORMAT(t.date, '%Y-%m-%d')
-        ORDER BY
-            DATE_FORMAT(t.date, '%Y-%m-%d')";
+                string sql = @$"
+                SELECT 
+                    formatted_date AS Label,
+                    SUM(amount_value) / 100 AS Value
+                FROM (
+                    SELECT 
+                        DATE_FORMAT(t.date, '%Y-%m-%d') AS formatted_date,
+                        ABS(t.amount) AS amount_value
+                    FROM 
+                        transaction t
+                    WHERE 
+                        t.LaundromatId IN ('{idList}')
+                        AND t.date >= '{startDate:yyyy-MM-dd}'
+                        AND t.date <= '{endDate:yyyy-MM-dd}'
+                        AND t.amount != 0
+                ) AS subquery
+                GROUP BY 
+                    formatted_date
+                ORDER BY
+                    formatted_date";
 
                 result = await ExecuteSqlForChartData(dbContext, sql);
 
