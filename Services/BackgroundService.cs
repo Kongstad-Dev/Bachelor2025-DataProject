@@ -85,11 +85,16 @@ namespace BlazorTest.Services
                     var transactionResult = await transactionService.UpdateAllTransactionsAsync();
                     _logger.LogInformation("Transaction update completed: Added {count} transactions, {failed} laundromats failed",
                         transactionResult.totalTransactions, transactionResult.failedLaundromats);
-                    
+
                     // Update stats
+                    /*
+                    Is kinda redundant, since UpdateAllTransactionsAsync() already updates the stats for laundromats individually,
+                    but if a laundromat has no new transactions, it won't update the stats ATM.
+
                     var statsService = scope.ServiceProvider.GetRequiredService<LaundromatStatsService>();
                     await statsService.UpdateAllStatsAsync();
                     _logger.LogInformation("Stats update completed");
+                    */
                     
                     _logger.LogInformation("Daily update process completed successfully at {time}", DateTime.Now);
                 }

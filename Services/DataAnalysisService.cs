@@ -24,8 +24,6 @@ namespace BlazorTest.Services
             return date1.Date == date2.Date;
         }
 
-        // Keeping the original public services in this file but delegating to specialized services
-
         public async Task<List<KeyValuePair<string, decimal>>> GetKeyValuesFromStats(
             List<string> laundromatIds,
             DateTime? startDate,

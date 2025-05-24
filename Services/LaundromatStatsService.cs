@@ -138,8 +138,13 @@ namespace BlazorTest.Services
 
                 foreach (var id in laundromatIds)
                 {
-                    await CalculateStatsForLaundromat(id);
-                    count++;
+                    try {
+                        await CalculateStatsForLaundromat(id);
+                        count++;
+                    }
+                    catch (Exception ex) {
+                        _logger.LogError(ex, $"Error updating stats for laundromat {id}. Continuing with next laundromat.");
+                    }
                 }
 
                 _logger.LogInformation($"Stats updated for {count} laundromats");
@@ -260,7 +265,9 @@ namespace BlazorTest.Services
         {
             // Check if stats for this period already exist
             var existingStats = await dbContext.LaundromatStats.FirstOrDefaultAsync(s =>
-                s.LaundromatId == laundromatId && s.PeriodType == periodType
+                s.LaundromatId == laundromatId &&
+                s.PeriodType == periodType &&
+                s.PeriodKey == periodKey
             );
 
             // Define dryer unit types
@@ -382,6 +389,8 @@ namespace BlazorTest.Services
             existingStats.DryerTransactions = stats.DryerTransactions;
             existingStats.WashingMachineTransactions = washerTransactions;
             existingStats.CalculatedAt = DateTime.Now;
+            
+            dbContext.Entry(existingStats).State = EntityState.Modified;
         }
 
         private async Task CalculateQuarterlyStats(
@@ -518,6 +527,8 @@ namespace BlazorTest.Services
             existingStats.DryerTransactions = stats.DryerTransactions;
             existingStats.WashingMachineTransactions = washerTransactions;
             existingStats.CalculatedAt = DateTime.Now;
+
+            dbContext.Entry(existingStats).State = EntityState.Modified;
         }
 
         private async Task CalculatePast4CompletedQuartersStats(
@@ -686,6 +697,8 @@ namespace BlazorTest.Services
             existingStats.DryerTransactions = stats.DryerTransactions;
             existingStats.WashingMachineTransactions = washerTransactions;
             existingStats.CalculatedAt = DateTime.Now;
+
+            dbContext.Entry(existingStats).State = EntityState.Modified;
         }
 
         private async Task<TimeSeriesInfo> GenerateTimeSeriesData(

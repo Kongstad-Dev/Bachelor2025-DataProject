@@ -117,25 +117,15 @@ public class YourDbContext : DbContext
     {
         if (!optionsBuilder.IsConfigured)
         {
-            // Load environment variables if needed
             DotNetEnv.Env.Load();
 
-            // Get connection string
             var connectionString =
                 $"Server={Env.GetString("DATABASE_HOST")};Database={Env.GetString("DATABASE_NAME")};User={Env.GetString("DATABASE_USERNAME")};Password={Env.GetString("DATABASE_PASSWORD")};";
 
-            // Configure MySQL
             optionsBuilder.UseMySQL(connectionString);
         }
 
-        // Performance optimizations
-
-        // Don't track entities by default unless explicitly requested
         optionsBuilder.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
-
-        // Enable batching of commands
-        // (MySQL provider doesn't support this directly, but keeping for reference)
-        // optionsBuilder.UseBatchSize(100);
     }
 }
 

@@ -22,31 +22,31 @@
         </div>
 
         <div class="main-content-graphs">
-                @if (isLoading || isDataLoading)
-                {
-                    <div class="loading-overlay">
-                        <div class="loader"></div>
-                    </div>
-                }
-                <div class="main-graph-container">
-                    <ChartComponent CanvasId="revenueOverTime" Labels="@chartLabelsTime" SingleValues="@chartValuesTime"
-                        Title="Revenue Over Time" Type="line" Stacked=false />
+            @if (isLoading || isDataLoading)
+            {
+                <div class="loading-overlay">
+                    <div class="loader"></div>
                 </div>
+            }
+            <div class="main-graph-container">
+                <ChartComponent CanvasId="revenueOverTime" Labels="@chartLabelsTime" SingleValues="@chartValuesTime"
+                    Title="Revenue Over Time" Type="line" Stacked=false />
+            </div>
 
-                <div class="main-graph-container">
-                    <ChartComponent CanvasId="TransactionsOverTime" Labels="@chartLabelsTimeTrans"
-                        SingleValues="@chartValuesTimeTrans" Title="Transactions Over Time" Type="line" />
-                </div>
-                <div class="main-graph-container">
-                    <ChartComponent CanvasId="stackedBarChart" Labels='@chartLabelsSumMachine'
-                        MultiValues="@chartValuesSumMachine" Title='Machine Starts' Type="bar" Stacked="true"
-                        DatasetLabels="@chartLabelsMachine" />
-                </div>
-                <div class="main-graph-container">
-                    <ChartComponent CanvasId="stackedBarChartRev" Labels='@chartLabelsSumMachineRev'
-                        MultiValues="@chartValuesSumMachineRev" Title='Revenue pr Machine' Type="bar" Stacked="true"
-                        DatasetLabels="@chartLabelsMachineRev" />
-                </div>
+            <div class="main-graph-container">
+                <ChartComponent CanvasId="TransactionsOverTime" Labels="@chartLabelsTimeTrans"
+                    SingleValues="@chartValuesTimeTrans" Title="Transactions Over Time" Type="line" />
+            </div>
+            <div class="main-graph-container">
+                <ChartComponent CanvasId="stackedBarChart" Labels='@chartLabelsSumMachine'
+                    MultiValues="@chartValuesSumMachine" Title='Machine Starts' Type="bar" Stacked="true"
+                    DatasetLabels="@chartLabelsMachine" />
+            </div>
+            <div class="main-graph-container">
+                <ChartComponent CanvasId="stackedBarChartRev" Labels='@chartLabelsSumMachineRev'
+                    MultiValues="@chartValuesSumMachineRev" Title='Revenue pr Machine' Type="bar" Stacked="true"
+                    DatasetLabels="@chartLabelsMachineRev" />
+            </div>
         </div>
     </div>
 </div>
@@ -128,9 +128,6 @@
 "Program Type Statistics",
 "Rinse Statistics"
 };
-
-    private string[] chartLabelsSum = Array.Empty<string>();
-    private decimal[] chartValuesSum = Array.Empty<decimal>();
     private string[] chartLabelsTime = Array.Empty<string>();
     private decimal[] chartValuesTime = Array.Empty<decimal>();
     private string[] chartLabelsSumSoap = Array.Empty<string>();
@@ -214,7 +211,6 @@
 
     private void StateChangedHandler()
     {
-        // Use InvokeAsync to safely handle the event
         InvokeAsync(async () =>
         {
             try
@@ -255,17 +251,12 @@
             startDate,
             endDate);
 
-            var revenueSumTask = AnalysisService.GetRevenueForLaundromatsFromStats(
+            var revenueTimeTask = AnalysisService.GetRevenueForLaundromatsOverTimeFromStats(
             effectiveLaundromats,
             startDate ?? DateTime.MinValue,
             endDate ?? DateTime.MaxValue);
 
-            var revenueTimeTask = AnalysisService.GetRevenueForLaundromatsOverTime(
-            effectiveLaundromats,
-            startDate ?? DateTime.MinValue,
-            endDate ?? DateTime.MaxValue);
-
-            var transactionTimeTask = AnalysisService.CalculateTransactionOverTime(
+            var transactionTimeTask = AnalysisService.CalculateTransactionOverTimeFromStats(
             effectiveLaundromats,
             startDate ?? DateTime.MinValue,
             endDate ?? DateTime.MaxValue);
@@ -280,20 +271,18 @@
             startDate ?? DateTime.MinValue,
             endDate ?? DateTime.MaxValue);
 
-
-
-
             // Wait for all tasks to complete
-            await Task.WhenAll(keyValuesTask, revenueSumTask, revenueTimeTask);
+            await Task.WhenAll(
+            keyValuesTask,
+            revenueTimeTask,
+            transactionTimeTask,
+            stackedMachineTask,
+            stackedMachineTaskRev);
 
             // Process results (only if not canceled)
             token.ThrowIfCancellationRequested();
 
             keyValuePairs = await keyValuesTask;
-
-            var resultSum = await revenueSumTask;
-            chartLabelsSum = resultSum.Select(r => r.Label).ToArray();
-            chartValuesSum = resultSum.Select(r => r.Value).ToArray();
 
             var resultTime = await revenueTimeTask;
             chartLabelsTime = resultTime.Select(r => r.Label).ToArray();
@@ -405,9 +394,9 @@
         {
             isSpecialDataLoading = true;
             StateHasChanged();
-            
+
             if (content == "Soap Statistics" &&
-        (chartLabelsSumSoap.Length == 0 || _lastSoapDataParams != GetCurrentParams()))
+            (chartLabelsSumSoap.Length == 0 || _lastSoapDataParams != GetCurrentParams()))
             {
                 // Load both soap datasets in parallel
                 var soapDataTask = AnalysisService.CalculateTotalSoapProgramFromTransactions(
